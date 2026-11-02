@@ -69,57 +69,175 @@ ul.assume { margin: 0; padding-left: 18px; color: var(--text-secondary); font-si
 ul.assume li { margin: 3px 0; }
 svg text { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
 svg text.endlabel { fill: var(--text-secondary); font-size: 12px; }
+/* --- Tabs, Überblick, Druck --- */
+.head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.actions label { display: flex; gap: 6px; align-items: center; color: var(--text-secondary); margin-right: 4px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid var(--grid); margin: 4px 0 16px; }
+.tab { font: inherit; padding: 8px 14px; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; color: var(--text-secondary); cursor: pointer; }
+.tab:hover { color: var(--text-primary); }
+.tab[aria-selected="true"] { color: var(--text-primary); border-bottom-color: var(--s1); font-weight: 600; }
+.verdict { font-size: 15px; line-height: 1.55; border-left: 3px solid var(--s1); }
+.verdict p { margin: 0 0 6px; }
+.verdict .fine { font-size: 12px; color: var(--muted); margin: 0; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 0 16px; align-items: start; }
+.inputs h2 { margin-bottom: 4px; }
+tr.flip td { background: var(--warn-bg); }
+.chart svg { width: 100%; height: auto; display: block; }
+.print-only { display: none; }
+@media print {
+  :root .viz-root {
+    color-scheme: light;
+    --page: #fff; --surface-1: #fff;
+    --text-primary: #0b0b0b; --text-secondary: #52514e; --muted: #6b6a66;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.15);
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+    --good: #006300; --warn-bg: #fff6e0;
+    min-height: 0; padding: 0; font-size: 12px;
+  }
+  .tabs, .actions, .noprint { display: none !important; }
+  .panel[data-print] { display: block !important; }
+  .panel:not([data-print]) { display: none !important; }
+  .print-only { display: block !important; }
+  .card, .tile, tr { break-inside: avoid; }
+  .layout { grid-template-columns: 240px 1fr; }
+  .panel + .panel { break-before: page; }
+}
 </style>
 </head>
 <body>
 <div class="viz-root">
-  <h1>Vorsorge-Rechner</h1>
-  <p class="sub">ETF-Depot vs. Altersvorsorgedepot (ab 2027) vs. fondsgebundene Rentenversicherung vs. aktiver Fonds – mit echtem Steuertarif, Förderung, Vorabpauschale, Auszahlphase, Krankenversicherung und Erbfall. Rechtsstand: Altersvorsorgereformgesetz vom 26.05.2026, Steuerwerte 2026.</p>
+  <div class="head">
+    <div>
+      <h1>Vorsorge-Rechner</h1>
+      <p class="sub">ETF-Depot, Altersvorsorgedepot (ab 2027), fondsgebundene Rentenversicherung und aktiver Fonds im Vergleich: mit Steuertarif, Förderung, Vorabpauschale, Auszahlphase, Krankenversicherung und Erbfall. Rechtsstand: Altersvorsorgereformgesetz vom 26.05.2026, Steuerwerte 2026.</p>
+    </div>
+    <div class="actions">
+      <label><input type="checkbox" id="real" checked> Heutige Kaufkraft</label>
+      <button class="btn" id="copyLink" type="button">Link kopieren</button>
+      <button class="btn" id="printBtn" type="button">Drucken / PDF</button>
+    </div>
+  </div>
+  <p class="hint print-only" id="printMeta"></p>
 
-  <div class="layout">
-    <!-- INPUTS -->
-    <div class="card inputs" id="inputs">
-      <details open>
-        <summary>Du</summary>
+  <nav class="tabs" role="tablist" aria-label="Ansichten">
+    <button class="tab" type="button" role="tab" data-tab="overview" aria-controls="tab-overview">Überblick</button>
+    <button class="tab" type="button" role="tab" data-tab="detail" aria-controls="tab-detail">Rente im Detail</button>
+    <button class="tab" type="button" role="tab" data-tab="heirs" aria-controls="tab-heirs">Erbfall</button>
+    <button class="tab" type="button" role="tab" data-tab="settings" aria-controls="tab-settings">Einstellungen &amp; Annahmen</button>
+  </nav>
+
+  <!-- ÜBERBLICK -->
+  <section class="panel" id="tab-overview" role="tabpanel" data-print>
+    <div class="layout">
+      <div class="card inputs">
+        <h2>Deine Eckdaten</h2>
         <div class="row"><label for="a0">Alter heute</label><input type="number" id="a0" value="23" min="16" max="60"></div>
+        <div class="row"><label for="incWork">Zu versteuerndes Einkommen im Beruf (€/Jahr, heutiges Geld)</label><input type="number" id="incWork" value="85000" step="1000" min="0"></div>
+        <div class="row"><label for="incRet">Zu versteuerndes Einkommen in der Rente <em>ohne</em> diese Produkte (€/Jahr, heutiges Geld)</label><input type="number" id="incRet" value="40000" step="1000" min="0"></div>
+        <p class="hint">z. B. gesetzliche Rente, Betriebsrente, Mieten. Bestimmt deinen Steuersatz im Alter.</p>
+        <div class="row"><label for="setAll">Monatsbeitrag je Produkt (€)</label><input type="number" id="setAll" value="150" step="10" min="0"></div>
+        <p class="hint">Gilt für alle Produkte. Einzeln anpassen kannst du sie unter „Einstellungen“.</p>
+        <div class="row"><label for="g">Rendite vor Kosten bis zur Rente (% p.a.)</label><input type="number" id="g" value="6" step="0.5"></div>
+        <div class="row"><label for="kvOn">Als Rentner <em>freiwillig</em> gesetzlich krankenversichert</label><input type="checkbox" id="kvOn"></div>
+        <p class="hint">Dann zahlst du ca. 22 % Kranken- und Pflegebeitrag auf AVD- und Versicherungsauszahlungen. In der Pflichtversicherung der Rentner (KVdR) oder privat versichert: Haken aus. Mehr dazu unter „Einstellungen“.</p>
+        <p class="hint noprint">Alle weiteren Annahmen (Studium, Rentenbeginn, Kosten, Inflation …) findest du unter „Einstellungen &amp; Annahmen“.</p>
+      </div>
+      <div>
+        <div class="card verdict" id="verdict"></div>
+        <div id="warn"></div>
+        <div class="tiles" id="tiles"></div>
+        <div class="card">
+          <h2>Was die Empfehlung kippen würde</h2>
+          <p class="hint">Ø netto pro Monat von Rentenbeginn bis Auszahlplan-Ende, jeweils mit nur einer geänderten Annahme. „Vorne“ = meistes Netto-Geld bis Auszahlplan-Ende. Gelb markiert: Ein anderes Produkt liegt vorne als bei deinen Annahmen.</p>
+          <div style="overflow-x:auto"><table id="scen"></table></div>
+        </div>
+        <div class="card">
+          <h2>Summe aller Netto-Auszahlungen ab Rentenbeginn</h2>
+          <div class="legend" id="lg2"></div>
+          <div class="chart" id="c2"></div>
+          <p class="hint" id="beText"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RENTE IM DETAIL -->
+  <section class="panel" id="tab-detail" role="tabpanel" data-print hidden>
+    <h2 class="print-only">Rente im Detail</h2>
+    <div class="card">
+      <h2>Vergleich</h2>
+      <div style="overflow-x:auto"><table id="tbl"></table></div>
+    </div>
+    <div class="card">
+      <h2>Vermögen im Zeitverlauf</h2>
+      <div class="legend" id="lg1"></div>
+      <div class="chart" id="c1"></div>
+      <p class="hint" id="c1hint"></p>
+    </div>
+  </section>
+
+  <!-- ERBFALL -->
+  <section class="panel" id="tab-heirs" role="tabpanel" hidden>
+    <div class="layout">
+      <div class="card inputs">
+        <h2>Annahmen Erbfall</h2>
+        <div class="row"><label for="deathAge">Angenommenes Todesalter</label><input type="number" id="deathAge" value="50" min="18" max="100"></div>
+        <div class="row"><label for="heirHalf">AVD: Erträge im Erbfall nur zur Hälfte versteuern (ab 62 und 12 Jahren Laufzeit)</label><input type="checkbox" id="heirHalf"></div>
+        <p class="hint">Erbt nicht der Ehepartner, gilt das AVD als „schädlich verwendet“ (§ 93 EStG): Zulagen und Steuervorteil gehen zurück, die Erträge (Guthaben − eigene Beiträge − Zulagen) werden versteuert (§ 22 Nr. 5 S. 3 EStG). Ob ab 62 nur die Hälfte steuerpflichtig ist, ist rechtlich noch unklar. Standardmäßig wird deshalb voll versteuert.</p>
+        <p class="hint">Erbschaftsteuer ist nicht gerechnet: Freibetrag Ehepartner 500.000 €, Kinder 400.000 €, Partner ohne Trauschein nur 20.000 € (darüber 30 %).</p>
+      </div>
+      <div>
+        <div class="card">
+          <h2>Was die Erben bekommen</h2>
+          <div id="heirs"></div>
+        </div>
+        <div class="card">
+          <h2>Je nach Todesalter</h2>
+          <div class="legend" id="lg3"></div>
+          <div class="chart" id="c3"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EINSTELLUNGEN & ANNAHMEN -->
+  <section class="panel" id="tab-settings" role="tabpanel" data-print hidden>
+    <h2 class="print-only">Einstellungen &amp; Annahmen</h2>
+    <div class="grid2">
+      <div class="card inputs">
+        <h2>Du &amp; Rente</h2>
         <div class="row"><label for="studyEnd">Studium / Ausbildung bis Alter</label><input type="number" id="studyEnd" value="24" min="16" max="60"></div>
         <p class="hint">Gerechnet wird in ganzen Jahren ab heute. Bei 24 ist das erste Jahr (2027) das Übergangsjahr, ab dann volles Gehalt.</p>
         <div class="row"><label for="incStudy">Zu versteuerndes Einkommen bis Studienende (€/Jahr)</label><input type="number" id="incStudy" value="35000" step="1000" min="0"></div>
         <p class="hint">2027: Studium bis Sommer, danach ca. 5 Monatsgehälter ≈ 35.000 €.</p>
         <div class="row"><label for="eligStudy">Bis Studienende förderberechtigt?</label><input type="checkbox" id="eligStudy" checked></div>
         <p class="hint">Förderberechtigt ist, wer im Beitragsjahr zumindest zeitweise rentenversicherungspflichtig ist (Werkstudent, Minijob mit RV-Pflicht, Berufsstart) oder als Selbstständiger Gewinneinkünfte erklärt (§ 10a EStG n.F.). Mit Berufsstart 2027 bist du für ganz 2027 förderberechtigt. Ohne Förderberechtigung fließen die AVD-Beiträge ins ETF-Nebendepot.</p>
-        <div class="row"><label for="incWork">Zu versteuerndes Einkommen im Beruf (€/Jahr, heutiges Geld)</label><input type="number" id="incWork" value="85000" step="1000" min="0"></div>
-        <div class="row"><label for="incRet">Zu versteuerndes Einkommen in der Rente <em>ohne</em> diese Produkte (€/Jahr, heutiges Geld)</label><input type="number" id="incRet" value="40000" step="1000" min="0"></div>
-        <p class="hint">z. B. gesetzliche Rente, Betriebsrente, App-Einnahmen, Mieten. Bestimmt deinen Steuersatz im Alter.</p>
         <div class="row"><label for="R">Rentenbeginn (Alter)</label><input type="number" id="R" value="67" min="65" max="70"></div>
         <p class="hint">Das AVD zahlt frühestens mit 65 aus, spätestens mit 70 (§ 1 AltZertG n.F.).</p>
         <div class="row"><label for="H">Auszahlplan läuft bis Alter</label><input type="number" id="H" value="90" min="85" max="100"></div>
-        <div class="row"><label for="kvOn">Im Alter <em>freiwillig</em> gesetzlich krankenversichert</label><input type="checkbox" id="kvOn"></div>
-        <div class="row"><label for="kvRate">… Beitragssatz KV + PV (%)</label><input type="number" id="kvRate" value="21.7" step="0.1"></div>
-        <p class="hint">Mit 85k liegst du über der Versicherungspflichtgrenze (2026: 77.400 €). In der Pflichtversicherung der Rentner (KVdR) oder privat versichert: Haken aus, dann fallen auf diese Produkte keine Beiträge an. Bist du im Alter freiwillig gesetzlich versichert, zahlst du den vollen Satz (14,6 % + Ø-Zusatzbeitrag 2,9 % + Pflege 4,2 % kinderlos) auf AVD-Auszahlungen, Versicherungsleistungen und ETF-Gewinne, bis zur Beitragsbemessungsgrenze (69.750 €). In die KVdR kommst du, wenn du in der zweiten Hälfte deines Erwerbslebens zu 9/10 gesetzlich versichert warst; freiwillige Zeiten zählen mit. <strong>Frag deinen Berater danach, bevor du in die PKV wechselst.</strong></p>
-      </details>
+        <div class="row"><label for="kvRate">Beitragssatz KV + PV bei freiwilliger Versicherung (%)</label><input type="number" id="kvRate" value="21.7" step="0.1"></div>
+        <p class="hint">Mit 85k liegst du über der Versicherungspflichtgrenze (2026: 77.400 €). Bist du im Alter freiwillig gesetzlich versichert, zahlst du den vollen Satz (14,6 % + Ø-Zusatzbeitrag 2,9 % + Pflege 4,2 % kinderlos) auf AVD-Auszahlungen, Versicherungsleistungen und ETF-Gewinne, bis zur Beitragsbemessungsgrenze (69.750 €). In die KVdR kommst du, wenn du in der zweiten Hälfte deines Erwerbslebens zu 9/10 gesetzlich versichert warst; freiwillige Zeiten zählen mit. <strong>Frag deinen Berater danach, bevor du in die PKV wechselst.</strong></p>
+      </div>
 
-      <details open>
-        <summary>Markt</summary>
-        <div class="row"><label for="g">Rendite vor Kosten in der Ansparphase (% p.a.)</label><input type="number" id="g" value="6" step="0.5"></div>
+      <div class="card inputs">
+        <h2>Markt</h2>
         <div class="row"><label for="gPay">Rendite vor Kosten in der Auszahlphase (% p.a.)</label><input type="number" id="gPay" value="4" step="0.5"></div>
         <div class="row"><label for="infl">Inflation (% p.a.)</label><input type="number" id="infl" value="2" step="0.5"></div>
         <div class="row"><label for="dyn">Beiträge steigen jährlich um (%)</label><input type="number" id="dyn" value="0" step="1"></div>
         <div class="row"><label for="basis">Basiszins für Vorabpauschale (%)</label><input type="number" id="basis" value="3.2" step="0.1"></div>
-        <p class="hint">2026: 3,2 % (BMF, 13.01.2026). Für spätere Jahre eine Prognose.</p>
-        <div class="row"><label for="setAll">Gleicher Monatsbeitrag für alle</label><input type="number" id="setAll" value="150" step="10"></div>
-        <button class="btn" id="applyAll" type="button">Auf alle Produkte anwenden</button>
-      </details>
+        <p class="hint">2026: 3,2 % (BMF, 13.01.2026). Für spätere Jahre eine Prognose. Die Rendite bis zur Rente stellst du im Überblick ein.</p>
+      </div>
 
-      <details open>
-        <summary><span class="key" style="background:var(--s1)"></span>ETF-Depot</summary>
+      <div class="card inputs">
+        <h2><span class="key" style="background:var(--s1)"></span> ETF-Depot</h2>
         <div class="row"><label for="etfOn">Anzeigen</label><input type="checkbox" id="etfOn" checked></div>
         <div class="row"><label for="etfM">Beitrag (€/Monat)</label><input type="number" id="etfM" value="150" step="10" min="0"></div>
         <div class="row"><label for="etfTer">Kosten / TER (% p.a.)</label><input type="number" id="etfTer" value="0.2" step="0.05" min="0"></div>
-      </details>
+      </div>
 
-      <details open>
-        <summary><span class="key" style="background:var(--s2)"></span>Altersvorsorgedepot</summary>
+      <div class="card inputs">
+        <h2><span class="key" style="background:var(--s2)"></span> Altersvorsorgedepot</h2>
         <div class="row"><label for="avdOn">Anzeigen</label><input type="checkbox" id="avdOn" checked></div>
         <div class="row"><label for="avdM">Beitrag (€/Monat, max. 150 gefördert)</label><input type="number" id="avdM" value="150" step="10" min="0"></div>
         <p class="hint">Was über 150 €/Monat hinausgeht (z. B. durch die Beitragssteigerung) und Beiträge ohne Förderberechtigung landen in einem ETF-Nebendepot. So zahlst du in jedes Produkt gleich viel eigenes Geld ein.</p>
@@ -129,15 +247,15 @@ svg text.endlabel { fill: var(--text-secondary); font-size: 12px; }
         <div class="row"><label for="kidsFrom">… ab Alter</label><input type="number" id="kidsFrom" value="32"></div>
         <div class="row"><label for="kidsYears">… für wie viele Jahre</label><input type="number" id="kidsYears" value="25"></div>
         <div class="row"><label for="bonus">Berufseinsteigerbonus 200 €</label><input type="checkbox" id="bonus" checked></div>
-        <p class="hint">Einmalig, wenn du zu Beginn des Beitragsjahres unter 25 bist (§ 84 EStG n.F.). Trifft auf dich zu.</p>
+        <p class="hint">Einmalig, wenn du zu Beginn des Beitragsjahres unter 25 bist (§ 84 EStG n.F.).</p>
         <div class="row"><label for="reinvest">Zusätzliche Steuererstattung in ETF anlegen</label><input type="checkbox" id="reinvest" checked></div>
         <p class="hint">Ohne Haken gibst du die Erstattung aus. Dann zahlst du netto weniger ein als bei den anderen Produkten, und der Vergleich zeigt das gesondert.</p>
         <div class="row"><label for="einmal">30 % Einmalauszahlung bei Rentenbeginn</label><input type="checkbox" id="einmal"></div>
         <p class="hint">Auszahlplan nach § 1 AltZertG: jedes Jahr Restkapital ÷ Restlaufzeit. Die Rate startet niedriger und steigt. Die Einmalauszahlung wird in einem Jahr voll versteuert und lohnt sich deshalb meist nicht.</p>
-      </details>
+      </div>
 
-      <details open>
-        <summary><span class="key" style="background:var(--s3)"></span>Fondsgebundene Rentenversicherung</summary>
+      <div class="card inputs">
+        <h2><span class="key" style="background:var(--s3)"></span> Fondsgebundene Rentenversicherung</h2>
         <div class="row"><label for="insOn">Anzeigen</label><input type="checkbox" id="insOn" checked></div>
         <div class="row"><label for="insM">Beitrag (€/Monat)</label><input type="number" id="insM" value="150" step="10" min="0"></div>
         <div class="row"><label for="insEff">Effektivkosten (% p.a.)</label><input type="number" id="insEff" value="0.9" step="0.1" min="0"></div>
@@ -146,76 +264,33 @@ svg text.endlabel { fill: var(--text-secondary); font-size: 12px; }
         <div class="row"><label for="rf">Rentenfaktor (€ Monatsrente je 10.000 €)</label><input type="number" id="rf" value="30" step="1" min="0"></div>
         <div class="row"><label for="gz">Rentengarantiezeit (Jahre)</label><input type="number" id="gz" value="10" min="0" max="30"></div>
         <p class="hint">Effektivkosten, Rentenfaktor und Garantiezeit stehen im Angebot bzw. Produktinformationsblatt. Achte darauf, ob der Rentenfaktor garantiert ist.</p>
-      </details>
+      </div>
 
-      <details>
-        <summary><span class="key" style="background:var(--s4)"></span>Aktiver Fonds (mit Ausgabeaufschlag)</summary>
+      <div class="card inputs">
+        <h2><span class="key" style="background:var(--s4)"></span> Aktiver Fonds (mit Ausgabeaufschlag)</h2>
         <div class="row"><label for="fondOn">Anzeigen</label><input type="checkbox" id="fondOn"></div>
         <div class="row"><label for="fondM">Beitrag (€/Monat)</label><input type="number" id="fondM" value="150" step="10" min="0"></div>
         <div class="row"><label for="fondAA">Ausgabeaufschlag (%)</label><input type="number" id="fondAA" value="5" step="0.5" min="0"></div>
         <div class="row"><label for="fondTer">Laufende Kosten (% p.a.)</label><input type="number" id="fondTer" value="1.6" step="0.1" min="0"></div>
-      </details>
-
-      <details open>
-        <summary>Erbfall</summary>
-        <div class="row"><label for="deathAge">Angenommenes Todesalter</label><input type="number" id="deathAge" value="50" min="18" max="100"></div>
-        <div class="row"><label for="heirHalf">AVD: Erträge im Erbfall nur zur Hälfte versteuern (ab 62 und 12 Jahren Laufzeit)</label><input type="checkbox" id="heirHalf"></div>
-        <p class="hint">Erbt nicht der Ehepartner, gilt das AVD als „schädlich verwendet“ (§ 93 EStG): Zulagen und Steuervorteil gehen zurück, die Erträge (Guthaben − eigene Beiträge − Zulagen) werden versteuert (§ 22 Nr. 5 S. 3 EStG). Ob ab 62 nur die Hälfte steuerpflichtig ist, ist rechtlich noch unklar. Standardmäßig wird deshalb voll versteuert.</p>
-      </details>
-    </div>
-
-    <!-- RESULTS -->
-    <div>
-      <div class="toolbar">
-        <label><input type="checkbox" id="real"> Beträge in heutiger Kaufkraft</label>
-        <span class="hint" id="modeHint"></span>
-      </div>
-      <div id="warn"></div>
-      <div class="tiles" id="tiles"></div>
-
-      <div class="card">
-        <h2>Vergleich</h2>
-        <div style="overflow-x:auto"><table id="tbl"></table></div>
-      </div>
-
-      <div class="card">
-        <h2>Vermögen im Zeitverlauf</h2>
-        <div class="legend" id="lg1"></div>
-        <div class="chart" id="c1"></div>
-        <p class="hint" id="c1hint"></p>
-      </div>
-
-      <div class="card">
-        <h2>Summe aller Netto-Auszahlungen ab Rentenbeginn</h2>
-        <div class="legend" id="lg2"></div>
-        <div class="chart" id="c2"></div>
-        <p class="hint" id="beText"></p>
-      </div>
-
-      <div class="card">
-        <h2>Erbfall</h2>
-        <div id="heirs"></div>
-        <h3>Was die Erben je nach Todesalter bekommen</h3>
-        <div class="legend" id="lg3"></div>
-        <div class="chart" id="c3"></div>
-      </div>
-
-      <div class="card">
-        <h2>Annahmen &amp; Grenzen</h2>
-        <ul class="assume">
-          <li>Einkommensteuer nach Tarif 2026 (Grundtarif, ledig) inkl. Soli; die Tarifgrenzen wachsen mit der Inflation mit, der Sparerpauschbetrag bleibt bei 1.000 €. Keine Kirchensteuer, kein Ehegattensplitting. Die Steuerreform 2027 ist noch nicht beschlossen.</li>
-          <li>ETF/Fonds: Abgeltungsteuer 26,375 %, 30 % Teilfreistellung (Aktienfonds), Sparerpauschbetrag 1.000 € pro Jahr (je Produkt gerechnet), Vorabpauschale jährlich. Entnahmen jährlich am Jahresanfang (für ETF/AVD leicht konservativ).</li>
-          <li>Altersvorsorgedepot (Gesetz vom 26.05.2026, BGBl. 2026 I Nr. 156, gilt ab 2027): 50 % Zulage auf die ersten 360 €, 25 % bis 1.800 € (max. 540 €), min. 120 € Eigenbeitrag; Kinderzulage 1:1 bis 300 €/Kind; Berufseinsteigerbonus 200 € unter 25; Sonderausgabenabzug (Beitrag + Zulagen) mit Günstigerprüfung; Auszahlung voll steuerpflichtig, ohne Fünftelregelung; Auszahlplan bis mind. 85 als Restkapital ÷ Restlaufzeit; Rentenbeginn 65–70. Beiträge über 150 €/Monat und Beiträge ohne Förderberechtigung gehen in ein ETF-Nebendepot (gleiche TER wie das ETF-Depot). Ins AVD dürften bis 6.840 €/Jahr ungefördert fließen; diese Variante ist nicht gerechnet. Vereinfacht wird ab heute statt ab 01.01.2027 gerechnet, und Zulagen werden sofort zum Jahresende gutgeschrieben (in echt 1–2 Jahre später).</li>
-          <li>„Heutige Kaufkraft“: Einzahlungen und Förderung werden Jahr für Jahr in heutige Kaufkraft umgerechnet, Kapitalwerte zum jeweiligen Zeitpunkt. Die Ø-Monatsrente wird für alle Produkte über denselben Zeitraum (Rentenbeginn bis Auszahlplan-Ende) gemittelt.</li>
-          <li>Erbfall AVD: Ehepartner können das Guthaben förderunschädlich auf einen eigenen Vertrag übertragen; die spätere Einkommensteuer darauf ist grob abgezogen (verteilt auf den Auszahlplan). Alle anderen Erben: Zulagen und Steuervorteile werden zurückgefordert, die Erträge mit dem Steuersatz des Verstorbenen im Todesjahr versteuert. Nach Rentenbeginn anteilig zum Restguthaben.</li>
-          <li>Versicherung: Effektivkosten als konstante Renditeminderung (Abschlusskosten sind darin über die Laufzeit verteilt; bei früher Kündigung deutlich schlechter). Kapitalauszahlung: 15 % des Gewinns steuerfrei, davon die Hälfte mit persönlichem Steuersatz (§ 20 Abs. 1 Nr. 6 EStG, nach 12 Jahren und ab 62). Leibrente: Ertragsanteil-Besteuerung, keine Überschüsse in der Rentenphase. Tod vor Rentenbeginn: einkommensteuerfrei. Restrenten aus der Garantiezeit: mit Ertragsanteil versteuert.</li>
-          <li>Krankenversicherung (nur mit Haken): voller Beitragssatz auf AVD-Auszahlungen, Versicherungsleistungen (Leibrente voll, Kapitalauszahlung voll und auf 120 Monate verteilt, BSG B 12 KR 28/08 R) und ETF-Gewinne, bis zur Beitragsbemessungsgrenze 2026, die mit der Inflation mitwächst. Ob das AVD bei freiwillig Versicherten genauso behandelt wird, ist noch nicht ganz geklärt.</li>
-          <li>Nicht berücksichtigt: Erbschaftsteuer (Freibetrag Ehepartner 500.000 €, Kinder 400.000 €, Partner ohne Trauschein nur 20.000 €, darüber 30 %), Pfändungsschutz (AVD geschützt, ETF nicht), Betriebsrente mit Arbeitgeberzuschuss, Ordergebühren.</li>
-          <li>Rendite ist konstant angenommen, in Wirklichkeit schwankt sie stark. Kein Ersatz für eine Beratung.</li>
-        </ul>
       </div>
     </div>
-  </div>
+
+    <div class="card">
+      <h2>Annahmen &amp; Grenzen</h2>
+      <ul class="assume">
+        <li>Einkommensteuer nach Tarif 2026 (Grundtarif, ledig) inkl. Soli; die Tarifgrenzen wachsen mit der Inflation mit, der Sparerpauschbetrag bleibt bei 1.000 €. Keine Kirchensteuer, kein Ehegattensplitting. Die Steuerreform 2027 ist noch nicht beschlossen.</li>
+        <li>ETF/Fonds: Abgeltungsteuer 26,375 %, 30 % Teilfreistellung (Aktienfonds), Sparerpauschbetrag 1.000 € pro Jahr (je Produkt gerechnet), Vorabpauschale jährlich. Entnahmen jährlich am Jahresanfang (für ETF/AVD leicht konservativ).</li>
+        <li>Altersvorsorgedepot (Gesetz vom 26.05.2026, BGBl. 2026 I Nr. 156, gilt ab 2027): 50 % Zulage auf die ersten 360 €, 25 % bis 1.800 € (max. 540 €), min. 120 € Eigenbeitrag; Kinderzulage 1:1 bis 300 €/Kind; Berufseinsteigerbonus 200 € unter 25; Sonderausgabenabzug (Beitrag + Zulagen) mit Günstigerprüfung; Auszahlung voll steuerpflichtig, ohne Fünftelregelung; Auszahlplan bis mind. 85 als Restkapital ÷ Restlaufzeit; Rentenbeginn 65–70. Beiträge über 150 €/Monat und Beiträge ohne Förderberechtigung gehen in ein ETF-Nebendepot (gleiche TER wie das ETF-Depot). Ins AVD dürften bis 6.840 €/Jahr ungefördert fließen; diese Variante ist nicht gerechnet. Vereinfacht wird ab heute statt ab 01.01.2027 gerechnet, und Zulagen werden sofort zum Jahresende gutgeschrieben (in echt 1–2 Jahre später).</li>
+        <li>„Heutige Kaufkraft“: Einzahlungen und Förderung werden Jahr für Jahr in heutige Kaufkraft umgerechnet, Kapitalwerte zum jeweiligen Zeitpunkt. Die Ø-Monatsrente wird für alle Produkte über denselben Zeitraum (Rentenbeginn bis Auszahlplan-Ende) gemittelt.</li>
+        <li>Erbfall AVD: Ehepartner können das Guthaben förderunschädlich auf einen eigenen Vertrag übertragen; die spätere Einkommensteuer darauf ist grob abgezogen (verteilt auf den Auszahlplan). Alle anderen Erben: Zulagen und Steuervorteile werden zurückgefordert, die Erträge mit dem Steuersatz des Verstorbenen im Todesjahr versteuert. Nach Rentenbeginn anteilig zum Restguthaben.</li>
+        <li>Versicherung: Effektivkosten als konstante Renditeminderung (Abschlusskosten sind darin über die Laufzeit verteilt; bei früher Kündigung deutlich schlechter). Kapitalauszahlung: 15 % des Gewinns steuerfrei, davon die Hälfte mit persönlichem Steuersatz (§ 20 Abs. 1 Nr. 6 EStG, nach 12 Jahren und ab 62). Leibrente: Ertragsanteil-Besteuerung, keine Überschüsse in der Rentenphase. Tod vor Rentenbeginn: einkommensteuerfrei. Restrenten aus der Garantiezeit: mit Ertragsanteil versteuert.</li>
+        <li>Krankenversicherung (nur mit Haken): voller Beitragssatz auf AVD-Auszahlungen, Versicherungsleistungen (Leibrente voll, Kapitalauszahlung voll und auf 120 Monate verteilt, BSG B 12 KR 28/08 R) und ETF-Gewinne, bis zur Beitragsbemessungsgrenze 2026, die mit der Inflation mitwächst. Ob das AVD bei freiwillig Versicherten genauso behandelt wird, ist noch nicht ganz geklärt.</li>
+        <li>Szenarien im Überblick: Jede Zeile ändert genau eine Annahme gegenüber deinen Eingaben, alles andere bleibt gleich.</li>
+        <li>Nicht berücksichtigt: Erbschaftsteuer, Pfändungsschutz (AVD geschützt, ETF nicht), Betriebsrente mit Arbeitgeberzuschuss, Ordergebühren.</li>
+        <li>Rendite ist konstant angenommen, in Wirklichkeit schwankt sie stark. Modellrechnung, kein Ersatz für eine Beratung.</li>
+      </ul>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -461,10 +536,10 @@ function model(p) {
 
 // --- Rendering ---
 const PRODUCTS = [
-  { key: 'etf', name: 'ETF-Depot', short: 'ETF', color: 'var(--s1)' },
-  { key: 'avd', name: 'Altersvorsorgedepot', short: 'AVD', color: 'var(--s2)' },
-  { key: 'ins', name: 'Fondsgeb. Rentenversicherung', short: 'Versicherung', color: 'var(--s3)' },
-  { key: 'fond', name: 'Aktiver Fonds', short: 'Akt. Fonds', color: 'var(--s4)' },
+  { key: 'etf', name: 'ETF-Depot', short: 'ETF', nom: 'das ETF-Depot', color: 'var(--s1)' },
+  { key: 'avd', name: 'Altersvorsorgedepot', short: 'AVD', nom: 'das Altersvorsorgedepot', color: 'var(--s2)' },
+  { key: 'ins', name: 'Fondsgeb. Rentenversicherung', short: 'Versicherung', nom: 'die Rentenversicherung', color: 'var(--s3)' },
+  { key: 'fond', name: 'Aktiver Fonds', short: 'Akt. Fonds', nom: 'der aktive Fonds', color: 'var(--s4)' },
 ];
 
 function el(tag, attrs = {}, ...kids) {
@@ -474,6 +549,7 @@ function el(tag, attrs = {}, ...kids) {
   return e;
 }
 const keyEl = (c, dash) => el('span', { class: 'key', style: dash ? 'height:0;border-top:2px dashed ' + c : 'background:' + c });
+const nameCell = (pr, dash) => el('span', { style: 'display:inline-flex;gap:6px;align-items:center' }, keyEl(pr.color, dash), pr.name);
 
 function legend(host, items) {
   host.replaceChildren(...items.map(it => el('span', {}, keyEl(it.color, it.dash), it.name)));
@@ -489,7 +565,8 @@ function lineChart(host, { x0, series, yFmt, xTitle }) {
   const step = niceStep(ymax / 4); ymax = Math.ceil(ymax / step) * step;
   const x = i => m.l + (len <= 1 ? 0 : i / (len - 1) * iw), y = v => m.t + ih - v / ymax * ih;
   const NS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('width', W); svg.setAttribute('height', Hh); svg.setAttribute('role', 'img');
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + Hh); svg.setAttribute('role', 'img'); // skaliert mit (wichtig für versteckte Tabs und Druck)
   const mk = (tag, a) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); return e; };
   for (let v = 0; v <= ymax + 1e-6; v += step) {
     svg.append(mk('line', { x1: m.l, x2: m.l + iw, y1: y(v), y2: y(v), stroke: v === 0 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1 }));
@@ -523,8 +600,8 @@ function lineChart(host, { x0, series, yFmt, xTitle }) {
   host.append(svg);
   const tip = el('div', { class: 'tip' }); host.append(tip);
   const show = (evt) => {
-    const rect = svg.getBoundingClientRect();
-    const px = evt.clientX - rect.left;
+    const rect = svg.getBoundingClientRect(), sc = rect.width / W || 1; // SVG-Koordinaten ↔ Bildschirm-Pixel
+    const px = (evt.clientX - rect.left) / sc;
     const i = Math.max(0, Math.min(len - 1, Math.round((px - m.l) / iw * (len - 1))));
     cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('visibility', 'visible');
     tip.replaceChildren(el('div', { class: 't' }, 'Alter ' + (x0 + i)));
@@ -535,8 +612,8 @@ function lineChart(host, { x0, series, yFmt, xTitle }) {
       tip.append(el('div', { class: 'r' }, keyEl(s.color, s.dash), s.name, el('b', {}, eur(v))));
     });
     tip.style.display = 'block';
-    const left = x(i) + 14 + 190 > W ? x(i) - 14 - tip.offsetWidth : x(i) + 14;
-    tip.style.left = left + 'px'; tip.style.top = (m.t + 6) + 'px';
+    const xs = x(i) * sc, left = xs + 14 + 190 > rect.width ? xs - 14 - tip.offsetWidth : xs + 14;
+    tip.style.left = left + 'px'; tip.style.top = (m.t * sc + 6) + 'px';
   };
   hit.addEventListener('pointermove', show);
   hit.addEventListener('pointerleave', () => { tip.style.display = 'none'; cross.setAttribute('visibility', 'hidden'); dots.forEach(d => d.setAttribute('visibility', 'hidden')); });
@@ -544,15 +621,13 @@ function lineChart(host, { x0, series, yFmt, xTitle }) {
 function niceStep(raw) { const p = Math.pow(10, Math.floor(Math.log10(raw))); const f = raw / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p; }
 const kfmt = v => v >= 1e6 ? (v / 1e6).toLocaleString('de-DE', { maximumFractionDigits: 1 }) + ' Mio' : v >= 1e3 ? Math.round(v / 1e3).toLocaleString('de-DE') + 'k' : String(Math.round(v));
 
-function render() {
-  const p = readParams();
-  const { res, T, n, tH, I } = model(p);
+// Rechnet ein Szenario durch und leitet die Vergleichskennzahlen ab.
+function analyze(p) {
+  const m = model(p), { res, T, n, tH, I } = m;
   const R = (x, t) => p.real ? x / I(t) : x;
-  $('modeHint').textContent = p.real ? 'Alle Beträge in Kaufkraft von heute (Inflation ' + (p.infl * 100).toLocaleString('de-DE') + ' % herausgerechnet).' : 'Nominale Beträge (Euro der Zukunft).';
   const active = PRODUCTS.filter(pr => res[pr.key]).map(pr => pr.key === 'ins'
     ? Object.assign({}, pr, { name: pr.name + (res.ins.lump ? ' (Kapitalauszahlung)' : ' (Leibrente)') }) : pr);
-
-  // Kennzahlen – alle Produkte über denselben Zeitraum Rentenbeginn … Auszahlplan-Ende
+  // Alle Produkte über denselben Zeitraum Rentenbeginn … Auszahlplan-Ende
   const stats = {};
   active.forEach(pr => {
     const r = res[pr.key];
@@ -563,71 +638,98 @@ function render() {
   });
   const ownOf = pr => p.real ? res[pr.key].ownReal : res[pr.key].own;
   const owns = active.map(ownOf);
-  const fairOwn = Math.max(...owns) <= Math.min(...owns) * 1.01 + 1;
-  const refundSpent = res.avd && !p.reinvest && res.avd.ref > 0;
+  const fairOwn = active.length > 0 && Math.max(...owns) <= Math.min(...owns) * 1.01 + 1;
+  const refundSpent = !!(res.avd && !p.reinvest && res.avd.ref > 0);
+  const lead = active.length > 1 && fairOwn ? active.reduce((a, b) => stats[b.key].cumH > stats[a.key].cumH ? b : a) : null;
+  const canRank = !!lead && !refundSpent;
+  return Object.assign({}, m, { p, R, active, stats, ownOf, fairOwn, refundSpent, lead, canRank });
+}
+
+// „Was die Empfehlung kippen würde“: je Zeile genau eine Annahme geändert
+function scenarios(p) {
+  const list = [];
+  const add = (label, patch) => list.push({ label, p: Object.assign({}, p, patch) });
+  add(p.kvOn ? 'Als Rentner in der KVdR oder privat versichert' : 'Als Rentner freiwillig gesetzlich versichert', { kvOn: !p.kvOn });
+  if (p.on.avd && p.avdCost < 0.01) add('AVD kostet 1,0 % (Deckel Standarddepot)', { avdCost: 0.01 });
+  if (p.on.avd && p.reinvest) add('Steuererstattung ausgegeben statt angelegt (dafür vorher mehr Geld zur Verfügung)', { reinvest: false });
+  add('Rendite 2 Prozentpunkte niedriger', { g: p.g - 0.02, gPay: p.gPay - 0.02 });
+  add('Gehalt 30 % niedriger (' + eur(p.incWork * 0.7) + ')', { incWork: p.incWork * 0.7 });
+  if (p.incRet >= 15000) add('Einkommen im Alter ' + eur(p.incRet - 15000) + ' statt ' + eur(p.incRet), { incRet: p.incRet - 15000 });
+  add('Einkommen im Alter ' + eur(p.incRet + 20000) + ' statt ' + eur(p.incRet), { incRet: p.incRet + 20000 });
+  if (p.on.ins) add(p.insLump ? 'Versicherung als lebenslange Rente' : 'Versicherung mit Kapitalauszahlung', { insLump: !p.insLump });
+  if (p.on.ins && p.insEff < 0.015) add('Versicherung mit 1,5 % Kosten (typisch Provisionstarif)', { insEff: 0.015 });
+  return list.map(s => Object.assign(s, { a: analyze(s.p) }));
+}
+
+function verdictText(A, scen) {
+  const { p, active, stats } = A;
+  if (active.length < 2) return ['Wähle unter „Einstellungen“ mindestens zwei Produkte aus, um sie zu vergleichen.'];
+  if (!A.fairOwn) return ['Die Monatsbeiträge sind nicht bei allen Produkten gleich, so lässt sich keine Empfehlung ableiten. Setze links einen gemeinsamen Monatsbeitrag.'];
+  if (A.refundSpent) return ['Weil du die Steuererstattung ausgibst, setzt du beim AVD netto weniger eigenes Geld ein als bei den anderen Produkten. Deshalb gibt es hier keinen fairen Gewinner. Schalte unter „Einstellungen“ „Steuererstattung anlegen“ ein, um zu vergleichen.'];
+  const w = A.lead, second = active.filter(pr => pr.key !== w.key).reduce((a, b) => stats[b.key].cumH > stats[a.key].cumH ? b : a);
+  const sw = stats[w.key], ss = stats[second.key], rel = ss.cumH > 0 ? (sw.cumH - ss.cumH) / ss.cumH : 1;
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  const out = [];
+  out.push((rel < 0.05 ? 'Knapp vorne: ' : 'Rechnerisch vorne: ') + cap(w.nom) + ' mit Ø ' + eur(sw.avgMonthly) + ' netto im Monat (' + p.R + '–' + p.H + '). Das sind bis ' + p.H + ' insgesamt ' + eur(sw.cumH - ss.cumH) + ' mehr als ' + second.nom + '.');
+  if (w.key === 'avd') out.push('Sinnvoll wäre damit: 150 € im Monat ins Altersvorsorgedepot (mehr wird nicht gefördert), alles darüber in einen ETF' + (p.reinvest ? ', und die Steuererstattung jedes Jahr mit anlegen.' : '.'));
+  else if (w.key === 'etf') out.push('Das ETF-Depot ist außerdem jederzeit verfügbar, du bist also flexibel (Notgroschen, Wohnung, Auszeit).');
+  else out.push('Das ist ungewöhnlich. Prüf die Kosten-Annahmen unter „Einstellungen“.');
+  const flips = scen.filter(s => s.a.lead && s.a.lead.key !== w.key);
+  out.push(flips.length
+    ? 'Aber: In ' + flips.length + ' von ' + scen.length + ' Szenarien unten liegt ein anderes Produkt vorne, z. B. bei „' + flips[0].label + '“.'
+    : 'Das Ergebnis hält in allen ' + scen.length + ' Szenarien unten.');
+  return out;
+}
+
+let tab = 'overview';
+const TABS = ['overview', 'detail', 'heirs', 'settings'];
+
+function render() {
+  const p = readParams();
+  const A = analyze(p);
+  const { res, T, n, I, R, active, stats } = A;
+  const scen = scenarios(p);
+  const today = new Date().toLocaleDateString('de-DE');
+  $('printMeta').textContent = 'Stand ' + today + ' · ' + (p.real ? 'Beträge in heutiger Kaufkraft (Inflation ' + (p.infl * 100).toLocaleString('de-DE') + ' %)' : 'Nominale Beträge') + ' · Modellrechnung, keine Beratung.';
+
+  // Empfehlung
+  const vt = verdictText(A, scen);
+  $('verdict').replaceChildren(...vt.map(t => el('p', {}, t)), el('p', { class: 'fine' }, (p.real ? 'Beträge in heutiger Kaufkraft. ' : 'Nominale Beträge (Euro der Zukunft). ') + 'Modellrechnung mit konstanter Rendite, keine Beratung.'));
 
   // Hinweise
   const warn = $('warn'); warn.replaceChildren();
   const note = txt => warn.append(el('div', { class: 'note' }, txt));
   if (num('R') < 65) note('Rentenbeginn auf 65 angehoben: Das Altersvorsorgedepot zahlt frühestens mit 65 aus.');
-  if (!fairOwn) note('Die eigenen Einzahlungen sind nicht in allen Produkten gleich, der Vergleich ist so nicht fair. Nutze „Auf alle Produkte anwenden“.');
-  if (refundSpent) note('Ohne Wiederanlage gibst du ' + eur(p.real ? res.avd.refReal : res.avd.ref) + ' Steuererstattung aus. Beim AVD hast du netto also weniger eingesetzt als bei den anderen Produkten (siehe „Netto-Eigenaufwand“). Deshalb wird kein Gewinner markiert.');
+  if (A.refundSpent) note('Ohne Wiederanlage gibst du ' + eur(p.real ? res.avd.refReal : res.avd.ref) + ' Steuererstattung aus. Beim AVD hast du netto also weniger eingesetzt als bei den anderen Produkten (siehe „Netto-Eigenaufwand“ unter „Rente im Detail“).');
   if (res.avd && res.avd.noElig > 0) note('Altersvorsorgedepot: In ' + res.avd.noElig + ' Studienjahr(en) ohne Förderberechtigung fließt der Beitrag ins ETF-Nebendepot statt ins AVD.');
   if (res.avd && res.avd.sideOwn > 0) note('Altersvorsorgedepot: ' + eur(p.real ? res.avd.sideOwnReal : res.avd.sideOwn) + ' deiner Beiträge sind nicht förderfähig (über 150 €/Monat oder ohne Förderberechtigung) und gehen ins ETF-Nebendepot. Sie sind im AVD-Wert enthalten.');
 
-  // Kacheln – Gewinner = meistes Netto-Geld bis Auszahlplan-Ende, nur wenn der Vergleich fair ist
-  const canRank = active.length > 1 && fairOwn && !refundSpent;
-  const best = Math.max(...active.map(pr => stats[pr.key].cumH));
+  // Kacheln
   $('tiles').replaceChildren(...active.map(pr => {
     const r = res[pr.key], s = stats[pr.key];
     const sub = 'Ø ' + p.R + '–' + p.H + (r.lifelong ? ', danach lebenslang weiter' : '') + (s.lump > 0 ? ' · zzgl. ' + eur(s.lump) + ' Einmalauszahlung netto' : '');
     return el('div', { class: 'tile' },
-      el('div', { class: 'name' }, keyEl(pr.color), pr.name, canRank && s.cumH === best ? el('span', { class: 'badge' }, 'meistes Geld bis ' + p.H) : ''),
+      el('div', { class: 'name' }, keyEl(pr.color), pr.name, A.canRank && A.lead.key === pr.key ? el('span', { class: 'badge' }, 'vorne') : ''),
       el('div', { class: 'big' }, eur(s.avgMonthly)),
       el('div', { class: 'unit' }, 'netto pro Monat · ' + sub),
       el('div', { class: 'small' }, 'Kapital bei Rentenbeginn: ' + eur(R(r.capR, n)) + ', nach Steuern ca. ' + eur(R(r.capNet, n))));
   }));
 
-  // Tabelle – markiert werden nur Zeilen, in denen „mehr“ bzw. „weniger“ eindeutig besser ist
-  const rows = [
-    ['Eigene Einzahlungen', ownOf, null],
-    ...(refundSpent ? [['Netto-Eigenaufwand (Einzahlungen − ausgegebene Steuererstattung)', pr => ownOf(pr) - (pr.key === 'avd' ? (p.real ? res.avd.refReal : res.avd.ref) : 0), null]] : []),
-    ['Staatliche Förderung (Zulagen + Steuervorteil)', pr => p.real ? res[pr.key].foerderReal : res[pr.key].foerder, null],
-    ['Kosten bis Rentenbeginn (entgangener Ertrag)', pr => R(res[pr.key].cost, n), 'min'],
-    ['Kapital bei Rentenbeginn (vor Steuern)', pr => R(res[pr.key].capR, n), null],
-    ['Kapital bei Rentenbeginn nach Einkommensteuer (geschätzt)', pr => R(res[pr.key].capNet, n), 'max'],
-    ['Netto pro Monat, Ø ' + p.R + '–' + p.H + ' (ohne Einmalauszahlung)', pr => stats[pr.key].avgMonthly, 'max'],
-    ['Summe netto bis Alter ' + p.H, pr => stats[pr.key].cumH, 'max'],
-    ['Summe netto bis Alter 100', pr => stats[pr.key].cum100, 'max'],
-  ];
-  const tbl = $('tbl'); tbl.replaceChildren();
-  tbl.append(el('thead', {}, el('tr', {}, el('th', {}, ''), ...active.map(pr => el('th', {}, el('span', { style: 'display:inline-flex;gap:6px;align-items:center' }, keyEl(pr.color), pr.name))))));
-  const tb = el('tbody');
-  rows.forEach(([label, f, dir]) => {
-    const vals = active.map(f);
-    const target = dir && canRank && new Set(vals.map(Math.round)).size > 1 ? (dir === 'max' ? Math.max(...vals) : Math.min(...vals)) : null;
-    tb.append(el('tr', {}, el('td', {}, label), ...vals.map(v => el('td', { class: target !== null && Math.round(v) === Math.round(target) ? 'best' : '' }, eur(v)))));
+  // Szenario-Tabelle
+  const st = $('scen'); st.replaceChildren();
+  st.append(el('thead', {}, el('tr', {}, el('th', {}, 'Szenario'), ...active.map(pr => el('th', {}, el('span', { style: 'display:inline-flex;gap:6px;align-items:center' }, keyEl(pr.color), pr.short))), el('th', {}, 'Vorne'))));
+  const sb = el('tbody');
+  [{ label: 'Deine Annahmen', a: A, base: true }, ...scen].forEach(s => {
+    const lead = s.a.lead, flip = !s.base && lead && A.lead && lead.key !== A.lead.key;
+    sb.append(el('tr', { class: flip ? 'flip' : '' },
+      el('td', {}, s.base ? el('strong', {}, s.label) : s.label),
+      ...active.map(pr => { const v = s.a.stats[pr.key]; return el('td', { class: lead && lead.key === pr.key ? 'best' : '' }, v ? eur(v.avgMonthly) : '–'); }),
+      el('td', {}, lead ? lead.short : '–')));
   });
-  const detail = txt => tb.append(el('tr', {}, el('td', { colspan: active.length + 1, style: 'color:var(--text-secondary)' }, txt)));
-  detail('„Nach Einkommensteuer“: ETF/Fonds bei komplettem Verkauf, AVD bei Entnahme über den Auszahlplan (grob), Versicherung bei Kapitalauszahlung. Ohne Krankenversicherung.');
-  if (res.avd) detail('AVD-Detail: Zulagen ' + eur(p.real ? res.avd.zulReal : res.avd.zul) + ', zusätzliche Steuererstattungen ' + eur(p.real ? res.avd.refReal : res.avd.ref) + (p.reinvest ? ' (im ETF-Nebendepot angelegt)' : ' (ausgegeben)') + '. Die Erstattungen sind zum Teil nur Steuerstundung, weil die Auszahlungen später voll steuerpflichtig sind. Kapital bei Rentenbeginn: AVD-Vertrag ' + eur(R(res.avd.capAVD, n)) + ', ETF-Nebendepot ' + eur(R(res.avd.sideR, n)) + '.');
-  if (res.ins) detail(res.ins.lump
-    ? 'Versicherung: Kapitalauszahlung ' + eur(R(res.ins.kapNet, n)) + ' netto, angelegt im ETF und bis ' + p.H + ' entnommen. Alternativ lebenslange Rente: ' + eur(R(res.ins.annual / 12, n)) + ' brutto/Monat (Ertragsanteil ' + ERTRAG[p.R] + ' %).'
-    : 'Versicherung: Brutto-Rente ' + eur(R(res.ins.annual / 12, n)) + '/Monat, besteuert mit Ertragsanteil ' + ERTRAG[p.R] + ' %. Alternativ Kapitalauszahlung: ' + eur(R(res.ins.kapNet, n)) + ' netto.');
-  tbl.append(tb);
+  st.append(sb);
 
-  // Chart 1: Vermögen
+  // Chart: kumulierte Netto-Auszahlungen (Überblick)
   const items = active.map(pr => ({ name: pr.name, color: pr.color }));
-  legend($('lg1'), items);
-  lineChart($('c1'), {
-    x0: p.a0, xTitle: 'Alter', yFmt: kfmt,
-    series: active.map(pr => ({ name: pr.name, short: pr.short, color: pr.color, values: res[pr.key].vals.map((v, i) => v == null ? null : R(v, i)) }))
-  });
-  $('c1hint').textContent = !res.ins ? '' : res.ins.lump
-    ? 'Versicherung: Bei Rentenbeginn wird das Guthaben ausgezahlt, versteuert und in einen ETF-Auszahlplan gesteckt, daher der Knick.'
-    : 'Versicherung: Bei Rentenbeginn wird das Guthaben in die lebenslange Rente umgewandelt und ist danach nicht mehr sichtbar.';
-
-  // Chart 2: kumulierte Netto-Auszahlungen
   legend($('lg2'), items);
   const cumSeries = active.map(pr => {
     const r = res[pr.key]; let c = 0; const vals = [];
@@ -635,8 +737,6 @@ function render() {
     return { name: pr.name, short: pr.short, color: pr.color, values: vals };
   });
   lineChart($('c2'), { x0: p.R, xTitle: 'Alter', yFmt: kfmt, series: cumSeries });
-
-  // Break-even Leibrente (nur ohne Kapitalauszahlung)
   let be = '';
   if (res.ins && res.ins.lifelong) {
     const ins = cumSeries[active.findIndex(a => a.key === 'ins')].values;
@@ -648,6 +748,44 @@ function render() {
     }
   }
   $('beText').textContent = be;
+
+  // Rente im Detail: Tabelle – markiert werden nur Zeilen, in denen „mehr“ bzw. „weniger“ eindeutig besser ist
+  const rows = [
+    ['Eigene Einzahlungen', A.ownOf, null],
+    ...(A.refundSpent ? [['Netto-Eigenaufwand (Einzahlungen − ausgegebene Steuererstattung)', pr => A.ownOf(pr) - (pr.key === 'avd' ? (p.real ? res.avd.refReal : res.avd.ref) : 0), null]] : []),
+    ['Staatliche Förderung (Zulagen + Steuervorteil)', pr => p.real ? res[pr.key].foerderReal : res[pr.key].foerder, null],
+    ['Kosten bis Rentenbeginn (entgangener Ertrag)', pr => R(res[pr.key].cost, n), 'min'],
+    ['Kapital bei Rentenbeginn (vor Steuern)', pr => R(res[pr.key].capR, n), null],
+    ['Kapital bei Rentenbeginn nach Einkommensteuer (geschätzt)', pr => R(res[pr.key].capNet, n), 'max'],
+    ['Netto pro Monat, Ø ' + p.R + '–' + p.H + ' (ohne Einmalauszahlung)', pr => stats[pr.key].avgMonthly, 'max'],
+    ['Summe netto bis Alter ' + p.H, pr => stats[pr.key].cumH, 'max'],
+    ['Summe netto bis Alter 100', pr => stats[pr.key].cum100, 'max'],
+  ];
+  const tbl = $('tbl'); tbl.replaceChildren();
+  tbl.append(el('thead', {}, el('tr', {}, el('th', {}, ''), ...active.map(pr => el('th', {}, nameCell(pr))))));
+  const tb = el('tbody');
+  rows.forEach(([label, f, dir]) => {
+    const vals = active.map(f);
+    const target = dir && A.canRank && new Set(vals.map(Math.round)).size > 1 ? (dir === 'max' ? Math.max(...vals) : Math.min(...vals)) : null;
+    tb.append(el('tr', {}, el('td', {}, label), ...vals.map(v => el('td', { class: target !== null && Math.round(v) === Math.round(target) ? 'best' : '' }, eur(v)))));
+  });
+  const detail = txt => tb.append(el('tr', {}, el('td', { colspan: active.length + 1, style: 'color:var(--text-secondary)' }, txt)));
+  detail('„Nach Einkommensteuer“: ETF/Fonds bei komplettem Verkauf, AVD bei Entnahme über den Auszahlplan (grob), Versicherung bei Kapitalauszahlung. Ohne Krankenversicherung.');
+  if (res.avd) detail('AVD-Detail: Zulagen ' + eur(p.real ? res.avd.zulReal : res.avd.zul) + ', zusätzliche Steuererstattungen ' + eur(p.real ? res.avd.refReal : res.avd.ref) + (p.reinvest ? ' (im ETF-Nebendepot angelegt)' : ' (ausgegeben)') + '. Die Erstattungen sind zum Teil nur Steuerstundung, weil die Auszahlungen später voll steuerpflichtig sind. Kapital bei Rentenbeginn: AVD-Vertrag ' + eur(R(res.avd.capAVD, n)) + ', ETF-Nebendepot ' + eur(R(res.avd.sideR, n)) + '.');
+  if (res.ins) detail(res.ins.lump
+    ? 'Versicherung: Kapitalauszahlung ' + eur(R(res.ins.kapNet, n)) + ' netto, angelegt im ETF und bis ' + p.H + ' entnommen. Alternativ lebenslange Rente: ' + eur(R(res.ins.annual / 12, n)) + ' brutto/Monat (Ertragsanteil ' + ERTRAG[p.R] + ' %).'
+    : 'Versicherung: Brutto-Rente ' + eur(R(res.ins.annual / 12, n)) + '/Monat, besteuert mit Ertragsanteil ' + ERTRAG[p.R] + ' %. Alternativ Kapitalauszahlung: ' + eur(R(res.ins.kapNet, n)) + ' netto.');
+  tbl.append(tb);
+
+  // Rente im Detail: Vermögen
+  legend($('lg1'), items);
+  lineChart($('c1'), {
+    x0: p.a0, xTitle: 'Alter', yFmt: kfmt,
+    series: active.map(pr => ({ name: pr.name, short: pr.short, color: pr.color, values: res[pr.key].vals.map((v, i) => v == null ? null : R(v, i)) }))
+  });
+  $('c1hint').textContent = !res.ins ? '' : res.ins.lump
+    ? 'Versicherung: Bei Rentenbeginn wird das Guthaben ausgezahlt, versteuert und in einen ETF-Auszahlplan gesteckt, daher der Knick.'
+    : 'Versicherung: Bei Rentenbeginn wird das Guthaben in die lebenslange Rente umgewandelt und ist danach nicht mehr sichtbar.';
 
   // Erbfall
   const heirRows = [];
@@ -666,22 +804,63 @@ function render() {
   const markHeir = maxH > 0 && heirRows.length > 1 && new Set(heirVals.map(h => Math.round(h.val))).size > 1;
   heirRows.forEach((row, i) => {
     const h = heirVals[i];
-    hb.append(el('tr', {}, el('td', {}, el('span', { style: 'display:inline-flex;gap:6px;align-items:center' }, keyEl(row.color, row.dash), row.name)),
+    hb.append(el('tr', {}, el('td', {}, nameCell(row, row.dash)),
       el('td', { class: markHeir && Math.round(h.val) === Math.round(maxH) ? 'best' : '' }, eur(R(h.val, tD))),
       el('td', { style: 'text-align:left;white-space:normal;color:var(--text-secondary)' }, h.note)));
   });
   ht.append(hb);
-  $('heirs').replaceChildren(el('p', { class: 'hint' }, 'Wenn du mit ' + p.deathAge + ' stirbst. Ohne Erbschaftsteuer: Freibetrag Ehepartner 500.000 €, Kinder 400.000 €, Partner ohne Trauschein nur 20.000 € (darüber 30 %).'), ht);
+  $('heirs').replaceChildren(el('p', { class: 'hint' }, 'Wenn du mit ' + p.deathAge + ' stirbst. Ohne Erbschaftsteuer.'), ht);
   legend($('lg3'), heirRows);
   const ages = Array.from({ length: T }, (_, k) => k + 1);
   lineChart($('c3'), { x0: p.a0 + 1, xTitle: 'Todesalter', yFmt: kfmt,
     series: heirRows.map(row => ({ name: row.name, short: row.short, color: row.color, dash: row.dash, values: ages.map(i => R(row.f(i).val, i)) })) });
+
+  saveState();
 }
 
-$('applyAll').addEventListener('click', () => { const v = num('setAll'); ['etfM', 'avdM', 'insM', 'fondM'].forEach(id => $(id).value = v); render(); });
-document.querySelectorAll('input, select').forEach(i => i.addEventListener('input', render));
+// --- Zustand im Link (#…) speichern, damit Szenarien sich teilen und wieder öffnen lassen ---
+const STATE_IDS = [...document.querySelectorAll('input[id]')].map(i => i.id);
+const valOf = id => { const e = $(id); return e.type === 'checkbox' ? (e.checked ? '1' : '0') : e.value; };
+const DEFAULTS = Object.fromEntries(STATE_IDS.map(id => [id, valOf(id)]));
+function saveState() {
+  const q = new URLSearchParams();
+  if (tab !== 'overview') q.set('t', tab);
+  STATE_IDS.forEach(id => { const v = valOf(id); if (v !== DEFAULTS[id]) q.set(id, v); });
+  const h = q.toString();
+  // Nur den Hash ersetzen: Das klappt auch bei file://, wo history.replaceState in Chrome blockiert ist, und erzeugt keinen Verlaufseintrag.
+  if (location.hash.slice(1) !== h) { try { location.replace('#' + h); } catch (e) { /* z. B. in Sandbox-iframes */ } }
+}
+function loadState() {
+  const q = new URLSearchParams(location.hash.slice(1));
+  for (const [k, v] of q) {
+    if (!STATE_IDS.includes(k)) continue;
+    const e = $(k);
+    if (e.type === 'checkbox') e.checked = v === '1';
+    else if (isFinite(parseFloat(v))) e.value = v; // Müll im Link ignorieren
+  }
+  return q.get('t');
+}
+
+function showTab(t) {
+  tab = TABS.includes(t) ? t : 'overview';
+  document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === tab)));
+  document.querySelectorAll('.panel').forEach(s => { s.hidden = s.id !== 'tab-' + tab; });
+  render(); // Diagramme an die jetzt sichtbare Breite anpassen
+}
+
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+// Der gemeinsame Monatsbeitrag im Überblick setzt alle Produktbeiträge (vor dem allgemeinen render-Listener registriert).
+$('setAll').addEventListener('input', () => { const v = $('setAll').value; ['etfM', 'avdM', 'insM', 'fondM'].forEach(id => { $(id).value = v; }); });
+document.querySelectorAll('input').forEach(i => i.addEventListener('input', render));
+$('copyLink').addEventListener('click', async () => {
+  saveState();
+  const btn = $('copyLink'), href = location.href;
+  try { await navigator.clipboard.writeText(href); btn.textContent = 'Link kopiert ✓'; setTimeout(() => { btn.textContent = 'Link kopieren'; }, 1500); }
+  catch (e) { window.prompt('Link zum Kopieren:', href); }
+});
+$('printBtn').addEventListener('click', () => window.print());
 window.addEventListener('resize', () => { clearTimeout(window.__rt); window.__rt = setTimeout(render, 120); });
-render();
+showTab(loadState());
 })();
 </script>
 </body>
