@@ -82,10 +82,11 @@ svg text.endlabel { fill: var(--text-secondary); font-size: 12px; }
       <details open>
         <summary>Du</summary>
         <div class="row"><label for="a0">Alter heute</label><input type="number" id="a0" value="23" min="16" max="60"></div>
-        <div class="row"><label for="studyEnd">Studium / Ausbildung bis Alter</label><input type="number" id="studyEnd" value="26" min="16" max="60"></div>
+        <div class="row"><label for="studyEnd">Studium / Ausbildung bis Alter</label><input type="number" id="studyEnd" value="24" min="16" max="60"></div>
+        <p class="hint">Gerechnet wird in ganzen Jahren ab heute. Bei 24 gilt das erste Jahr (bis Herbst 2027) noch als Studium, ab dann volles Gehalt.</p>
         <div class="row"><label for="incStudy">Zu versteuerndes Einkommen im Studium (€/Jahr)</label><input type="number" id="incStudy" value="0" step="1000"></div>
         <div class="row"><label for="eligStudy">Im Studium förderberechtigt?</label><input type="checkbox" id="eligStudy" checked></div>
-        <p class="hint">Nur mit Minijob/Werkstudentenjob <em>mit</em> Rentenversicherungspflicht. Wenn nicht: AVD-Beiträge starten erst nach dem Studium.</p>
+        <p class="hint">Nur mit Minijob/Werkstudentenjob <em>mit</em> Rentenversicherungspflicht – oder wenn du im selben Kalenderjahr ins Berufsleben startest (bei Riester reichte ein Monat Pflichtversicherung im Jahr). Wenn nicht: Die AVD-Beiträge fließen bis Studienende ins ETF-Nebendepot.</p>
         <div class="row"><label for="incWork">Zu versteuerndes Einkommen im Beruf (€/Jahr, heutiges Geld)</label><input type="number" id="incWork" value="85000" step="1000"></div>
         <div class="row"><label for="incRet">Zu versteuerndes Einkommen in der Rente <em>ohne</em> diese Produkte (€/Jahr, heutiges Geld)</label><input type="number" id="incRet" value="40000" step="1000"></div>
         <p class="hint">z. B. gesetzliche Rente, Betriebsrente, App-Einnahmen, Mieten. Bestimmt deinen Steuersatz im Alter.</p>
@@ -114,7 +115,8 @@ svg text.endlabel { fill: var(--text-secondary); font-size: 12px; }
       <details open>
         <summary><span class="key" style="background:var(--s2)"></span>Altersvorsorgedepot</summary>
         <div class="row"><label for="avdOn">Anzeigen</label><input type="checkbox" id="avdOn" checked></div>
-        <div class="row"><label for="avdM">Beitrag (€/Monat, max. 150 gefördert)</label><input type="number" id="avdM" value="150" step="10" max="150"></div>
+        <div class="row"><label for="avdM">Beitrag (€/Monat, max. 150 gefördert)</label><input type="number" id="avdM" value="150" step="10" min="0"></div>
+        <p class="hint">Was über 150 €/Monat hinausgeht (z. B. durch die Beitragssteigerung) und Beiträge ohne Förderberechtigung landen in einem ETF-Nebendepot. So zahlst du in jedes Produkt gleich viel eigenes Geld ein.</p>
         <div class="row"><label for="avdCost">Kosten (% p.a.)</label><input type="number" id="avdCost" value="0.5" step="0.1"></div>
         <div class="row"><label for="kids">Kinder mit Kindergeld</label><input type="number" id="kids" value="0" min="0" max="6"></div>
         <div class="row"><label for="kidsFrom">… ab Alter</label><input type="number" id="kidsFrom" value="32"></div>
@@ -192,8 +194,9 @@ svg text.endlabel { fill: var(--text-secondary); font-size: 12px; }
         <ul class="assume">
           <li>Einkommensteuer nach Tarif 2026 (Grundtarif, ledig) inkl. Soli; Steuergrenzen wachsen mit der Inflation mit. Keine Kirchensteuer, kein Ehegattensplitting.</li>
           <li>ETF/Fonds: Abgeltungsteuer 26,375 %, 30 % Teilfreistellung (Aktienfonds), Sparerpauschbetrag 1.000 € pro Jahr (je Produkt gerechnet), Vorabpauschale jährlich.</li>
-          <li>Altersvorsorgedepot (Stand Nov. 2026, aus Ratgeberquellen): 50 % Zulage auf die ersten 360 €, 25 % bis 1.800 €, min. 120 € Eigenbeitrag; Kinderzulage bis 300 €/Kind; Sonderausgabenabzug (Eigenbeitrag + Zulagen) mit Günstigerprüfung; Auszahlung voll steuerpflichtig; Auszahlplan mind. bis 85.</li>
-          <li>Erbfall AVD: Ehepartner können das Guthaben ohne Abzug auf einen eigenen Vertrag übertragen. Alle anderen Erben: Zulagen + Steuervorteile werden zurückgefordert, die Erträge (Auszahlung minus eigene Beiträge) werden – wie bei Riester – als Einkommen versteuert, hier vereinfacht mit dem Steuersatz des Verstorbenen im Todesjahr (abschaltbar, da für das AVD nicht bestätigt). Nach Rentenbeginn anteilig zum Restguthaben.</li>
+          <li>Altersvorsorgedepot (Stand Nov. 2026, aus Ratgeberquellen): 50 % Zulage auf die ersten 360 €, 25 % bis 1.800 €, min. 120 € Eigenbeitrag; Kinderzulage bis 300 €/Kind; Sonderausgabenabzug (Eigenbeitrag + Zulagen) mit Günstigerprüfung; Auszahlung voll steuerpflichtig; Auszahlplan mind. bis 85. Beiträge über 150 €/Monat und Beiträge ohne Förderberechtigung gehen in ein ETF-Nebendepot (gleiche TER wie das ETF-Depot), damit der Vergleich mit gleich viel eigenem Geld läuft. Zulagen werden vereinfacht sofort zum Jahresende gutgeschrieben (in echt 1–2 Jahre später).</li>
+          <li>„Heutige Kaufkraft“: Einzahlungen und Förderung werden Jahr für Jahr in heutige Kaufkraft umgerechnet, Kapitalwerte zum jeweiligen Zeitpunkt.</li>
+          <li>Erbfall AVD: Ehepartner können das Guthaben ohne Abzug auf einen eigenen Vertrag übertragen. Alle anderen Erben: Zulagen + Steuervorteile werden zurückgefordert, die Erträge (Guthaben minus eigene Beiträge minus Zulagen) werden – wie bei Riester – als Einkommen versteuert, hier vereinfacht mit dem Steuersatz des Verstorbenen im Todesjahr (abschaltbar, da für das AVD nicht bestätigt). Nach Rentenbeginn anteilig zum Restguthaben.</li>
           <li>Versicherung: Effektivkosten als konstante Renditeminderung (Abschlusskosten sind darin über die Laufzeit verteilt – bei früher Kündigung ist es deutlich schlechter). Einmalauszahlung: 15 % des Gewinns steuerfrei, davon die Hälfte steuerpflichtig (nach 12 Jahren und ab 62). Leibrente: Ertragsanteil-Besteuerung. Überschüsse in der Rentenphase nicht berücksichtigt.</li>
           <li>Nicht berücksichtigt: Kranken-/Pflegeversicherungsbeiträge im Alter (relevant für freiwillig Versicherte), Erbschaftsteuer (Freibetrag Kinder 400.000 €, unverheiratete Partner nur 20.000 €), Ordergebühren, Wechselkosten.</li>
           <li>Rendite ist konstant angenommen – in Wirklichkeit schwankt sie stark. Kein Ersatz für eine Beratung.</li>
@@ -230,18 +233,20 @@ function readParams() {
     a0: Math.round(num('a0')), studyEnd: Math.round(num('studyEnd')), incStudy: num('incStudy'), eligStudy: chk('eligStudy'),
     incWork: num('incWork'), incRet: num('incRet'), R: Math.round(num('R')), H: Math.round(num('H')),
     g: num('g')/100, gPay: num('gPay')/100, infl: num('infl')/100, dyn: num('dyn')/100, basis: num('basis')/100,
-    etfM: num('etfM'), etfTer: num('etfTer')/100,
-    avdM: Math.min(150, num('avdM')), avdCost: num('avdCost')/100, kids: num('kids'), kidsFrom: num('kidsFrom'), kidsYears: num('kidsYears'),
+    etfM: Math.max(0, num('etfM')), etfTer: num('etfTer')/100,
+    avdM: Math.max(0, num('avdM')), avdCost: num('avdCost')/100, kids: Math.max(0, Math.round(num('kids'))), kidsFrom: num('kidsFrom'), kidsYears: Math.max(0, num('kidsYears')),
     bonus: chk('bonus'), reinvest: chk('reinvest'), einmal: chk('einmal'),
-    insM: num('insM'), insEff: num('insEff')/100, rf: num('rf'), gz: num('gz'),
-    fondM: num('fondM'), fondAA: num('fondAA')/100, fondTer: num('fondTer')/100,
+    insM: Math.max(0, num('insM')), insEff: num('insEff')/100, rf: Math.max(0, num('rf')), gz: Math.max(0, Math.round(num('gz'))),
+    fondM: Math.max(0, num('fondM')), fondAA: num('fondAA')/100, fondTer: num('fondTer')/100,
     deathAge: Math.round(num('deathAge')), heirTaxOn: chk('heirTaxOn'),
     real: chk('real'),
     on: { etf: chk('etfOn'), avd: chk('avdOn'), ins: chk('insOn'), fond: chk('fondOn') }
   };
+  // Grenzen erzwingen: Ohne das bricht die Rechnung (z. B. Alter ≥ 100 → leere Arrays, Alter > Rentenbeginn → negative Laufzeit).
+  p.a0 = Math.min(60, Math.max(16, p.a0));
   p.R = Math.min(70, Math.max(62, p.R));
   p.H = Math.min(100, Math.max(85, p.H, p.R + 1));
-  p.studyEnd = Math.max(p.a0, p.studyEnd);
+  p.studyEnd = Math.min(p.R, Math.max(p.a0, p.studyEnd));
   p.deathAge = Math.min(100, Math.max(p.a0 + 1, p.deathAge));
   return p;
 }
@@ -259,7 +264,7 @@ function model(p) {
   // Investmentfonds (ETF / aktiver Fonds / Neben-Depot)
   function runFund(monthly, lumpEnd, ter, aa, payEndAge) {
     const tEnd = payEndAge - p.a0;
-    let V = 0, B = 0, own = 0, taxPaid = 0;
+    let V = 0, B = 0, own = 0, ownReal = 0, taxPaid = 0;
     const vals = [0], bases = [0], owns = [0], net = new Array(T).fill(0);
     for (let t = 0; t < T; t++) {
       const accum = t < n;
@@ -273,7 +278,7 @@ function model(p) {
       }
       const Vs = V; let cY = 0, newSh = 0;
       for (let m = 1; m <= 12; m++) {
-        if (accum && monthly[t] > 0) { const c = monthly[t], inv = c * (1 - aa); V += inv; B += c; own += c; cY += inv; newSh += inv * (13 - m) / 12; }
+        if (accum && monthly[t] > 0) { const c = monthly[t], inv = c * (1 - aa); V += inv; B += c; own += c; ownReal += c / I(t); cY += inv; newSh += inv * (13 - m) / 12; }
         V *= 1 + rm;
       }
       if (V > 0 && p.basis > 0) {
@@ -282,13 +287,14 @@ function model(p) {
         if (tx > 0) { B *= (V - tx) / V; V -= tx; taxPaid += tx; }
         B += vp;
       }
-      if (accum && lumpEnd && lumpEnd[t] > 0) { V += lumpEnd[t]; B += lumpEnd[t]; own += lumpEnd[t]; }
+      // Einmalbeträge (z. B. reinvestierte Steuererstattung) erhöhen die Anschaffungskosten, sind aber kein eigenes Geld.
+      if (accum && lumpEnd && lumpEnd[t] > 0) { V += lumpEnd[t]; B += lumpEnd[t]; }
       taxPaid += taxY;
       net[t] = payY - taxY;
-      vals.push(V); bases.push(Math.min(B, Math.max(B, 0))); owns.push(own);
+      vals.push(V); bases.push(B); owns.push(own);
     }
     const sellNet = idx => { const V = vals[idx], B = bases[idx]; return V - Math.max(0, (V - B) * 0.7 - 1000) * 0.26375; };
-    return { vals, bases, owns, net, sellNet, own: owns[n], capR: vals[n], kapNet: sellNet(n), tEnd };
+    return { vals, bases, owns, net, sellNet, own: owns[n], ownReal, capR: vals[n], kapNet: sellNet(n), tEnd };
   }
 
   const res = {};
@@ -298,7 +304,7 @@ function model(p) {
   if (p.on.etf) {
     const r = runFund(monthlyArr(p.etfM), null, p.etfTer, 0, p.H);
     const r0 = runFund(monthlyArr(p.etfM), null, 0, 0, p.H);
-    r.cost = r0.capR - r.capR; r.foerder = 0; r.payEnd = p.H;
+    r.cost = r0.capR - r.capR; r.foerder = 0; r.foerderReal = 0; r.payEnd = p.H;
     r.heir = idx => ({ val: r.sellNet(idx), note: 'Steuer nur, falls die Erben verkaufen' });
     res.etf = r;
   }
@@ -306,7 +312,7 @@ function model(p) {
   if (p.on.fond) {
     const r = runFund(monthlyArr(p.fondM), null, p.fondTer, p.fondAA, p.H);
     const r0 = runFund(monthlyArr(p.fondM), null, 0, 0, p.H);
-    r.cost = r0.capR - r.capR; r.foerder = 0; r.payEnd = p.H;
+    r.cost = r0.capR - r.capR; r.foerder = 0; r.foerderReal = 0; r.payEnd = p.H;
     r.heir = idx => ({ val: r.sellNet(idx), note: 'Steuer nur, falls die Erben verkaufen' });
     res.fond = r;
   }
@@ -315,8 +321,9 @@ function model(p) {
   if (p.on.avd) {
     const payEnd = Math.max(p.H, 85), tEnd = payEnd - p.a0;
     const run = (cost) => {
-      let V = 0, own = 0, zul = 0, ref = 0, bonusUsed = false, C0 = 0, noElig = 0;
-      const vals = [0], owns = [0], foer = [0], net = new Array(T).fill(0), refunds = new Array(T).fill(0);
+      let V = 0, own = 0, ownReal = 0, zul = 0, zulReal = 0, ref = 0, refReal = 0, bonusUsed = false, C0 = 0, noElig = 0, lumpNet = 0;
+      const vals = [0], owns = [0], zuls = [0], foer = [0], net = new Array(T).fill(0), refunds = new Array(T).fill(0);
+      const overflow = new Array(T).fill(0); // Monatsbeitrag, der nicht ins AVD passt → ETF-Nebendepot
       for (let t = 0; t < T; t++) {
         const age = p.a0 + t, accum = t < n;
         if (t === n) C0 = V;
@@ -325,45 +332,56 @@ function model(p) {
           let L = 0; if (t === n && p.einmal) { L = 0.3 * V; V -= L; }
           const W = annuityDue(V, p.gPay - cost, tEnd - t);
           V -= W; payY = W + L; taxY = taxAdd(p.incRet, payY, t);
+          if (L > 0) lumpNet = L - (taxY - taxAdd(p.incRet, W, t));
         }
         const elig = accum && (age >= p.studyEnd || p.eligStudy);
-        if (accum && !elig && p.avdM > 0) noElig++;
-        const E = elig ? Math.min(p.avdM * 12 * dynF(t), 1800) : 0;
+        const want = accum ? p.avdM * 12 * dynF(t) : 0;
+        if (accum && !elig && want > 0) noElig++;
+        const E = elig ? Math.min(want, 1800) : 0;
+        overflow[t] = (want - E) / 12;
         const rm = Math.pow(1 + (accum ? p.g : p.gPay) - cost, 1 / 12) - 1;
         for (let m = 1; m <= 12; m++) { if (E > 0) { V += E / 12; own += E / 12; } V *= 1 + rm; }
+        ownReal += E / I(t);
         if (elig && E >= 120) {
           const grund = 0.5 * Math.min(E, 360) + 0.25 * Math.max(0, Math.min(E, 1800) - 360);
           const kidActive = age >= p.kidsFrom && age < p.kidsFrom + p.kidsYears;
           const kind = kidActive ? p.kids * 300 * Math.min(1, E / 300) : 0;
           let bon = 0; if (p.bonus && !bonusUsed && age < 25) { bon = 200; bonusUsed = true; }
-          V += grund + kind + bon; zul += grund + kind + bon;
+          const z = grund + kind + bon;
+          V += z; zul += z; zulReal += z / I(t);
           const save = taxSave(incAt(t), E + grund + kind, t);
           const extra = Math.max(0, save - (grund + kind));
-          refunds[t] = extra; ref += extra;
+          refunds[t] = extra; ref += extra; refReal += extra / I(t);
         }
         net[t] = payY - taxY;
-        vals.push(V); owns.push(own); foer.push(zul + ref);
+        vals.push(V); owns.push(own); zuls.push(zul); foer.push(zul + ref);
       }
-      return { vals, owns, foer, net, refunds, own, zul, ref, C0: C0 || vals[n], noElig };
+      return { vals, owns, zuls, foer, net, refunds, overflow, own, ownReal, zul, zulReal, ref, refReal, lumpNet, C0: C0 || vals[n], noElig };
     };
     const a = run(p.avdCost), a0 = run(0);
-    const side = runFund(new Array(T).fill(0), p.reinvest ? a.refunds : null, p.etfTer, 0, payEnd);
+    // ETF-Nebendepot: nicht förderfähige Beiträge (+ optional die zusätzliche Steuererstattung)
+    const side = runFund(a.overflow, p.reinvest ? a.refunds : null, p.etfTer, 0, payEnd);
+    const side0 = runFund(a.overflow, p.reinvest ? a.refunds : null, 0, 0, payEnd);
     const r = {
-      vals: a.vals.map((v, i) => v + (p.reinvest ? side.vals[i] : 0)),
-      net: a.net.map((v, i) => v + (p.reinvest ? side.net[i] : 0)),
-      own: a.own, capR: a.vals[n] + (p.reinvest ? side.vals[n] : 0), capAVD: a.vals[n], sideR: p.reinvest ? side.vals[n] : 0,
-      zul: a.zul, ref: a.ref, foerder: a.zul + a.ref, cost: a0.vals[n] - a.vals[n], kapNet: NaN, payEnd, noElig: a.noElig
+      vals: a.vals.map((v, i) => v + side.vals[i]),
+      net: a.net.map((v, i) => v + side.net[i]),
+      own: a.own + side.own, ownReal: a.ownReal + side.ownReal, sideOwn: side.own, sideOwnReal: side.ownReal,
+      capR: a.vals[n] + side.vals[n], capAVD: a.vals[n], sideR: side.vals[n],
+      zul: a.zul, zulReal: a.zulReal, ref: a.ref, refReal: a.refReal,
+      foerder: a.zul + a.ref, foerderReal: a.zulReal + a.refReal,
+      cost: (a0.vals[n] + side0.vals[n]) - (a.vals[n] + side.vals[n]), kapNet: NaN, payEnd, noElig: a.noElig, lumpNet: a.lumpNet
     };
     r.heirMarried = idx => {
-      const V = a.vals[idx], sideNet = p.reinvest ? side.sellNet(idx) : 0;
+      const V = a.vals[idx], sideNet = side.sellNet(idx);
       return { val: V + sideNet, note: 'Wird ohne Abzug auf einen eigenen AVD-Vertrag übertragen' };
     };
     r.heir = idx => {
-      const V = a.vals[idx], sideNet = p.reinvest ? side.sellNet(idx) : 0;
-      let back, ownR;
-      if (idx <= n) { back = a.foer[idx]; ownR = a.owns[idx]; }
-      else { const f = a.C0 > 0 ? V / a.C0 : 0; back = a.foer[n] * f; ownR = a.owns[n] * f; }
-      const rest = Math.max(0, V - back), gain = Math.max(0, rest - ownR);
+      const V = a.vals[idx], sideNet = side.sellNet(idx);
+      let back, ownR, zulR;
+      if (idx <= n) { back = a.foer[idx]; ownR = a.owns[idx]; zulR = a.zuls[idx]; }
+      else { const f = a.C0 > 0 ? V / a.C0 : 0; back = a.foer[n] * f; ownR = a.owns[n] * f; zulR = a.zuls[n] * f; }
+      // Steuerpflichtige Erträge = Guthaben − eigene Beiträge − Zulagen. Die Steuererstattungen lagen nie im Vertrag.
+      const rest = Math.max(0, V - back), gain = Math.max(0, V - ownR - zulR);
       const incDeath = idx < n ? incAt(idx) : p.incRet;
       const tx = p.heirTaxOn ? taxAdd(incDeath, gain, idx) : 0;
       const parts = ['Förderung ' + eur(back) + ' zurück'];
@@ -376,12 +394,12 @@ function model(p) {
   // Fondsgebundene Rentenversicherung
   if (p.on.ins) {
     const run = (eff) => {
-      let V = 0, own = 0; const vals = [0];
+      let V = 0, own = 0, ownReal = 0; const vals = [0];
       for (let t = 0; t < T; t++) {
-        if (t < n) { const c = p.insM * dynF(t), rm = Math.pow(1 + p.g - eff, 1 / 12) - 1; for (let m = 0; m < 12; m++) { V += c; own += c; V *= 1 + rm; } vals.push(V); }
+        if (t < n) { const c = p.insM * dynF(t), rm = Math.pow(1 + p.g - eff, 1 / 12) - 1; for (let m = 0; m < 12; m++) { V += c; own += c; V *= 1 + rm; } ownReal += 12 * c / I(t); vals.push(V); }
         else vals.push(null);
       }
-      return { vals, own, C: vals[n] };
+      return { vals, own, ownReal, C: vals[n] };
     };
     const a = run(p.insEff), a0 = run(0);
     const annual = a.C / 10000 * p.rf * 12, ea = (ERTRAG[p.R] || 17) / 100;
@@ -389,7 +407,7 @@ function model(p) {
     for (let t = n; t < T; t++) net[t] = annual - taxAdd(p.incRet, annual * ea, t);
     const gain = Math.max(0, a.C - a.own), halb = n >= 12 && p.R >= 62;
     const kapNet = a.C - taxAdd(p.incRet, gain * 0.85 * (halb ? 0.5 : 1), n);
-    const r = { vals: a.vals, net, own: a.own, capR: a.C, kapNet, foerder: 0, cost: a0.C - a.C, annual, payEnd: 100, lifelong: true };
+    const r = { vals: a.vals, net, own: a.own, ownReal: a.ownReal, capR: a.C, kapNet, foerder: 0, foerderReal: 0, cost: a0.C - a.C, annual, payEnd: 100, lifelong: true };
     r.heir = idx => {
       if (idx <= n) return { val: a.vals[idx], note: 'Fondsguthaben, einkommensteuerfrei' };
       const age = p.a0 + idx, rest = Math.max(0, p.R + p.gz - age);
@@ -494,23 +512,25 @@ function render() {
   active.forEach(pr => {
     const r = res[pr.key];
     const end = Math.min(T, r.payEnd - p.a0);
-    let sum = 0, cnt = 0; for (let t = n; t < end; t++) { sum += R(r.net[t], t); cnt++; }
+    // Ø-Monatsrente ohne die 30 %-Einmalauszahlung, sonst sieht die laufende Rente höher aus, als sie ist.
+    const lump = r.lumpNet ? R(r.lumpNet, n) : 0;
+    let sum = -lump, cnt = 0; for (let t = n; t < end; t++) { sum += R(r.net[t], t); cnt++; }
     const avgMonthly = cnt ? sum / cnt / 12 : 0;
     let cumH = 0; for (let t = n; t < p.H - p.a0; t++) cumH += R(r.net[t], t);
     let cum100 = 0; for (let t = n; t < T; t++) cum100 += R(r.net[t], t);
-    stats[pr.key] = { avgMonthly, cumH, cum100 };
+    stats[pr.key] = { avgMonthly, cumH, cum100, lump };
   });
 
   // Warnungen
   const warn = $('warn'); warn.replaceChildren();
-  if (res.avd && res.avd.noElig > 0) warn.append(el('div', { class: 'note' }, 'Altersvorsorgedepot: In ' + res.avd.noElig + ' Studienjahr(en) ohne Förderberechtigung wird nichts eingezahlt – die eigenen Einzahlungen sind dort also kleiner als bei den anderen Produkten.'));
-  if (num('avdM') > 150) warn.append(el('div', { class: 'note' }, 'Altersvorsorgedepot: Gefördert werden max. 1.800 €/Jahr (150 €/Monat). Gerechnet wird mit 150 €.'));
+  if (res.avd && res.avd.noElig > 0) warn.append(el('div', { class: 'note' }, 'Altersvorsorgedepot: In ' + res.avd.noElig + ' Studienjahr(en) ohne Förderberechtigung fließt der Beitrag ins ETF-Nebendepot statt ins AVD.'));
+  if (res.avd && res.avd.sideOwn > 0) warn.append(el('div', { class: 'note' }, 'Altersvorsorgedepot: ' + eur(p.real ? res.avd.sideOwnReal : res.avd.sideOwn) + ' deiner Beiträge sind nicht förderfähig (über 150 €/Monat oder ohne Förderberechtigung) und gehen ins ETF-Nebendepot. Sie sind im AVD-Wert enthalten.'));
 
   // Tiles
   const best = Math.max(...active.map(pr => stats[pr.key].avgMonthly));
   $('tiles').replaceChildren(...active.map(pr => {
     const r = res[pr.key], s = stats[pr.key];
-    const sub = r.lifelong ? 'lebenslang, ab ' + p.R : p.R + ' bis ' + r.payEnd + ' (Ø)';
+    const sub = (r.lifelong ? 'lebenslang, ab ' + p.R : p.R + ' bis ' + r.payEnd + ' (Ø)') + (s.lump > 0 ? ' · zzgl. ' + eur(s.lump) + ' Einmalauszahlung netto' : '');
     return el('div', { class: 'tile' },
       el('div', { class: 'name' }, keyEl(pr.color), pr.name, s.avgMonthly === best && active.length > 1 ? el('span', { class: 'badge' }, 'höchste Rente') : ''),
       el('div', { class: 'big' }, eur(s.avgMonthly)),
@@ -520,12 +540,13 @@ function render() {
 
   // Tabelle
   const rows = [
-    ['Eigene Einzahlungen', pr => R(res[pr.key].own, n), 'max'],
-    ['Staatliche Förderung (Zulagen + Steuervorteil)', pr => R(res[pr.key].foerder, n), 'max'],
+    // Einzahlungen/Förderung sind Ströme über viele Jahre → jedes Jahr einzeln in Kaufkraft umrechnen, nicht pauschal mit I(n).
+    ['Eigene Einzahlungen', pr => p.real ? res[pr.key].ownReal : res[pr.key].own, null],
+    ['Staatliche Förderung (Zulagen + Steuervorteil)', pr => p.real ? res[pr.key].foerderReal : res[pr.key].foerder, 'max'],
     ['Kosten bis Rentenbeginn (entgangener Ertrag)', pr => R(res[pr.key].cost, n), 'min'],
     ['Kapital bei Rentenbeginn (vor Steuern)', pr => R(res[pr.key].capR, n), 'max'],
     ['Kapital netto bei kompletter Einmalauszahlung', pr => res[pr.key].kapNet === undefined || isNaN(res[pr.key].kapNet) ? null : R(res[pr.key].kapNet, n), 'max'],
-    ['Netto pro Monat in der Rente (Ø)', pr => stats[pr.key].avgMonthly, 'max'],
+    ['Netto pro Monat in der Rente (Ø, ohne Einmalauszahlung)', pr => stats[pr.key].avgMonthly, 'max'],
     ['Summe netto bis Alter ' + p.H, pr => stats[pr.key].cumH, 'max'],
     ['Summe netto bis Alter 100', pr => stats[pr.key].cum100, 'max'],
   ];
@@ -535,13 +556,13 @@ function render() {
   rows.forEach(([label, f, dir]) => {
     const vals = active.map(f);
     const valid = vals.filter(v => v != null);
-    const target = valid.length > 1 && new Set(valid.map(Math.round)).size > 1 ? (dir === 'max' ? Math.max(...valid) : Math.min(...valid)) : null;
+    const target = dir && valid.length > 1 && new Set(valid.map(Math.round)).size > 1 ? (dir === 'max' ? Math.max(...valid) : Math.min(...valid)) : null;
     tb.append(el('tr', {}, el('td', {}, label), ...vals.map((v, i) => {
       if (v == null) return el('td', {}, active[i].key === 'avd' ? 'nicht möglich (max. 30 %)' : '–');
       return el('td', { class: target !== null && Math.round(v) === Math.round(target) ? 'best' : '' }, eur(v));
     })));
   });
-  if (res.avd) tb.append(el('tr', {}, el('td', { colspan: active.length + 1, class: '' }, 'AVD-Detail: Zulagen ' + eur(R(res.avd.zul, n)) + ', zusätzliche Steuererstattungen ' + eur(R(res.avd.ref, n)) + (p.reinvest ? ' (in ETF angelegt, im AVD-Wert enthalten)' : ' (nicht angelegt, nicht im Wert enthalten)') + '.')));
+  if (res.avd) tb.append(el('tr', {}, el('td', { colspan: active.length + 1, class: '' }, 'AVD-Detail: Zulagen ' + eur(p.real ? res.avd.zulReal : res.avd.zul) + ', zusätzliche Steuererstattungen ' + eur(p.real ? res.avd.refReal : res.avd.ref) + (p.reinvest ? ' (in ETF angelegt, im AVD-Wert enthalten)' : ' (nicht angelegt, nicht im Wert enthalten)') + '. Kapital bei Rentenbeginn: davon AVD-Vertrag ' + eur(R(res.avd.capAVD, n)) + ', ETF-Nebendepot ' + eur(R(res.avd.sideR, n)) + '.')));
   if (res.ins) tb.append(el('tr', {}, el('td', { colspan: active.length + 1 }, 'Versicherung: Brutto-Rente ' + eur(R(res.ins.annual / 12, n)) + '/Monat, besteuert mit Ertragsanteil ' + (ERTRAG[p.R] || 17) + ' %. Einmalauszahlung statt Rente: ' + eur(R(res.ins.kapNet, n)) + ' netto.')));
   tbl.append(tb);
 
@@ -603,7 +624,7 @@ function render() {
     series: heirRows.map(row => ({ name: row.name, short: row.short, color: row.color, dash: row.dash, values: ages.map(i => R(row.f(i).val, i)) })) });
 }
 
-$('applyAll').addEventListener('click', () => { const v = num('setAll'); ['etfM', 'avdM', 'insM', 'fondM'].forEach(id => $(id).value = id === 'avdM' ? Math.min(150, v) : v); render(); });
+$('applyAll').addEventListener('click', () => { const v = num('setAll'); ['etfM', 'avdM', 'insM', 'fondM'].forEach(id => $(id).value = v); render(); });
 document.querySelectorAll('input, select').forEach(i => i.addEventListener('input', render));
 window.addEventListener('resize', () => { clearTimeout(window.__rt); window.__rt = setTimeout(render, 120); });
 render();
