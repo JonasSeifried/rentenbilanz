@@ -103,6 +103,16 @@ tr.flip td { background: var(--warn-bg); }
   .layout { grid-template-columns: 240px 1fr; }
   .panel + .panel { break-before: page; }
 }
+/* --- Eckdaten-Leiste über den Tabs --- */
+.eck { padding: 12px 16px 10px; }
+.eck-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 16px; align-items: end; }
+.field label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 3px; line-height: 1.3; }
+.field input[type=number] { width: 100%; padding: 5px 7px; border: 1px solid var(--axis); border-radius: 6px; background: var(--surface-1); color: var(--text-primary); font: inherit; text-align: right; font-variant-numeric: tabular-nums; }
+.field.check label { display: flex; gap: 8px; align-items: center; font-size: 13px; margin: 0 0 6px; }
+.field.check input { width: 16px; height: 16px; flex: none; }
+.compare { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--grid); font-size: 13px; color: var(--text-secondary); }
+.compare label { display: inline-flex; gap: 6px; align-items: center; color: var(--text-primary); cursor: pointer; }
+.eck .hint { margin: 8px 0 0; }
 </style>
 </head>
 <body>
@@ -120,60 +130,83 @@ tr.flip td { background: var(--warn-bg); }
   </div>
   <p class="hint print-only" id="printMeta"></p>
 
+  <!-- ECKDATEN: wirken auf alle Tabs -->
+  <div class="card eck">
+    <div class="eck-grid">
+      <div class="field"><label for="a0">Alter heute</label><input type="number" id="a0" value="23" min="16" max="60"></div>
+      <div class="field"><label for="incWork">Gehalt, zu versteuern (€/Jahr)</label><input type="number" id="incWork" value="85000" step="1000" min="0"></div>
+      <div class="field"><label for="incRet">Einkommen im Alter ohne diese Produkte (€/Jahr)</label><input type="number" id="incRet" value="40000" step="1000" min="0"></div>
+      <div class="field"><label for="setAll">Monatsbeitrag je Produkt (€)</label><input type="number" id="setAll" value="150" step="10" min="0"></div>
+      <div class="field"><label for="g">Rendite bis zur Rente (% p.a., vor Kosten)</label><input type="number" id="g" value="6" step="0.5"></div>
+      <div class="field"><label for="R">Rentenbeginn (Alter, 65–70)</label><input type="number" id="R" value="67" min="65" max="70"></div>
+      <div class="field check"><label for="kvOn"><input type="checkbox" id="kvOn"> Als Rentner <em>freiwillig</em> gesetzlich krankenversichert</label></div>
+    </div>
+    <div class="compare">
+      <span>Vergleichen:</span>
+      <label><input type="checkbox" id="etfOn" checked><span class="key" style="background:var(--s1)"></span>ETF-Depot</label>
+      <label><input type="checkbox" id="avdOn" checked><span class="key" style="background:var(--s2)"></span>Altersvorsorgedepot</label>
+      <label><input type="checkbox" id="insOn" checked><span class="key" style="background:var(--s3)"></span>Fondsgeb. Rentenversicherung</label>
+      <label><input type="checkbox" id="fondOn"><span class="key" style="background:var(--s4)"></span>Aktiver Fonds</label>
+    </div>
+    <p class="hint">Beträge in heutigem Geld. Einkommen im Alter = z. B. gesetzliche Rente, Betriebsrente, Mieten; es bestimmt deinen Steuersatz als Rentner. Krankenversicherung: In der Pflichtversicherung der Rentner (KVdR) oder privat versichert → Haken aus; freiwillig gesetzlich → ca. 22 % Beitrag auf AVD- und Versicherungsauszahlungen (Details unter „Weitere Einstellungen“).</p>
+  </div>
+
   <nav class="tabs" role="tablist" aria-label="Ansichten">
     <button class="tab" type="button" role="tab" data-tab="overview" aria-controls="tab-overview">Überblick</button>
     <button class="tab" type="button" role="tab" data-tab="detail" aria-controls="tab-detail">Rente im Detail</button>
     <button class="tab" type="button" role="tab" data-tab="heirs" aria-controls="tab-heirs">Erbfall</button>
-    <button class="tab" type="button" role="tab" data-tab="settings" aria-controls="tab-settings">Einstellungen &amp; Annahmen</button>
+    <button class="tab" type="button" role="tab" data-tab="settings" aria-controls="tab-settings">Weitere Einstellungen &amp; Annahmen</button>
   </nav>
 
   <!-- ÜBERBLICK -->
   <section class="panel" id="tab-overview" role="tabpanel" data-print>
-    <div class="layout">
-      <div class="card inputs">
-        <h2>Deine Eckdaten</h2>
-        <div class="row"><label for="a0">Alter heute</label><input type="number" id="a0" value="23" min="16" max="60"></div>
-        <div class="row"><label for="incWork">Zu versteuerndes Einkommen im Beruf (€/Jahr, heutiges Geld)</label><input type="number" id="incWork" value="85000" step="1000" min="0"></div>
-        <div class="row"><label for="incRet">Zu versteuerndes Einkommen in der Rente <em>ohne</em> diese Produkte (€/Jahr, heutiges Geld)</label><input type="number" id="incRet" value="40000" step="1000" min="0"></div>
-        <p class="hint">z. B. gesetzliche Rente, Betriebsrente, Mieten. Bestimmt deinen Steuersatz im Alter.</p>
-        <div class="row"><label for="setAll">Monatsbeitrag je Produkt (€)</label><input type="number" id="setAll" value="150" step="10" min="0"></div>
-        <p class="hint">Gilt für alle Produkte. Einzeln anpassen kannst du sie unter „Einstellungen“.</p>
-        <div class="row"><label for="g">Rendite vor Kosten bis zur Rente (% p.a.)</label><input type="number" id="g" value="6" step="0.5"></div>
-        <div class="row"><label for="kvOn">Als Rentner <em>freiwillig</em> gesetzlich krankenversichert</label><input type="checkbox" id="kvOn"></div>
-        <p class="hint">Dann zahlst du ca. 22 % Kranken- und Pflegebeitrag auf AVD- und Versicherungsauszahlungen. In der Pflichtversicherung der Rentner (KVdR) oder privat versichert: Haken aus. Mehr dazu unter „Einstellungen“.</p>
-        <p class="hint noprint">Alle weiteren Annahmen (Studium, Rentenbeginn, Kosten, Inflation …) findest du unter „Einstellungen &amp; Annahmen“.</p>
-      </div>
-      <div>
-        <div class="card verdict" id="verdict"></div>
-        <div id="warn"></div>
-        <div class="tiles" id="tiles"></div>
-        <div class="card">
-          <h2>Was die Empfehlung kippen würde</h2>
-          <p class="hint">Ø netto pro Monat von Rentenbeginn bis Auszahlplan-Ende, jeweils mit nur einer geänderten Annahme. „Vorne“ = meistes Netto-Geld bis Auszahlplan-Ende. Gelb markiert: Ein anderes Produkt liegt vorne als bei deinen Annahmen.</p>
-          <div style="overflow-x:auto"><table id="scen"></table></div>
-        </div>
-        <div class="card">
-          <h2>Summe aller Netto-Auszahlungen ab Rentenbeginn</h2>
-          <div class="legend" id="lg2"></div>
-          <div class="chart" id="c2"></div>
-          <p class="hint" id="beText"></p>
-        </div>
-      </div>
+    <div class="card verdict" id="verdict"></div>
+    <div id="warn"></div>
+    <div class="tiles" id="tiles"></div>
+    <div class="card">
+      <h2>Was die Empfehlung kippen würde</h2>
+      <p class="hint">Ø netto pro Monat von Rentenbeginn bis Auszahlplan-Ende, jeweils mit nur einer geänderten Annahme. „Vorne“ = meistes Netto-Geld bis Auszahlplan-Ende. Gelb markiert: Ein anderes Produkt liegt vorne als bei deinen Annahmen.</p>
+      <div style="overflow-x:auto"><table id="scen"></table></div>
+    </div>
+    <div class="card">
+      <h2>Summe aller Netto-Auszahlungen ab Rentenbeginn</h2>
+      <div class="legend" id="lg2"></div>
+      <div class="chart" id="c2"></div>
+      <p class="hint" id="beText"></p>
     </div>
   </section>
 
   <!-- RENTE IM DETAIL -->
   <section class="panel" id="tab-detail" role="tabpanel" data-print hidden>
     <h2 class="print-only">Rente im Detail</h2>
-    <div class="card">
-      <h2>Vergleich</h2>
-      <div style="overflow-x:auto"><table id="tbl"></table></div>
-    </div>
-    <div class="card">
-      <h2>Vermögen im Zeitverlauf</h2>
-      <div class="legend" id="lg1"></div>
-      <div class="chart" id="c1"></div>
-      <p class="hint" id="c1hint"></p>
+    <div class="layout">
+      <div class="card inputs">
+        <h2>Auszahlphase</h2>
+        <div class="row"><label for="H">Auszahlplan läuft bis Alter</label><input type="number" id="H" value="90" min="85" max="100"></div>
+        <div class="row"><label for="gPay">Rendite vor Kosten in der Rente (% p.a.)</label><input type="number" id="gPay" value="4" step="0.5"></div>
+        <p class="hint">In der Rente meist vorsichtiger angelegt, daher niedriger als in der Ansparphase.</p>
+        <h3><span class="key" style="background:var(--s2)"></span> Altersvorsorgedepot</h3>
+        <div class="row"><label for="einmal">30 % Einmalauszahlung bei Rentenbeginn</label><input type="checkbox" id="einmal"></div>
+        <p class="hint">Auszahlplan nach § 1 AltZertG: jedes Jahr Restkapital ÷ Restlaufzeit. Die Rate startet niedriger und steigt. Die Einmalauszahlung wird in einem Jahr voll versteuert und lohnt sich deshalb meist nicht.</p>
+        <h3><span class="key" style="background:var(--s3)"></span> Rentenversicherung</h3>
+        <div class="row"><label for="insLump">Kapitalauszahlung statt lebenslanger Rente</label><input type="checkbox" id="insLump" checked></div>
+        <p class="hint">Variante deines Beraters: Das Guthaben wird bei Rentenbeginn ausgezahlt (85 % × 50 % des Gewinns mit deinem Steuersatz), in einen ETF gesteckt und bis zum Ende des Auszahlplans entnommen. Ohne Haken: lebenslange Rente.</p>
+        <div class="row"><label for="rf">Rentenfaktor (€ Monatsrente je 10.000 €)</label><input type="number" id="rf" value="30" step="1" min="0"></div>
+        <div class="row"><label for="gz">Rentengarantiezeit (Jahre)</label><input type="number" id="gz" value="10" min="0" max="30"></div>
+        <p class="hint">Rentenfaktor und Garantiezeit stehen im Angebot. Sie zählen nur bei lebenslanger Rente. Achte darauf, ob der Rentenfaktor garantiert ist.</p>
+      </div>
+      <div>
+        <div class="card">
+          <h2>Vergleich</h2>
+          <div style="overflow-x:auto"><table id="tbl"></table></div>
+        </div>
+        <div class="card">
+          <h2>Vermögen im Zeitverlauf</h2>
+          <div class="legend" id="lg1"></div>
+          <div class="chart" id="c1"></div>
+          <p class="hint" id="c1hint"></p>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -201,44 +234,39 @@ tr.flip td { background: var(--warn-bg); }
     </div>
   </section>
 
-  <!-- EINSTELLUNGEN & ANNAHMEN -->
+  <!-- WEITERE EINSTELLUNGEN & ANNAHMEN -->
   <section class="panel" id="tab-settings" role="tabpanel" data-print hidden>
-    <h2 class="print-only">Einstellungen &amp; Annahmen</h2>
+    <h2 class="print-only">Weitere Einstellungen &amp; Annahmen</h2>
     <div class="grid2">
       <div class="card inputs">
-        <h2>Du &amp; Rente</h2>
+        <h2>Studium &amp; Krankenversicherung</h2>
         <div class="row"><label for="studyEnd">Studium / Ausbildung bis Alter</label><input type="number" id="studyEnd" value="24" min="16" max="60"></div>
         <p class="hint">Gerechnet wird in ganzen Jahren ab heute. Bei 24 ist das erste Jahr (2027) das Übergangsjahr, ab dann volles Gehalt.</p>
         <div class="row"><label for="incStudy">Zu versteuerndes Einkommen bis Studienende (€/Jahr)</label><input type="number" id="incStudy" value="35000" step="1000" min="0"></div>
         <p class="hint">2027: Studium bis Sommer, danach ca. 5 Monatsgehälter ≈ 35.000 €.</p>
         <div class="row"><label for="eligStudy">Bis Studienende förderberechtigt?</label><input type="checkbox" id="eligStudy" checked></div>
         <p class="hint">Förderberechtigt ist, wer im Beitragsjahr zumindest zeitweise rentenversicherungspflichtig ist (Werkstudent, Minijob mit RV-Pflicht, Berufsstart) oder als Selbstständiger Gewinneinkünfte erklärt (§ 10a EStG n.F.). Mit Berufsstart 2027 bist du für ganz 2027 förderberechtigt. Ohne Förderberechtigung fließen die AVD-Beiträge ins ETF-Nebendepot.</p>
-        <div class="row"><label for="R">Rentenbeginn (Alter)</label><input type="number" id="R" value="67" min="65" max="70"></div>
-        <p class="hint">Das AVD zahlt frühestens mit 65 aus, spätestens mit 70 (§ 1 AltZertG n.F.).</p>
-        <div class="row"><label for="H">Auszahlplan läuft bis Alter</label><input type="number" id="H" value="90" min="85" max="100"></div>
         <div class="row"><label for="kvRate">Beitragssatz KV + PV bei freiwilliger Versicherung (%)</label><input type="number" id="kvRate" value="21.7" step="0.1"></div>
         <p class="hint">Mit 85k liegst du über der Versicherungspflichtgrenze (2026: 77.400 €). Bist du im Alter freiwillig gesetzlich versichert, zahlst du den vollen Satz (14,6 % + Ø-Zusatzbeitrag 2,9 % + Pflege 4,2 % kinderlos) auf AVD-Auszahlungen, Versicherungsleistungen und ETF-Gewinne, bis zur Beitragsbemessungsgrenze (69.750 €). In die KVdR kommst du, wenn du in der zweiten Hälfte deines Erwerbslebens zu 9/10 gesetzlich versichert warst; freiwillige Zeiten zählen mit. <strong>Frag deinen Berater danach, bevor du in die PKV wechselst.</strong></p>
       </div>
 
       <div class="card inputs">
         <h2>Markt</h2>
-        <div class="row"><label for="gPay">Rendite vor Kosten in der Auszahlphase (% p.a.)</label><input type="number" id="gPay" value="4" step="0.5"></div>
         <div class="row"><label for="infl">Inflation (% p.a.)</label><input type="number" id="infl" value="2" step="0.5"></div>
         <div class="row"><label for="dyn">Beiträge steigen jährlich um (%)</label><input type="number" id="dyn" value="0" step="1"></div>
         <div class="row"><label for="basis">Basiszins für Vorabpauschale (%)</label><input type="number" id="basis" value="3.2" step="0.1"></div>
-        <p class="hint">2026: 3,2 % (BMF, 13.01.2026). Für spätere Jahre eine Prognose. Die Rendite bis zur Rente stellst du im Überblick ein.</p>
+        <p class="hint">2026: 3,2 % (BMF, 13.01.2026). Für spätere Jahre eine Prognose.</p>
       </div>
 
       <div class="card inputs">
         <h2><span class="key" style="background:var(--s1)"></span> ETF-Depot</h2>
-        <div class="row"><label for="etfOn">Anzeigen</label><input type="checkbox" id="etfOn" checked></div>
         <div class="row"><label for="etfM">Beitrag (€/Monat)</label><input type="number" id="etfM" value="150" step="10" min="0"></div>
         <div class="row"><label for="etfTer">Kosten / TER (% p.a.)</label><input type="number" id="etfTer" value="0.2" step="0.05" min="0"></div>
+        <p class="hint">Die Beiträge setzt du normalerweise oben für alle Produkte gemeinsam. Hier nur, wenn du sie einzeln ändern willst.</p>
       </div>
 
       <div class="card inputs">
         <h2><span class="key" style="background:var(--s2)"></span> Altersvorsorgedepot</h2>
-        <div class="row"><label for="avdOn">Anzeigen</label><input type="checkbox" id="avdOn" checked></div>
         <div class="row"><label for="avdM">Beitrag (€/Monat, max. 150 gefördert)</label><input type="number" id="avdM" value="150" step="10" min="0"></div>
         <p class="hint">Was über 150 €/Monat hinausgeht (z. B. durch die Beitragssteigerung) und Beiträge ohne Förderberechtigung landen in einem ETF-Nebendepot. So zahlst du in jedes Produkt gleich viel eigenes Geld ein.</p>
         <div class="row"><label for="avdCost">Kosten (% p.a.)</label><input type="number" id="avdCost" value="0.5" step="0.1" min="0"></div>
@@ -250,25 +278,17 @@ tr.flip td { background: var(--warn-bg); }
         <p class="hint">Einmalig, wenn du zu Beginn des Beitragsjahres unter 25 bist (§ 84 EStG n.F.).</p>
         <div class="row"><label for="reinvest">Zusätzliche Steuererstattung in ETF anlegen</label><input type="checkbox" id="reinvest" checked></div>
         <p class="hint">Ohne Haken gibst du die Erstattung aus. Dann zahlst du netto weniger ein als bei den anderen Produkten, und der Vergleich zeigt das gesondert.</p>
-        <div class="row"><label for="einmal">30 % Einmalauszahlung bei Rentenbeginn</label><input type="checkbox" id="einmal"></div>
-        <p class="hint">Auszahlplan nach § 1 AltZertG: jedes Jahr Restkapital ÷ Restlaufzeit. Die Rate startet niedriger und steigt. Die Einmalauszahlung wird in einem Jahr voll versteuert und lohnt sich deshalb meist nicht.</p>
       </div>
 
       <div class="card inputs">
         <h2><span class="key" style="background:var(--s3)"></span> Fondsgebundene Rentenversicherung</h2>
-        <div class="row"><label for="insOn">Anzeigen</label><input type="checkbox" id="insOn" checked></div>
         <div class="row"><label for="insM">Beitrag (€/Monat)</label><input type="number" id="insM" value="150" step="10" min="0"></div>
         <div class="row"><label for="insEff">Effektivkosten (% p.a.)</label><input type="number" id="insEff" value="0.9" step="0.1" min="0"></div>
-        <div class="row"><label for="insLump">Kapitalauszahlung statt lebenslanger Rente</label><input type="checkbox" id="insLump" checked></div>
-        <p class="hint">Variante deines Beraters: Das Guthaben wird bei Rentenbeginn ausgezahlt (85 % × 50 % des Gewinns mit deinem Steuersatz), in einen ETF gesteckt und bis zum Ende des Auszahlplans entnommen. Ohne Haken: lebenslange Rente.</p>
-        <div class="row"><label for="rf">Rentenfaktor (€ Monatsrente je 10.000 €)</label><input type="number" id="rf" value="30" step="1" min="0"></div>
-        <div class="row"><label for="gz">Rentengarantiezeit (Jahre)</label><input type="number" id="gz" value="10" min="0" max="30"></div>
-        <p class="hint">Effektivkosten, Rentenfaktor und Garantiezeit stehen im Angebot bzw. Produktinformationsblatt. Achte darauf, ob der Rentenfaktor garantiert ist.</p>
+        <p class="hint">Steht im Produktinformationsblatt. Kapitalauszahlung oder Rente, Rentenfaktor und Garantiezeit stellst du unter „Rente im Detail“ ein.</p>
       </div>
 
       <div class="card inputs">
         <h2><span class="key" style="background:var(--s4)"></span> Aktiver Fonds (mit Ausgabeaufschlag)</h2>
-        <div class="row"><label for="fondOn">Anzeigen</label><input type="checkbox" id="fondOn"></div>
         <div class="row"><label for="fondM">Beitrag (€/Monat)</label><input type="number" id="fondM" value="150" step="10" min="0"></div>
         <div class="row"><label for="fondAA">Ausgabeaufschlag (%)</label><input type="number" id="fondAA" value="5" step="0.5" min="0"></div>
         <div class="row"><label for="fondTer">Laufende Kosten (% p.a.)</label><input type="number" id="fondTer" value="1.6" step="0.1" min="0"></div>
@@ -663,9 +683,9 @@ function scenarios(p) {
 
 function verdictText(A, scen) {
   const { p, active, stats } = A;
-  if (active.length < 2) return ['Wähle unter „Einstellungen“ mindestens zwei Produkte aus, um sie zu vergleichen.'];
-  if (!A.fairOwn) return ['Die Monatsbeiträge sind nicht bei allen Produkten gleich, so lässt sich keine Empfehlung ableiten. Setze links einen gemeinsamen Monatsbeitrag.'];
-  if (A.refundSpent) return ['Weil du die Steuererstattung ausgibst, setzt du beim AVD netto weniger eigenes Geld ein als bei den anderen Produkten. Deshalb gibt es hier keinen fairen Gewinner. Schalte unter „Einstellungen“ „Steuererstattung anlegen“ ein, um zu vergleichen.'];
+  if (active.length < 2) return ['Wähle oben bei „Vergleichen“ mindestens zwei Produkte aus.'];
+  if (!A.fairOwn) return ['Die Monatsbeiträge sind nicht bei allen Produkten gleich, so lässt sich keine Empfehlung ableiten. Setze oben einen gemeinsamen Monatsbeitrag.'];
+  if (A.refundSpent) return ['Weil du die Steuererstattung ausgibst, setzt du beim AVD netto weniger eigenes Geld ein als bei den anderen Produkten. Deshalb gibt es hier keinen fairen Gewinner. Schalte unter „Weitere Einstellungen“ „Steuererstattung anlegen“ ein, um zu vergleichen.'];
   const w = A.lead, second = active.filter(pr => pr.key !== w.key).reduce((a, b) => stats[b.key].cumH > stats[a.key].cumH ? b : a);
   const sw = stats[w.key], ss = stats[second.key], rel = ss.cumH > 0 ? (sw.cumH - ss.cumH) / ss.cumH : 1;
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
@@ -673,7 +693,7 @@ function verdictText(A, scen) {
   out.push((rel < 0.05 ? 'Knapp vorne: ' : 'Rechnerisch vorne: ') + cap(w.nom) + ' mit Ø ' + eur(sw.avgMonthly) + ' netto im Monat (' + p.R + '–' + p.H + '). Das sind bis ' + p.H + ' insgesamt ' + eur(sw.cumH - ss.cumH) + ' mehr als ' + second.nom + '.');
   if (w.key === 'avd') out.push('Sinnvoll wäre damit: 150 € im Monat ins Altersvorsorgedepot (mehr wird nicht gefördert), alles darüber in einen ETF' + (p.reinvest ? ', und die Steuererstattung jedes Jahr mit anlegen.' : '.'));
   else if (w.key === 'etf') out.push('Das ETF-Depot ist außerdem jederzeit verfügbar, du bist also flexibel (Notgroschen, Wohnung, Auszeit).');
-  else out.push('Das ist ungewöhnlich. Prüf die Kosten-Annahmen unter „Einstellungen“.');
+  else out.push('Das ist ungewöhnlich. Prüf die Kosten-Annahmen unter „Weitere Einstellungen“.');
   const flips = scen.filter(s => s.a.lead && s.a.lead.key !== w.key);
   out.push(flips.length
     ? 'Aber: In ' + flips.length + ' von ' + scen.length + ' Szenarien unten liegt ein anderes Produkt vorne, z. B. bei „' + flips[0].label + '“.'
