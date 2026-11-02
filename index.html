@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vorsorge-Rechner: ETF vs. Altersvorsorgedepot vs. fondsgebundene Rente</title>
+<style>
+.viz-root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface-1: #fcfcfb;
+  --text-primary: #0b0b0b; --text-secondary: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --good: #006300; --warn-bg: #fff6e0;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) .viz-root {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface-1: #1a1a19;
+    --text-primary: #f0efec; --text-secondary: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --good: #0ca30c; --warn-bg: #2a2416;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+.viz-root { background: var(--page); color: var(--text-primary); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; min-height: 100vh; padding: 20px; }
+h1 { font-size: 20px; margin: 0 0 4px; }
+h2 { font-size: 15px; margin: 0 0 10px; }
+h3 { font-size: 13px; margin: 14px 0 6px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .04em; }
+.sub { color: var(--text-secondary); margin: 0 0 16px; }
+.layout { display: grid; grid-template-columns: 340px 1fr; gap: 16px; align-items: start; }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+.inputs details { border-top: 1px solid var(--grid); padding: 8px 0; }
+.inputs details:first-of-type { border-top: 0; }
+.inputs summary { cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.key { display: inline-block; width: 14px; height: 3px; border-radius: 2px; }
+.row { display: grid; grid-template-columns: 1fr 110px; gap: 8px; align-items: center; margin: 6px 0; }
+.row label { color: var(--text-secondary); font-size: 13px; }
+.row input[type=number], .row select { width: 100%; padding: 4px 6px; border: 1px solid var(--axis); border-radius: 6px; background: var(--surface-1); color: var(--text-primary); font: inherit; text-align: right; font-variant-numeric: tabular-nums; }
+.row input[type=checkbox] { justify-self: end; width: 16px; height: 16px; }
+.hint { font-size: 12px; color: var(--muted); margin: 2px 0 6px; }
+.btn { font: inherit; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--axis); background: var(--surface-1); color: var(--text-primary); cursor: pointer; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; }
+.toolbar label { display: flex; gap: 6px; align-items: center; color: var(--text-secondary); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.tile .name { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 13px; }
+.tile .big { font-size: 26px; font-weight: 650; margin: 4px 0 0; }
+.tile .unit { font-size: 12px; color: var(--muted); }
+.tile .small { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+.badge { font-size: 11px; padding: 1px 6px; border-radius: 10px; border: 1px solid var(--good); color: var(--good); margin-left: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { padding: 6px 8px; border-bottom: 1px solid var(--grid); text-align: right; white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; white-space: normal; }
+thead th { color: var(--text-secondary); font-weight: 600; font-size: 12px; }
+td.best { font-weight: 700; }
+.chart { position: relative; width: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 6px; font-size: 13px; color: var(--text-secondary); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.tip { position: absolute; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.12); display: none; min-width: 170px; z-index: 5; }
+.tip .t { color: var(--text-secondary); margin-bottom: 4px; }
+.tip .r { display: flex; align-items: center; gap: 8px; }
+.tip .r b { margin-left: auto; font-variant-numeric: tabular-nums; }
+.note { background: var(--warn-bg); border-radius: 8px; padding: 8px 10px; font-size: 13px; margin: 8px 0; }
+ul.assume { margin: 0; padding-left: 18px; color: var(--text-secondary); font-size: 13px; }
+ul.assume li { margin: 3px 0; }
+svg text { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+svg text.endlabel { fill: var(--text-secondary); font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="viz-root">
+  <h1>Vorsorge-Rechner</h1>
+  <p class="sub">ETF-Depot vs. Altersvorsorgedepot (ab 2027) vs. fondsgebundene Rentenversicherung vs. aktiver Fonds – mit echtem Steuertarif, Förderung, Vorabpauschale, Auszahlphase und Erbfall.</p>
+
+  <div class="layout">
+    <!-- INPUTS -->
+    <div class="card inputs" id="inputs">
+      <details open>
+        <summary>Du</summary>
+        <div class="row"><label for="a0">Alter heute</label><input type="number" id="a0" value="23" min="16" max="60"></div>
+        <div class="row"><label for="studyEnd">Studium / Ausbildung bis Alter</label><input type="number" id="studyEnd" value="26" min="16" max="60"></div>
+        <div class="row"><label for="incStudy">Zu versteuerndes Einkommen im Studium (€/Jahr)</label><input type="number" id="incStudy" value="0" step="1000"></div>
+        <div class="row"><label for="eligStudy">Im Studium förderberechtigt?</label><input type="checkbox" id="eligStudy" checked></div>
+        <p class="hint">Nur mit Minijob/Werkstudentenjob <em>mit</em> Rentenversicherungspflicht. Wenn nicht: AVD-Beiträge starten erst nach dem Studium.</p>
+        <div class="row"><label for="incWork">Zu versteuerndes Einkommen im Beruf (€/Jahr, heutiges Geld)</label><input type="number" id="incWork" value="85000" step="1000"></div>
+        <div class="row"><label for="incRet">Zu versteuerndes Einkommen in der Rente <em>ohne</em> diese Produkte (€/Jahr, heutiges Geld)</label><input type="number" id="incRet" value="40000" step="1000"></div>
+        <p class="hint">z. B. gesetzliche Rente, Betriebsrente, App-Einnahmen, Mieten. Bestimmt deinen Steuersatz im Alter.</p>
+        <div class="row"><label for="R">Rentenbeginn (Alter)</label><input type="number" id="R" value="67" min="62" max="70"></div>
+        <div class="row"><label for="H">Auszahlplan läuft bis Alter</label><input type="number" id="H" value="90" min="85" max="100"></div>
+      </details>
+
+      <details open>
+        <summary>Markt</summary>
+        <div class="row"><label for="g">Rendite vor Kosten in der Ansparphase (% p.a.)</label><input type="number" id="g" value="6" step="0.5"></div>
+        <div class="row"><label for="gPay">Rendite vor Kosten in der Auszahlphase (% p.a.)</label><input type="number" id="gPay" value="4" step="0.5"></div>
+        <div class="row"><label for="infl">Inflation (% p.a.)</label><input type="number" id="infl" value="2" step="0.5"></div>
+        <div class="row"><label for="dyn">Beiträge steigen jährlich um (%)</label><input type="number" id="dyn" value="0" step="1"></div>
+        <div class="row"><label for="basis">Basiszins für Vorabpauschale (%)</label><input type="number" id="basis" value="2.5" step="0.1"></div>
+        <div class="row"><label for="setAll">Gleicher Monatsbeitrag für alle</label><input type="number" id="setAll" value="150" step="10"></div>
+        <button class="btn" id="applyAll" type="button">Auf alle Produkte anwenden</button>
+      </details>
+
+      <details open>
+        <summary><span class="key" style="background:var(--s1)"></span>ETF-Depot</summary>
+        <div class="row"><label for="etfOn">Anzeigen</label><input type="checkbox" id="etfOn" checked></div>
+        <div class="row"><label for="etfM">Beitrag (€/Monat)</label><input type="number" id="etfM" value="150" step="10"></div>
+        <div class="row"><label for="etfTer">Kosten / TER (% p.a.)</label><input type="number" id="etfTer" value="0.2" step="0.05"></div>
+      </details>
+
+      <details open>
+        <summary><span class="key" style="background:var(--s2)"></span>Altersvorsorgedepot</summary>
+        <div class="row"><label for="avdOn">Anzeigen</label><input type="checkbox" id="avdOn" checked></div>
+        <div class="row"><label for="avdM">Beitrag (€/Monat, max. 150 gefördert)</label><input type="number" id="avdM" value="150" step="10" max="150"></div>
+        <div class="row"><label for="avdCost">Kosten (% p.a.)</label><input type="number" id="avdCost" value="0.5" step="0.1"></div>
+        <div class="row"><label for="kids">Kinder mit Kindergeld</label><input type="number" id="kids" value="0" min="0" max="6"></div>
+        <div class="row"><label for="kidsFrom">… ab Alter</label><input type="number" id="kidsFrom" value="32"></div>
+        <div class="row"><label for="kidsYears">… für wie viele Jahre</label><input type="number" id="kidsYears" value="25"></div>
+        <div class="row"><label for="bonus">Berufseinsteigerbonus 200 € (unter 25)</label><input type="checkbox" id="bonus"></div>
+        <p class="hint">Ob der Bonus im neuen AVD gilt, ist laut Quellen unklar – standardmäßig aus.</p>
+        <div class="row"><label for="reinvest">Zusätzliche Steuererstattung in ETF anlegen</label><input type="checkbox" id="reinvest" checked></div>
+        <div class="row"><label for="einmal">30 % Einmalauszahlung bei Rentenbeginn</label><input type="checkbox" id="einmal"></div>
+      </details>
+
+      <details open>
+        <summary><span class="key" style="background:var(--s3)"></span>Fondsgebundene Rentenversicherung</summary>
+        <div class="row"><label for="insOn">Anzeigen</label><input type="checkbox" id="insOn" checked></div>
+        <div class="row"><label for="insM">Beitrag (€/Monat)</label><input type="number" id="insM" value="150" step="10"></div>
+        <div class="row"><label for="insEff">Effektivkosten (% p.a.)</label><input type="number" id="insEff" value="0.9" step="0.1"></div>
+        <div class="row"><label for="rf">Rentenfaktor (€ Monatsrente je 10.000 €)</label><input type="number" id="rf" value="30" step="1"></div>
+        <div class="row"><label for="gz">Rentengarantiezeit (Jahre)</label><input type="number" id="gz" value="10" min="0" max="30"></div>
+        <p class="hint">Rentenfaktor und Garantiezeit stehen im Angebot / Produktinformationsblatt.</p>
+      </details>
+
+      <details>
+        <summary><span class="key" style="background:var(--s4)"></span>Aktiver Fonds (mit Ausgabeaufschlag)</summary>
+        <div class="row"><label for="fondOn">Anzeigen</label><input type="checkbox" id="fondOn"></div>
+        <div class="row"><label for="fondM">Beitrag (€/Monat)</label><input type="number" id="fondM" value="150" step="10"></div>
+        <div class="row"><label for="fondAA">Ausgabeaufschlag (%)</label><input type="number" id="fondAA" value="5" step="0.5"></div>
+        <div class="row"><label for="fondTer">Laufende Kosten (% p.a.)</label><input type="number" id="fondTer" value="1.6" step="0.1"></div>
+      </details>
+
+      <details open>
+        <summary>Erbfall</summary>
+        <div class="row"><label for="deathAge">Angenommenes Todesalter</label><input type="number" id="deathAge" value="50" min="18" max="100"></div>
+        <div class="row"><label for="heirTaxOn">AVD: Erträge im Erbfall versteuern (wie bei Riester)</label><input type="checkbox" id="heirTaxOn" checked></div>
+        <p class="hint">Erben nicht Ehepartner, gilt das AVD als „schädlich verwendet“: Förderung zurück <em>und</em> die Erträge werden als Einkommen versteuert (bei Riester so geregelt; gerechnet mit dem Steuersatz im Todesjahr). Ob und wie das beim AVD genauso gilt, ist noch nicht sicher bestätigt.</p>
+      </details>
+    </div>
+
+    <!-- RESULTS -->
+    <div>
+      <div class="toolbar">
+        <label><input type="checkbox" id="real"> Beträge in heutiger Kaufkraft</label>
+        <span class="hint" id="modeHint"></span>
+      </div>
+      <div id="warn"></div>
+      <div class="tiles" id="tiles"></div>
+
+      <div class="card">
+        <h2>Vergleich</h2>
+        <div style="overflow-x:auto"><table id="tbl"></table></div>
+      </div>
+
+      <div class="card">
+        <h2>Vermögen im Zeitverlauf</h2>
+        <div class="legend" id="lg1"></div>
+        <div class="chart" id="c1"></div>
+        <p class="hint">Die Versicherung endet bei Rentenbeginn – das Guthaben wird in die lebenslange Rente umgewandelt.</p>
+      </div>
+
+      <div class="card">
+        <h2>Summe aller Netto-Auszahlungen ab Rentenbeginn</h2>
+        <div class="legend" id="lg2"></div>
+        <div class="chart" id="c2"></div>
+        <p class="hint" id="beText"></p>
+      </div>
+
+      <div class="card">
+        <h2>Erbfall</h2>
+        <div id="heirs"></div>
+        <h3>Was die Erben je nach Todesalter bekommen</h3>
+        <div class="legend" id="lg3"></div>
+        <div class="chart" id="c3"></div>
+      </div>
+
+      <div class="card">
+        <h2>Annahmen &amp; Grenzen</h2>
+        <ul class="assume">
+          <li>Einkommensteuer nach Tarif 2026 (Grundtarif, ledig) inkl. Soli; Steuergrenzen wachsen mit der Inflation mit. Keine Kirchensteuer, kein Ehegattensplitting.</li>
+          <li>ETF/Fonds: Abgeltungsteuer 26,375 %, 30 % Teilfreistellung (Aktienfonds), Sparerpauschbetrag 1.000 € pro Jahr (je Produkt gerechnet), Vorabpauschale jährlich.</li>
+          <li>Altersvorsorgedepot (Stand Nov. 2026, aus Ratgeberquellen): 50 % Zulage auf die ersten 360 €, 25 % bis 1.800 €, min. 120 € Eigenbeitrag; Kinderzulage bis 300 €/Kind; Sonderausgabenabzug (Eigenbeitrag + Zulagen) mit Günstigerprüfung; Auszahlung voll steuerpflichtig; Auszahlplan mind. bis 85.</li>
+          <li>Erbfall AVD: Ehepartner können das Guthaben ohne Abzug auf einen eigenen Vertrag übertragen. Alle anderen Erben: Zulagen + Steuervorteile werden zurückgefordert, die Erträge (Auszahlung minus eigene Beiträge) werden – wie bei Riester – als Einkommen versteuert, hier vereinfacht mit dem Steuersatz des Verstorbenen im Todesjahr (abschaltbar, da für das AVD nicht bestätigt). Nach Rentenbeginn anteilig zum Restguthaben.</li>
+          <li>Versicherung: Effektivkosten als konstante Renditeminderung (Abschlusskosten sind darin über die Laufzeit verteilt – bei früher Kündigung ist es deutlich schlechter). Einmalauszahlung: 15 % des Gewinns steuerfrei, davon die Hälfte steuerpflichtig (nach 12 Jahren und ab 62). Leibrente: Ertragsanteil-Besteuerung. Überschüsse in der Rentenphase nicht berücksichtigt.</li>
+          <li>Nicht berücksichtigt: Kranken-/Pflegeversicherungsbeiträge im Alter (relevant für freiwillig Versicherte), Erbschaftsteuer (Freibetrag Kinder 400.000 €, unverheiratete Partner nur 20.000 €), Ordergebühren, Wechselkosten.</li>
+          <li>Rendite ist konstant angenommen – in Wirklichkeit schwankt sie stark. Kein Ersatz für eine Beratung.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const num = id => { const v = parseFloat(String($(id).value).replace(',', '.')); return isFinite(v) ? v : 0; };
+const chk = id => $(id).checked;
+const eur = x => (isFinite(x) ? Math.round(x).toLocaleString('de-DE') : '–') + ' €';
+
+// --- Steuer (Tarif 2026, Grundtarif) ---
+function est(x) {
+  x = Math.floor(Math.max(0, x));
+  let t;
+  if (x <= 12348) t = 0;
+  else if (x <= 17799) { const y = (x - 12348) / 1e4; t = (914.51 * y + 1400) * y; }
+  else if (x <= 69878) { const z = (x - 17799) / 1e4; t = (173.10 * z + 2397) * z + 1034.87; }
+  else if (x <= 277825) t = 0.42 * x - 11135.63;
+  else t = 0.45 * x - 19470.38;
+  return Math.max(0, t);
+}
+function soli(t) { const fg = 20350; return t <= fg ? 0 : Math.min(0.055 * t, 0.119 * (t - fg)); }
+function tax(x) { const t = est(x); return t + soli(t); }
+const ERTRAG = {60:22,61:22,62:21,63:20,64:19,65:18,66:18,67:17,68:16,69:15,70:15};
+
+function readParams() {
+  const p = {
+    a0: Math.round(num('a0')), studyEnd: Math.round(num('studyEnd')), incStudy: num('incStudy'), eligStudy: chk('eligStudy'),
+    incWork: num('incWork'), incRet: num('incRet'), R: Math.round(num('R')), H: Math.round(num('H')),
+    g: num('g')/100, gPay: num('gPay')/100, infl: num('infl')/100, dyn: num('dyn')/100, basis: num('basis')/100,
+    etfM: num('etfM'), etfTer: num('etfTer')/100,
+    avdM: Math.min(150, num('avdM')), avdCost: num('avdCost')/100, kids: num('kids'), kidsFrom: num('kidsFrom'), kidsYears: num('kidsYears'),
+    bonus: chk('bonus'), reinvest: chk('reinvest'), einmal: chk('einmal'),
+    insM: num('insM'), insEff: num('insEff')/100, rf: num('rf'), gz: num('gz'),
+    fondM: num('fondM'), fondAA: num('fondAA')/100, fondTer: num('fondTer')/100,
+    deathAge: Math.round(num('deathAge')), heirTaxOn: chk('heirTaxOn'),
+    real: chk('real'),
+    on: { etf: chk('etfOn'), avd: chk('avdOn'), ins: chk('insOn'), fond: chk('fondOn') }
+  };
+  p.R = Math.min(70, Math.max(62, p.R));
+  p.H = Math.min(100, Math.max(85, p.H, p.R + 1));
+  p.studyEnd = Math.max(p.a0, p.studyEnd);
+  p.deathAge = Math.min(100, Math.max(p.a0 + 1, p.deathAge));
+  return p;
+}
+
+// --- Engine ---
+function model(p) {
+  const T = 100 - p.a0, n = p.R - p.a0;
+  const I = t => Math.pow(1 + p.infl, t);
+  const incAt = t => (p.a0 + t < p.studyEnd ? p.incStudy : p.incWork);
+  const taxAdd = (incReal, addNom, t) => addNom <= 0 ? 0 : (tax(incReal + addNom / I(t)) - tax(incReal)) * I(t);
+  const taxSave = (incReal, dedNom, t) => (tax(incReal) - tax(Math.max(0, incReal - dedNom / I(t)))) * I(t);
+  const dynF = t => Math.pow(1 + p.dyn, t);
+  const annuityDue = (V, rr, rem) => rem <= 1 ? V : (Math.abs(rr) < 1e-9 ? V / rem : V * rr / ((1 + rr) * (1 - Math.pow(1 + rr, -rem))));
+
+  // Investmentfonds (ETF / aktiver Fonds / Neben-Depot)
+  function runFund(monthly, lumpEnd, ter, aa, payEndAge) {
+    const tEnd = payEndAge - p.a0;
+    let V = 0, B = 0, own = 0, taxPaid = 0;
+    const vals = [0], bases = [0], owns = [0], net = new Array(T).fill(0);
+    for (let t = 0; t < T; t++) {
+      const accum = t < n;
+      const rm = Math.pow(1 + (accum ? p.g : p.gPay) - ter, 1 / 12) - 1;
+      let spb = 1000, payY = 0, taxY = 0;
+      if (!accum && t < tEnd && V > 0) {
+        const W = annuityDue(V, p.gPay - ter, tEnd - t);
+        const gain = Math.max(0, W * (V - B) / V);
+        const tb = Math.max(0, gain * 0.7 - spb); spb = Math.max(0, spb - gain * 0.7);
+        taxY += tb * 0.26375; B -= W * B / V; V -= W; payY = W;
+      }
+      const Vs = V; let cY = 0, newSh = 0;
+      for (let m = 1; m <= 12; m++) {
+        if (accum && monthly[t] > 0) { const c = monthly[t], inv = c * (1 - aa); V += inv; B += c; own += c; cY += inv; newSh += inv * (13 - m) / 12; }
+        V *= 1 + rm;
+      }
+      if (V > 0 && p.basis > 0) {
+        const vp = Math.min((Vs + newSh) * p.basis * 0.7, Math.max(0, V - Vs - cY));
+        const tx = Math.max(0, vp * 0.7 - spb) * 0.26375;
+        if (tx > 0) { B *= (V - tx) / V; V -= tx; taxPaid += tx; }
+        B += vp;
+      }
+      if (accum && lumpEnd && lumpEnd[t] > 0) { V += lumpEnd[t]; B += lumpEnd[t]; own += lumpEnd[t]; }
+      taxPaid += taxY;
+      net[t] = payY - taxY;
+      vals.push(V); bases.push(Math.min(B, Math.max(B, 0))); owns.push(own);
+    }
+    const sellNet = idx => { const V = vals[idx], B = bases[idx]; return V - Math.max(0, (V - B) * 0.7 - 1000) * 0.26375; };
+    return { vals, bases, owns, net, sellNet, own: owns[n], capR: vals[n], kapNet: sellNet(n), tEnd };
+  }
+
+  const res = {};
+  const monthlyArr = m => Array.from({ length: T }, (_, t) => t < n ? m * dynF(t) : 0);
+
+  // ETF
+  if (p.on.etf) {
+    const r = runFund(monthlyArr(p.etfM), null, p.etfTer, 0, p.H);
+    const r0 = runFund(monthlyArr(p.etfM), null, 0, 0, p.H);
+    r.cost = r0.capR - r.capR; r.foerder = 0; r.payEnd = p.H;
+    r.heir = idx => ({ val: r.sellNet(idx), note: 'Steuer nur, falls die Erben verkaufen' });
+    res.etf = r;
+  }
+  // Aktiver Fonds
+  if (p.on.fond) {
+    const r = runFund(monthlyArr(p.fondM), null, p.fondTer, p.fondAA, p.H);
+    const r0 = runFund(monthlyArr(p.fondM), null, 0, 0, p.H);
+    r.cost = r0.capR - r.capR; r.foerder = 0; r.payEnd = p.H;
+    r.heir = idx => ({ val: r.sellNet(idx), note: 'Steuer nur, falls die Erben verkaufen' });
+    res.fond = r;
+  }
+
+  // Altersvorsorgedepot
+  if (p.on.avd) {
+    const payEnd = Math.max(p.H, 85), tEnd = payEnd - p.a0;
+    const run = (cost) => {
+      let V = 0, own = 0, zul = 0, ref = 0, bonusUsed = false, C0 = 0, noElig = 0;
+      const vals = [0], owns = [0], foer = [0], net = new Array(T).fill(0), refunds = new Array(T).fill(0);
+      for (let t = 0; t < T; t++) {
+        const age = p.a0 + t, accum = t < n;
+        if (t === n) C0 = V;
+        let payY = 0, taxY = 0;
+        if (!accum && t < tEnd && V > 0) {
+          let L = 0; if (t === n && p.einmal) { L = 0.3 * V; V -= L; }
+          const W = annuityDue(V, p.gPay - cost, tEnd - t);
+          V -= W; payY = W + L; taxY = taxAdd(p.incRet, payY, t);
+        }
+        const elig = accum && (age >= p.studyEnd || p.eligStudy);
+        if (accum && !elig && p.avdM > 0) noElig++;
+        const E = elig ? Math.min(p.avdM * 12 * dynF(t), 1800) : 0;
+        const rm = Math.pow(1 + (accum ? p.g : p.gPay) - cost, 1 / 12) - 1;
+        for (let m = 1; m <= 12; m++) { if (E > 0) { V += E / 12; own += E / 12; } V *= 1 + rm; }
+        if (elig && E >= 120) {
+          const grund = 0.5 * Math.min(E, 360) + 0.25 * Math.max(0, Math.min(E, 1800) - 360);
+          const kidActive = age >= p.kidsFrom && age < p.kidsFrom + p.kidsYears;
+          const kind = kidActive ? p.kids * 300 * Math.min(1, E / 300) : 0;
+          let bon = 0; if (p.bonus && !bonusUsed && age < 25) { bon = 200; bonusUsed = true; }
+          V += grund + kind + bon; zul += grund + kind + bon;
+          const save = taxSave(incAt(t), E + grund + kind, t);
+          const extra = Math.max(0, save - (grund + kind));
+          refunds[t] = extra; ref += extra;
+        }
+        net[t] = payY - taxY;
+        vals.push(V); owns.push(own); foer.push(zul + ref);
+      }
+      return { vals, owns, foer, net, refunds, own, zul, ref, C0: C0 || vals[n], noElig };
+    };
+    const a = run(p.avdCost), a0 = run(0);
+    const side = runFund(new Array(T).fill(0), p.reinvest ? a.refunds : null, p.etfTer, 0, payEnd);
+    const r = {
+      vals: a.vals.map((v, i) => v + (p.reinvest ? side.vals[i] : 0)),
+      net: a.net.map((v, i) => v + (p.reinvest ? side.net[i] : 0)),
+      own: a.own, capR: a.vals[n] + (p.reinvest ? side.vals[n] : 0), capAVD: a.vals[n], sideR: p.reinvest ? side.vals[n] : 0,
+      zul: a.zul, ref: a.ref, foerder: a.zul + a.ref, cost: a0.vals[n] - a.vals[n], kapNet: NaN, payEnd, noElig: a.noElig
+    };
+    r.heirMarried = idx => {
+      const V = a.vals[idx], sideNet = p.reinvest ? side.sellNet(idx) : 0;
+      return { val: V + sideNet, note: 'Wird ohne Abzug auf einen eigenen AVD-Vertrag übertragen' };
+    };
+    r.heir = idx => {
+      const V = a.vals[idx], sideNet = p.reinvest ? side.sellNet(idx) : 0;
+      let back, ownR;
+      if (idx <= n) { back = a.foer[idx]; ownR = a.owns[idx]; }
+      else { const f = a.C0 > 0 ? V / a.C0 : 0; back = a.foer[n] * f; ownR = a.owns[n] * f; }
+      const rest = Math.max(0, V - back), gain = Math.max(0, rest - ownR);
+      const incDeath = idx < n ? incAt(idx) : p.incRet;
+      const tx = p.heirTaxOn ? taxAdd(incDeath, gain, idx) : 0;
+      const parts = ['Förderung ' + eur(back) + ' zurück'];
+      if (p.heirTaxOn) parts.push('Steuer auf Erträge ' + eur(tx));
+      return { val: rest - tx + sideNet, note: parts.join(', ') };
+    };
+    res.avd = r;
+  }
+
+  // Fondsgebundene Rentenversicherung
+  if (p.on.ins) {
+    const run = (eff) => {
+      let V = 0, own = 0; const vals = [0];
+      for (let t = 0; t < T; t++) {
+        if (t < n) { const c = p.insM * dynF(t), rm = Math.pow(1 + p.g - eff, 1 / 12) - 1; for (let m = 0; m < 12; m++) { V += c; own += c; V *= 1 + rm; } vals.push(V); }
+        else vals.push(null);
+      }
+      return { vals, own, C: vals[n] };
+    };
+    const a = run(p.insEff), a0 = run(0);
+    const annual = a.C / 10000 * p.rf * 12, ea = (ERTRAG[p.R] || 17) / 100;
+    const net = new Array(T).fill(0);
+    for (let t = n; t < T; t++) net[t] = annual - taxAdd(p.incRet, annual * ea, t);
+    const gain = Math.max(0, a.C - a.own), halb = n >= 12 && p.R >= 62;
+    const kapNet = a.C - taxAdd(p.incRet, gain * 0.85 * (halb ? 0.5 : 1), n);
+    const r = { vals: a.vals, net, own: a.own, capR: a.C, kapNet, foerder: 0, cost: a0.C - a.C, annual, payEnd: 100, lifelong: true };
+    r.heir = idx => {
+      if (idx <= n) return { val: a.vals[idx], note: 'Fondsguthaben, einkommensteuerfrei' };
+      const age = p.a0 + idx, rest = Math.max(0, p.R + p.gz - age);
+      return { val: rest * annual, note: rest > 0 ? 'Restliche Garantiezeit: ' + rest + ' Jahre' : 'Garantiezeit abgelaufen – nichts' };
+    };
+    res.ins = r;
+  }
+  return { res, T, n, I };
+}
+
+// --- Rendering ---
+const PRODUCTS = [
+  { key: 'etf', name: 'ETF-Depot', short: 'ETF', color: 'var(--s1)' },
+  { key: 'avd', name: 'Altersvorsorgedepot', short: 'AVD', color: 'var(--s2)' },
+  { key: 'ins', name: 'Fondsgeb. Rentenversicherung', short: 'Versicherung', color: 'var(--s3)' },
+  { key: 'fond', name: 'Aktiver Fonds', short: 'Akt. Fonds', color: 'var(--s4)' },
+];
+
+function el(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) { if (k === 'style') e.style.cssText = v; else if (k === 'class') e.className = v; else e.setAttribute(k, v); }
+  for (const k of kids) e.append(k instanceof Node ? k : document.createTextNode(String(k)));
+  return e;
+}
+const keyEl = (c, dash) => el('span', { class: 'key', style: dash ? 'height:0;border-top:2px dashed ' + c : 'background:' + c });
+
+function legend(host, items) {
+  host.replaceChildren(...items.map(it => el('span', {}, keyEl(it.color, it.dash), it.name)));
+}
+
+function lineChart(host, { x0, series, yFmt, xTitle }) {
+  host.replaceChildren();
+  const W = Math.max(320, host.clientWidth || 700), Hh = 280, m = { l: 56, r: 100, t: 10, b: 30 };
+  const iw = W - m.l - m.r, ih = Hh - m.t - m.b;
+  const len = Math.max(...series.map(s => s.values.length));
+  let ymax = 0; series.forEach(s => s.values.forEach(v => { if (v != null && v > ymax) ymax = v; }));
+  if (ymax <= 0) ymax = 1;
+  const step = niceStep(ymax / 4); ymax = Math.ceil(ymax / step) * step;
+  const x = i => m.l + (len <= 1 ? 0 : i / (len - 1) * iw), y = v => m.t + ih - v / ymax * ih;
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('width', W); svg.setAttribute('height', Hh); svg.setAttribute('role', 'img');
+  const mk = (tag, a) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); return e; };
+  for (let v = 0; v <= ymax + 1e-6; v += step) {
+    svg.append(mk('line', { x1: m.l, x2: m.l + iw, y1: y(v), y2: y(v), stroke: v === 0 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1 }));
+    const t = mk('text', { x: m.l - 8, y: y(v) + 4, 'text-anchor': 'end' }); t.textContent = yFmt(v); svg.append(t);
+  }
+  for (let i = 0; i < len; i++) {
+    const age = x0 + i;
+    if (age % 10 === 0 || i === 0) { const t = mk('text', { x: x(i), y: Hh - 10, 'text-anchor': 'middle' }); t.textContent = age; svg.append(t); }
+  }
+  const xt = mk('text', { x: m.l + iw, y: Hh - 10, 'text-anchor': 'start', dx: 6 }); xt.textContent = xTitle; svg.append(xt);
+  const ends = [];
+  series.forEach(s => {
+    let d = '', pen = false, last = null;
+    s.values.forEach((v, i) => { if (v == null) { pen = false; return; } d += (pen ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(v).toFixed(1); pen = true; last = i; });
+    svg.append(mk('path', Object.assign({ d, fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, s.dash ? { 'stroke-dasharray': '6 5' } : {})));
+    if (last != null) {
+      svg.append(mk('circle', { cx: x(last), cy: y(s.values[last]), r: 4, fill: s.color, stroke: 'var(--surface-1)', 'stroke-width': 2 }));
+      ends.push({ s, i: last, yy: y(s.values[last]) });
+    }
+  });
+  // direct end labels with collision nudge
+  ends.sort((a, b) => a.yy - b.yy);
+  for (let k = 1; k < ends.length; k++) if (ends[k].yy - ends[k - 1].yy < 15) ends[k].yy = ends[k - 1].yy + 15;
+  ends.forEach(e => { const t = mk('text', { x: x(e.i) + 8, y: e.yy + 4, class: 'endlabel' }); t.textContent = e.s.short || e.s.name; svg.append(t); });
+  const cross = mk('line', { y1: m.t, y2: m.t + ih, stroke: 'var(--axis)', 'stroke-width': 1, visibility: 'hidden' }); svg.append(cross);
+  const dots = series.map(s => { const c = mk('circle', { r: 4, fill: s.color, stroke: 'var(--surface-1)', 'stroke-width': 2, visibility: 'hidden' }); svg.append(c); return c; });
+  const hit = mk('rect', { x: m.l, y: m.t, width: iw, height: ih, fill: 'transparent' }); svg.append(hit);
+  host.append(svg);
+  const tip = el('div', { class: 'tip' }); host.append(tip);
+  const show = (evt) => {
+    const rect = svg.getBoundingClientRect();
+    const px = evt.clientX - rect.left;
+    const i = Math.max(0, Math.min(len - 1, Math.round((px - m.l) / iw * (len - 1))));
+    cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('visibility', 'visible');
+    tip.replaceChildren(el('div', { class: 't' }, 'Alter ' + (x0 + i)));
+    series.forEach((s, k) => {
+      const v = s.values[i];
+      if (v == null) { dots[k].setAttribute('visibility', 'hidden'); return; }
+      dots[k].setAttribute('cx', x(i)); dots[k].setAttribute('cy', y(v)); dots[k].setAttribute('visibility', 'visible');
+      tip.append(el('div', { class: 'r' }, keyEl(s.color, s.dash), s.name, el('b', {}, eur(v))));
+    });
+    tip.style.display = 'block';
+    const left = x(i) + 14 + 190 > W ? x(i) - 14 - tip.offsetWidth : x(i) + 14;
+    tip.style.left = left + 'px'; tip.style.top = (m.t + 6) + 'px';
+  };
+  hit.addEventListener('pointermove', show);
+  hit.addEventListener('pointerleave', () => { tip.style.display = 'none'; cross.setAttribute('visibility', 'hidden'); dots.forEach(d => d.setAttribute('visibility', 'hidden')); });
+}
+function niceStep(raw) { const p = Math.pow(10, Math.floor(Math.log10(raw))); const f = raw / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p; }
+const kfmt = v => v >= 1e6 ? (v / 1e6).toLocaleString('de-DE', { maximumFractionDigits: 1 }) + ' Mio' : v >= 1e3 ? Math.round(v / 1e3).toLocaleString('de-DE') + 'k' : String(Math.round(v));
+
+function render() {
+  const p = readParams();
+  const { res, T, n, I } = model(p);
+  const R = (x, t) => p.real ? x / I(t) : x;
+  $('modeHint').textContent = p.real ? 'Alle Beträge in Kaufkraft von heute (Inflation ' + (p.infl * 100).toLocaleString('de-DE') + ' % herausgerechnet).' : 'Nominale Beträge (Euro der Zukunft).';
+  const active = PRODUCTS.filter(pr => res[pr.key]);
+
+  // Kennzahlen
+  const stats = {};
+  active.forEach(pr => {
+    const r = res[pr.key];
+    const end = Math.min(T, r.payEnd - p.a0);
+    let sum = 0, cnt = 0; for (let t = n; t < end; t++) { sum += R(r.net[t], t); cnt++; }
+    const avgMonthly = cnt ? sum / cnt / 12 : 0;
+    let cumH = 0; for (let t = n; t < p.H - p.a0; t++) cumH += R(r.net[t], t);
+    let cum100 = 0; for (let t = n; t < T; t++) cum100 += R(r.net[t], t);
+    stats[pr.key] = { avgMonthly, cumH, cum100 };
+  });
+
+  // Warnungen
+  const warn = $('warn'); warn.replaceChildren();
+  if (res.avd && res.avd.noElig > 0) warn.append(el('div', { class: 'note' }, 'Altersvorsorgedepot: In ' + res.avd.noElig + ' Studienjahr(en) ohne Förderberechtigung wird nichts eingezahlt – die eigenen Einzahlungen sind dort also kleiner als bei den anderen Produkten.'));
+  if (num('avdM') > 150) warn.append(el('div', { class: 'note' }, 'Altersvorsorgedepot: Gefördert werden max. 1.800 €/Jahr (150 €/Monat). Gerechnet wird mit 150 €.'));
+
+  // Tiles
+  const best = Math.max(...active.map(pr => stats[pr.key].avgMonthly));
+  $('tiles').replaceChildren(...active.map(pr => {
+    const r = res[pr.key], s = stats[pr.key];
+    const sub = r.lifelong ? 'lebenslang, ab ' + p.R : p.R + ' bis ' + r.payEnd + ' (Ø)';
+    return el('div', { class: 'tile' },
+      el('div', { class: 'name' }, keyEl(pr.color), pr.name, s.avgMonthly === best && active.length > 1 ? el('span', { class: 'badge' }, 'höchste Rente') : ''),
+      el('div', { class: 'big' }, eur(s.avgMonthly)),
+      el('div', { class: 'unit' }, 'netto pro Monat · ' + sub),
+      el('div', { class: 'small' }, 'Kapital bei Rentenbeginn: ' + eur(R(r.capR, n))));
+  }));
+
+  // Tabelle
+  const rows = [
+    ['Eigene Einzahlungen', pr => R(res[pr.key].own, n), 'max'],
+    ['Staatliche Förderung (Zulagen + Steuervorteil)', pr => R(res[pr.key].foerder, n), 'max'],
+    ['Kosten bis Rentenbeginn (entgangener Ertrag)', pr => R(res[pr.key].cost, n), 'min'],
+    ['Kapital bei Rentenbeginn (vor Steuern)', pr => R(res[pr.key].capR, n), 'max'],
+    ['Kapital netto bei kompletter Einmalauszahlung', pr => res[pr.key].kapNet === undefined || isNaN(res[pr.key].kapNet) ? null : R(res[pr.key].kapNet, n), 'max'],
+    ['Netto pro Monat in der Rente (Ø)', pr => stats[pr.key].avgMonthly, 'max'],
+    ['Summe netto bis Alter ' + p.H, pr => stats[pr.key].cumH, 'max'],
+    ['Summe netto bis Alter 100', pr => stats[pr.key].cum100, 'max'],
+  ];
+  const tbl = $('tbl'); tbl.replaceChildren();
+  tbl.append(el('thead', {}, el('tr', {}, el('th', {}, ''), ...active.map(pr => el('th', {}, el('span', { style: 'display:inline-flex;gap:6px;align-items:center' }, keyEl(pr.color), pr.name))))));
+  const tb = el('tbody');
+  rows.forEach(([label, f, dir]) => {
+    const vals = active.map(f);
+    const valid = vals.filter(v => v != null);
+    const target = valid.length > 1 && new Set(valid.map(Math.round)).size > 1 ? (dir === 'max' ? Math.max(...valid) : Math.min(...valid)) : null;
+    tb.append(el('tr', {}, el('td', {}, label), ...vals.map((v, i) => {
+      if (v == null) return el('td', {}, active[i].key === 'avd' ? 'nicht möglich (max. 30 %)' : '–');
+      return el('td', { class: target !== null && Math.round(v) === Math.round(target) ? 'best' : '' }, eur(v));
+    })));
+  });
+  if (res.avd) tb.append(el('tr', {}, el('td', { colspan: active.length + 1, class: '' }, 'AVD-Detail: Zulagen ' + eur(R(res.avd.zul, n)) + ', zusätzliche Steuererstattungen ' + eur(R(res.avd.ref, n)) + (p.reinvest ? ' (in ETF angelegt, im AVD-Wert enthalten)' : ' (nicht angelegt, nicht im Wert enthalten)') + '.')));
+  if (res.ins) tb.append(el('tr', {}, el('td', { colspan: active.length + 1 }, 'Versicherung: Brutto-Rente ' + eur(R(res.ins.annual / 12, n)) + '/Monat, besteuert mit Ertragsanteil ' + (ERTRAG[p.R] || 17) + ' %. Einmalauszahlung statt Rente: ' + eur(R(res.ins.kapNet, n)) + ' netto.')));
+  tbl.append(tb);
+
+  // Chart 1: Vermögen
+  const items = active.map(pr => ({ name: pr.name, color: pr.color }));
+  legend($('lg1'), items);
+  lineChart($('c1'), {
+    x0: p.a0, xTitle: 'Alter', yFmt: kfmt,
+    series: active.map(pr => ({ name: pr.name, short: pr.short, color: pr.color, values: res[pr.key].vals.map((v, i) => v == null ? null : R(v, i)) }))
+  });
+
+  // Chart 2: kumulierte Netto-Auszahlungen
+  legend($('lg2'), items);
+  const cumSeries = active.map(pr => {
+    const r = res[pr.key]; let c = 0; const vals = [];
+    for (let t = n; t <= T; t++) { vals.push(c); if (t < T) c += R(r.net[t], t); }
+    return { name: pr.name, short: pr.short, color: pr.color, values: vals };
+  });
+  lineChart($('c2'), { x0: p.R, xTitle: 'Alter', yFmt: kfmt, series: cumSeries });
+
+  // Break-even Leibrente
+  let be = '';
+  if (res.ins) {
+    const ins = cumSeries[active.findIndex(a => a.key === 'ins')].values;
+    const others = cumSeries.filter((_, i) => active[i].key !== 'ins');
+    if (others.length) {
+      const bestOther = ins.map((_, i) => Math.max(...others.map(o => o.values[i])));
+      const idx = ins.findIndex((v, i) => i > 0 && v >= bestOther[i]);
+      be = idx > 0 ? 'Die lebenslange Rente der Versicherung holt die beste Alternative erst ein, wenn du ca. ' + (p.R + idx) + ' Jahre alt wirst.' : 'Die lebenslange Rente der Versicherung holt die beste Alternative bis Alter 100 nicht ein.';
+    }
+  }
+  $('beText').textContent = be;
+
+  // Erbfall
+  const heirRows = [];
+  active.forEach(pr => {
+    if (pr.key === 'avd') {
+      heirRows.push({ name: 'AVD – Ehepartner erbt', short: 'AVD verh.', color: pr.color, f: i => res.avd.heirMarried(i) });
+      heirRows.push({ name: 'AVD – Kinder / Partner ohne Trauschein', short: 'AVD ledig', color: pr.color, dash: true, f: i => res.avd.heir(i) });
+    } else heirRows.push({ name: pr.name, short: pr.short, color: pr.color, f: i => res[pr.key].heir(i) });
+  });
+  const idx = p.deathAge - p.a0, tD = idx;
+  const ht = el('table');
+  ht.append(el('thead', {}, el('tr', {}, el('th', {}, 'Wer erbt was'), el('th', {}, 'Erben bekommen (ca.)'), el('th', {}, 'Hinweis'))));
+  const hb = el('tbody');
+  const heirVals = heirRows.map(h => h.f(idx));
+  const maxH = Math.max(...heirVals.map(h => h.val));
+  heirRows.forEach((row, i) => {
+    const h = heirVals[i];
+    hb.append(el('tr', {}, el('td', {}, el('span', { style: 'display:inline-flex;gap:6px;align-items:center' }, keyEl(row.color, row.dash), row.name)),
+      el('td', { class: Math.round(h.val) === Math.round(maxH) && heirRows.length > 1 ? 'best' : '' }, eur(R(h.val, tD))),
+      el('td', { style: 'text-align:left;white-space:normal;color:var(--text-secondary)' }, h.note)));
+  });
+  ht.append(hb);
+  $('heirs').replaceChildren(el('p', { class: 'hint' }, 'Wenn du mit ' + p.deathAge + ' stirbst. Ohne Erbschaftsteuer (Freibetrag Kinder 400.000 €, Ehepartner 500.000 €, Partner ohne Trauschein nur 20.000 €).'), ht);
+  legend($('lg3'), heirRows);
+  const ages = Array.from({ length: 100 - p.a0 }, (_, k) => k + 1);
+  lineChart($('c3'), { x0: p.a0 + 1, xTitle: 'Todesalter', yFmt: kfmt,
+    series: heirRows.map(row => ({ name: row.name, short: row.short, color: row.color, dash: row.dash, values: ages.map(i => R(row.f(i).val, i)) })) });
+}
+
+$('applyAll').addEventListener('click', () => { const v = num('setAll'); ['etfM', 'avdM', 'insM', 'fondM'].forEach(id => $(id).value = id === 'avdM' ? Math.min(150, v) : v); render(); });
+document.querySelectorAll('input, select').forEach(i => i.addEventListener('input', render));
+window.addEventListener('resize', () => { clearTimeout(window.__rt); window.__rt = setTimeout(render, 120); });
+render();
+})();
+</script>
+</body>
+</html>
