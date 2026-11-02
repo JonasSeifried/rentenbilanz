@@ -1,0 +1,295 @@
+// Rechen-Engine, 1:1 portiert aus legacy/index.html (geprüfter Stand, Commit 2ce0d56).
+// Inhaltlich unverändert: Nur Typen ergänzt und readParams liest aus einem Werte-Objekt statt aus dem DOM.
+// Golden-Tests (tests/golden.test.ts) vergleichen jedes Ergebnis mit der Original-Datei.
+// Bitte hier nichts „verbessern“, ohne die Golden-Tests bewusst anzupassen.
+
+import { eur } from '../format';
+import type { Inputs } from './inputs';
+
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
+// --- Steuer (Tarif 2026, Grundtarif) ---
+export function est(x: number): number {
+  x = Math.floor(Math.max(0, x));
+  let t: number;
+  if (x <= 12348) t = 0;
+  else if (x <= 17799) { const y = (x - 12348) / 1e4; t = (914.51 * y + 1400) * y; }
+  else if (x <= 69878) { const z = (x - 17799) / 1e4; t = (173.10 * z + 2397) * z + 1034.87; }
+  else if (x <= 277825) t = 0.42 * x - 11135.63;
+  else t = 0.45 * x - 19470.38;
+  return Math.max(0, t);
+}
+export function soli(t: number): number { const fg = 20350; return t <= fg ? 0 : Math.min(0.055 * t, 0.119 * (t - fg)); }
+export function tax(x: number): number { const t = est(x); return t + soli(t); }
+export const ERTRAG: Record<number, number> = { 60: 22, 61: 22, 62: 21, 63: 20, 64: 19, 65: 18, 66: 18, 67: 17, 68: 16, 69: 15, 70: 15 };
+export const KV_BBG = 69750; // Beitragsbemessungsgrenze KV/PV 2026, €/Jahr
+
+export type ProductKey = 'etf' | 'avd' | 'ins' | 'fond';
+
+export interface Params {
+  a0: number; studyEnd: number; incStudy: number; eligStudy: boolean;
+  incWork: number; incRet: number; R: number; H: number;
+  kvOn: boolean; kvRate: number;
+  g: number; gPay: number; infl: number; dyn: number; basis: number;
+  etfM: number; etfTer: number;
+  avdM: number; avdCost: number; kids: number; kidsFrom: number; kidsYears: number;
+  bonus: boolean; reinvest: boolean; einmal: boolean;
+  insM: number; insEff: number; rf: number; gz: number; insLump: boolean;
+  fondM: number; fondAA: number; fondTer: number;
+  deathAge: number; heirHalf: boolean;
+  real: boolean;
+  on: Record<ProductKey, boolean>;
+}
+
+/** Wie `num(id)` im Original: Komma als Dezimaltrenner erlaubt, Unlesbares → 0. */
+export function numOf(v: unknown): number { const x = parseFloat(String(v).replace(',', '.')); return isFinite(x) ? x : 0; }
+
+export function readParams(inp: Inputs): Params {
+  const num = (id: keyof Inputs) => numOf(inp[id]);
+  const chk = (id: keyof Inputs) => inp[id] === true;
+  const pct = (id: keyof Inputs, lo: number, hi: number) => clamp(num(id), lo, hi) / 100;
+  const p: Params = {
+    a0: clamp(Math.round(num('a0')), 16, 60), studyEnd: Math.round(num('studyEnd')), incStudy: Math.max(0, num('incStudy')), eligStudy: chk('eligStudy'),
+    incWork: Math.max(0, num('incWork')), incRet: Math.max(0, num('incRet')), R: clamp(Math.round(num('R')), 65, 70), H: Math.round(num('H')),
+    kvOn: chk('kvOn'), kvRate: pct('kvRate', 0, 40),
+    g: pct('g', -50, 30), gPay: pct('gPay', -50, 30), infl: pct('infl', -5, 20), dyn: pct('dyn', -10, 20), basis: pct('basis', 0, 10),
+    etfM: Math.max(0, num('etfM')), etfTer: pct('etfTer', 0, 10),
+    avdM: Math.max(0, num('avdM')), avdCost: pct('avdCost', 0, 10), kids: clamp(Math.round(num('kids')), 0, 10), kidsFrom: num('kidsFrom'), kidsYears: Math.max(0, num('kidsYears')),
+    bonus: chk('bonus'), reinvest: chk('reinvest'), einmal: chk('einmal'),
+    insM: Math.max(0, num('insM')), insEff: pct('insEff', 0, 10), rf: Math.max(0, num('rf')), gz: clamp(Math.round(num('gz')), 0, 40), insLump: chk('insLump'),
+    fondM: Math.max(0, num('fondM')), fondAA: pct('fondAA', 0, 20), fondTer: pct('fondTer', 0, 10),
+    deathAge: Math.round(num('deathAge')), heirHalf: chk('heirHalf'),
+    real: chk('real'),
+    on: { etf: chk('etfOn'), avd: chk('avdOn'), ins: chk('insOn'), fond: chk('fondOn') }
+  };
+  // Grenzen erzwingen: Ohne das bricht die Rechnung (leere Arrays, negative Laufzeiten).
+  p.H = clamp(p.H, Math.max(85, p.R + 1), 100);
+  p.studyEnd = clamp(p.studyEnd, p.a0, p.R);
+  p.deathAge = clamp(p.deathAge, p.a0 + 1, 100);
+  return p;
+}
+
+export interface HeirValue { val: number; note: string }
+
+export interface FundRun {
+  vals: number[]; bases: number[]; owns: number[]; net: number[];
+  sellNet: (idx: number) => number;
+  own: number; ownReal: number; capR: number; capNet: number; tEnd: number;
+}
+
+/** Ergebnis je Produkt. Nicht jedes Produkt hat jedes Feld (wie im Original). */
+export interface ProductResult {
+  vals: (number | null)[]; net: number[];
+  own: number; ownReal: number; capR: number; capNet: number;
+  cost: number; foerder: number; foerderReal: number; payEnd: number;
+  heir: (idx: number) => HeirValue;
+  // AVD
+  heirMarried?: (idx: number) => HeirValue;
+  sideOwn?: number; sideOwnReal?: number; capAVD?: number; sideR?: number;
+  zul?: number; zulReal?: number; ref?: number; refReal?: number; noElig?: number; lumpNet?: number;
+  // Versicherung
+  kapNet?: number; annual?: number; lump?: boolean; lifelong?: boolean;
+  // Fonds (aus runFund übernommen)
+  [k: string]: unknown;
+}
+
+export interface ModelResult {
+  res: Partial<Record<ProductKey, ProductResult>>;
+  T: number; n: number; tH: number;
+  I: (t: number) => number;
+}
+
+// --- Engine ---
+// Zeitachse: t = 0 … T-1 sind Jahre ab heute; vals[t] ist der Wert zu Beginn von Jahr t (= Alter a0 + t).
+export function model(p: Params): ModelResult {
+  const T = 100 - p.a0, n = p.R - p.a0, tH = p.H - p.a0;
+  const I = (t: number) => Math.pow(1 + p.infl, t);
+  const incAt = (t: number) => (p.a0 + t < p.studyEnd ? p.incStudy : p.incWork);
+  // Zusatzsteuer bzw. Ersparnis durch nominale Beträge auf ein Einkommen in heutigem Geld (Tarif wächst mit der Inflation).
+  const taxAdd = (incReal: number, addNom: number, t: number) => addNom <= 0 ? 0 : (tax(incReal + addNom / I(t)) - tax(incReal)) * I(t);
+  const taxSave = (incReal: number, dedNom: number, t: number) => (tax(incReal) - tax(Math.max(0, incReal - dedNom / I(t)))) * I(t);
+  // KV/PV für freiwillig Versicherte: voller Satz auf Zusatzeinnahmen bis zur Beitragsbemessungsgrenze.
+  const kvRoom = (t: number) => Math.max(0, (KV_BBG - p.incRet) * I(t));
+  const kvAdd = (addNom: number, t: number) => p.kvOn && addNom > 0 ? p.kvRate * Math.min(addNom, kvRoom(t)) : 0;
+  const kvLump = (addNom: number, t: number) => p.kvOn && addNom > 0 ? p.kvRate * Math.min(addNom, 10 * kvRoom(t)) : 0; // auf 120 Monate verteilt
+  const dynF = (t: number) => Math.pow(1 + p.dyn, t);
+  const Rn = (x: number, t: number) => p.real ? x / I(t) : x; // für Beträge in Hinweistexten (gleiche Basis wie die Anzeige)
+  const annuityDue = (V: number, rr: number, rem: number) => rem <= 1 ? V : (Math.abs(rr) < 1e-9 ? V / rem : V * rr / ((1 + rr) * (1 - Math.pow(1 + rr, -rem))));
+
+  // Investmentfonds (ETF / aktiver Fonds / Nebendepot / Kapitalauszahlung der Versicherung)
+  function runFund(monthly: number[], lumpEnd: number[] | null, ter: number, aa: number, payEndAge: number): FundRun {
+    const tEnd = payEndAge - p.a0;
+    let V = 0, B = 0, own = 0, ownReal = 0;
+    const vals = [0], bases = [0], owns = [0], net = new Array<number>(T).fill(0);
+    for (let t = 0; t < T; t++) {
+      const accum = t < n;
+      const rm = Math.pow(1 + (accum ? p.g : p.gPay) - ter, 1 / 12) - 1;
+      let spb = 1000, payY = 0, dedY = 0;
+      if (!accum && t < tEnd && V > 0) {
+        const W = annuityDue(V, p.gPay - ter, tEnd - t);
+        const gain = Math.max(0, W * (V - B) / V);
+        const tb = Math.max(0, gain * 0.7 - spb); spb = Math.max(0, spb - gain * 0.7);
+        dedY = tb * 0.26375 + kvAdd(gain, t);
+        B -= W * B / V; V -= W; payY = W;
+      }
+      const Vs = V; let cY = 0, newSh = 0;
+      for (let m = 1; m <= 12; m++) {
+        if (accum && monthly[t] > 0) { const c = monthly[t], inv = c * (1 - aa); V += inv; B += c; own += c; ownReal += c / I(t); cY += inv; newSh += inv * (13 - m) / 12; }
+        V *= 1 + rm;
+      }
+      if (V > 0 && p.basis > 0) {
+        const vp = Math.min((Vs + newSh) * p.basis * 0.7, Math.max(0, V - Vs - cY));
+        const tx = Math.max(0, vp * 0.7 - spb) * 0.26375;
+        if (tx > 0) { B *= (V - tx) / V; V -= tx; }
+        B += vp;
+      }
+      // Einmalbeträge (Steuererstattung, Kapitalauszahlung) erhöhen die Anschaffungskosten, sind aber kein eigenes Geld.
+      if (accum && lumpEnd && lumpEnd[t] > 0) { V += lumpEnd[t]; B += lumpEnd[t]; }
+      net[t] = payY - dedY;
+      vals.push(V); bases.push(B); owns.push(own);
+    }
+    const sellNet = (idx: number) => { const V = vals[idx], B = bases[idx]; return V - Math.max(0, (V - B) * 0.7 - 1000) * 0.26375; };
+    return { vals, bases, owns, net, sellNet, own: owns[n], ownReal, capR: vals[n], capNet: sellNet(n), tEnd };
+  }
+
+  const res: ModelResult['res'] = {};
+  const monthlyArr = (m: number) => Array.from({ length: T }, (_, t) => t < n ? m * dynF(t) : 0);
+  const fundNote = 'Nach Steuer bei Verkauf. Behalten die Erben, übernehmen sie den Gewinn steuerlich.';
+
+  // ETF
+  if (p.on.etf) {
+    const r = runFund(monthlyArr(p.etfM), null, p.etfTer, 0, p.H) as unknown as ProductResult & FundRun;
+    const r0 = runFund(monthlyArr(p.etfM), null, 0, 0, p.H);
+    r.cost = r0.capR - r.capR; r.foerder = 0; r.foerderReal = 0; r.payEnd = p.H;
+    r.heir = idx => ({ val: r.sellNet(idx), note: fundNote });
+    res.etf = r;
+  }
+  // Aktiver Fonds
+  if (p.on.fond) {
+    const r = runFund(monthlyArr(p.fondM), null, p.fondTer, p.fondAA, p.H) as unknown as ProductResult & FundRun;
+    const r0 = runFund(monthlyArr(p.fondM), null, 0, 0, p.H);
+    r.cost = r0.capR - r.capR; r.foerder = 0; r.foerderReal = 0; r.payEnd = p.H;
+    r.heir = idx => ({ val: r.sellNet(idx), note: fundNote });
+    res.fond = r;
+  }
+
+  // Altersvorsorgedepot
+  if (p.on.avd) {
+    const payEnd = p.H, tEnd = payEnd - p.a0; // H ≥ 85 ist durch readParams garantiert
+    const run = (cost: number) => {
+      let V = 0, own = 0, ownReal = 0, zul = 0, zulReal = 0, ref = 0, refReal = 0, bonusUsed = false, C0 = 0, noElig = 0, lumpNet = 0;
+      const vals = [0], owns = [0], zuls = [0], foer = [0], net = new Array<number>(T).fill(0), refunds = new Array<number>(T).fill(0);
+      const overflow = new Array<number>(T).fill(0); // Monatsbeitrag, der nicht ins AVD passt → ETF-Nebendepot
+      for (let t = 0; t < T; t++) {
+        const age = p.a0 + t, accum = t < n;
+        if (t === n) C0 = V;
+        let payY = 0, dedY = 0;
+        if (!accum && t < tEnd && V > 0) {
+          let L = 0; if (t === n && p.einmal) { L = 0.3 * V; V -= L; }
+          // Auszahlplan nach § 1 Abs. 1 Nr. 4b AltZertG: Restkapital ÷ Restlaufzeit, jährlich neu; im letzten Jahr der Rest.
+          const W = V / (tEnd - t);
+          V -= W; payY = W + L;
+          const taxY = taxAdd(p.incRet, payY, t), kvL = kvLump(L, t);
+          if (L > 0) lumpNet = L - (taxY - taxAdd(p.incRet, W, t)) - kvL;
+          dedY = taxY + kvAdd(W, t) + kvL;
+        }
+        const elig = accum && (age >= p.studyEnd || p.eligStudy);
+        const want = accum ? p.avdM * 12 * dynF(t) : 0;
+        if (accum && !elig && want > 0) noElig++;
+        const E = elig ? Math.min(want, 1800) : 0;
+        overflow[t] = (want - E) / 12;
+        const rm = Math.pow(1 + (accum ? p.g : p.gPay) - cost, 1 / 12) - 1;
+        for (let m = 1; m <= 12; m++) { if (E > 0) { V += E / 12; own += E / 12; } V *= 1 + rm; }
+        ownReal += E / I(t);
+        if (elig && E >= 120) {
+          const grund = 0.5 * Math.min(E, 360) + 0.25 * Math.max(0, Math.min(E, 1800) - 360);
+          const kidActive = age >= p.kidsFrom && age < p.kidsFrom + p.kidsYears;
+          const kind = kidActive ? p.kids * 300 * Math.min(1, E / 300) : 0;
+          let bon = 0; if (p.bonus && !bonusUsed && age < 25) { bon = 200; bonusUsed = true; }
+          const z = grund + kind + bon; // Bonus ist Teil der Grundzulage → auch im Sonderausgabenabzug
+          V += z; zul += z; zulReal += z / I(t);
+          const save = taxSave(incAt(t), E + z, t);
+          const extra = Math.max(0, save - z);
+          refunds[t] = extra; ref += extra; refReal += extra / I(t);
+        }
+        net[t] = payY - dedY;
+        vals.push(V); owns.push(own); zuls.push(zul); foer.push(zul + ref);
+      }
+      return { vals, owns, zuls, foer, net, refunds, overflow, own, ownReal, zul, zulReal, ref, refReal, lumpNet, C0: C0 || vals[n], noElig };
+    };
+    const a = run(p.avdCost), a0 = run(0);
+    // ETF-Nebendepot: nicht förderfähige Beiträge (+ optional die zusätzliche Steuererstattung)
+    const side = runFund(a.overflow, p.reinvest ? a.refunds : null, p.etfTer, 0, payEnd);
+    const side0 = runFund(a.overflow, p.reinvest ? a.refunds : null, 0, 0, payEnd);
+    // Spätere Einkommensteuer auf AVD-Kapital V, wenn es über den restlichen Auszahlplan entnommen wird (grob).
+    const latentTax = (V: number, t: number) => { const yrs = Math.max(1, tEnd - Math.max(t, n)); return yrs * taxAdd(p.incRet, V / yrs, t); };
+    const r: ProductResult = {
+      vals: a.vals.map((v, i) => v + side.vals[i]),
+      net: a.net.map((v, i) => v + side.net[i]),
+      own: a.own + side.own, ownReal: a.ownReal + side.ownReal, sideOwn: side.own, sideOwnReal: side.ownReal,
+      capR: a.vals[n] + side.vals[n], capAVD: a.vals[n], sideR: side.vals[n],
+      capNet: a.vals[n] - latentTax(a.vals[n], n) + side.sellNet(n),
+      zul: a.zul, zulReal: a.zulReal, ref: a.ref, refReal: a.refReal,
+      foerder: a.zul + a.ref, foerderReal: a.zulReal + a.refReal,
+      cost: (a0.vals[n] + side0.vals[n]) - (a.vals[n] + side.vals[n]), payEnd, noElig: a.noElig, lumpNet: a.lumpNet,
+      heir: () => ({ val: 0, note: '' }),
+    };
+    r.heirMarried = idx => {
+      const V = a.vals[idx], lt = latentTax(V, idx);
+      return { val: V - lt + side.sellNet(idx), note: 'Ohne Abzug auf einen eigenen AVD-Vertrag übertragbar, später aber voll steuerpflichtig (ca. ' + eur(Rn(lt, idx)) + ' Einkommensteuer, grob geschätzt und abgezogen)' };
+    };
+    r.heir = idx => {
+      const V = a.vals[idx], age = p.a0 + idx;
+      let back: number, ownR: number, zulR: number;
+      if (idx <= n) { back = a.foer[idx]; ownR = a.owns[idx]; zulR = a.zuls[idx]; }
+      else { const f = a.C0 > 0 ? V / a.C0 : 0; back = a.foer[n] * f; ownR = a.owns[n] * f; zulR = a.zuls[n] * f; }
+      // Steuerpflichtige Erträge = Guthaben − eigene Beiträge − Zulagen. Die Steuererstattungen lagen nie im Vertrag.
+      const halb = p.heirHalf && age >= 62 && idx >= 12;
+      const rest = Math.max(0, V - back), gain = Math.max(0, V - ownR - zulR) * (halb ? 0.5 : 1);
+      const incDeath = idx < n ? incAt(idx) : p.incRet;
+      const tx = taxAdd(incDeath, gain, idx);
+      return { val: rest - tx + side.sellNet(idx), note: 'Förderung ' + eur(Rn(back, idx)) + ' zurück, Steuer auf Erträge ' + eur(Rn(tx, idx)) + (halb ? ' (hälftig)' : '') };
+    };
+    res.avd = r;
+  }
+
+  // Fondsgebundene Rentenversicherung
+  if (p.on.ins) {
+    const run = (eff: number) => {
+      let V = 0, own = 0, ownReal = 0; const vals: (number | null)[] = [0];
+      for (let t = 0; t < T; t++) {
+        if (t < n) { const c = p.insM * dynF(t), rm = Math.pow(1 + p.g - eff, 1 / 12) - 1; for (let m = 0; m < 12; m++) { V += c; own += c; V *= 1 + rm; } ownReal += 12 * c / I(t); vals.push(V); }
+        else vals.push(null);
+      }
+      return { vals, own, ownReal, C: vals[n] as number };
+    };
+    const a = run(p.insEff), a0 = run(0);
+    const annual = a.C / 10000 * p.rf * 12, ea = ERTRAG[p.R] / 100;
+    const annualNet = (t: number) => annual - taxAdd(p.incRet, annual * ea, t);
+    // Kapitalauszahlung: 15 % des Gewinns steuerfrei; nach 12 Jahren und ab 62 davon die Hälfte mit persönlichem Satz, sonst Abgeltungsteuer.
+    const gain = Math.max(0, a.C - a.own), halb = n >= 12;
+    const kapTax = halb ? taxAdd(p.incRet, gain * 0.85 * 0.5, n) : gain * 0.85 * 0.26375;
+    const kapNet = a.C - kapTax - kvLump(a.C, n);
+    const r = { own: a.own, ownReal: a.ownReal, capR: a.C, capNet: a.C - kapTax, kapNet, foerder: 0, foerderReal: 0, cost: a0.C - a.C, annual, lump: p.insLump } as ProductResult;
+    if (p.insLump) {
+      const lumpArr = new Array<number>(T).fill(0); lumpArr[n - 1] = kapNet; // landet genau bei Rentenbeginn im ETF
+      const f = runFund(new Array<number>(T).fill(0), lumpArr, p.etfTer, 0, p.H);
+      Object.assign(r, { vals: a.vals.map((v, i) => i <= n ? v : f.vals[i]), net: f.net, payEnd: p.H, lifelong: false });
+      r.heir = idx => idx <= n ? { val: a.vals[idx] as number, note: 'Fondsguthaben, einkommensteuerfrei (nur Erbschaftsteuer)' }
+                               : { val: f.sellNet(idx), note: 'ETF aus der Kapitalauszahlung. ' + fundNote };
+    } else {
+      const net = new Array<number>(T).fill(0);
+      for (let t = n; t < T; t++) net[t] = annualNet(t) - kvAdd(annual, t);
+      Object.assign(r, { vals: a.vals, net, payEnd: 100, lifelong: true });
+      r.heir = idx => {
+        if (idx <= n) return { val: a.vals[idx] as number, note: 'Fondsguthaben, einkommensteuerfrei (nur Erbschaftsteuer)' };
+        const rest = Math.max(0, p.R + p.gz - (p.a0 + idx));
+        // Restrenten einzeln versteuern; im Kaufkraft-Modus jede Zahlung mit ihrem eigenen Jahr umrechnen (Anzeige teilt später durch I(idx)).
+        let v = 0; for (let k = 0; k < rest; k++) v += annualNet(idx + k) * (p.real ? I(idx) / I(idx + k) : 1);
+        return { val: v, note: rest > 0 ? 'Restliche Garantiezeit: ' + rest + ' Jahre, nach Steuer' : 'Garantiezeit abgelaufen – nichts' };
+      };
+    }
+    res.ins = r;
+  }
+  return { res, T, n, tH, I };
+}
