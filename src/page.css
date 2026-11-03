@@ -1,0 +1,5 @@
+.legal { max-width: 720px; padding-top: 24px; padding-bottom: 64px; }
+.legal h1 { font-size: 1.6rem; margin: 16px 0 20px; }
+.legal h2 { font-size: 1.05rem; margin: 28px 0 8px; }
+.legal p, .legal li { color: var(--text-2); }
+.legal ul { padding-left: 20px; }
