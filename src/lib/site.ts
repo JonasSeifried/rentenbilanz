@@ -9,4 +9,11 @@ export const SITE = {
   lawStateShort: 'Rechtsstand 26.05.2026 · Steuerwerte 2026',
   /** Datum der letzten inhaltlichen Prüfung. */
   updated: '02.11.2026',
+  /** Kontakt für „Fehler melden“ (steht auch im Impressum und in der Datenschutzerklärung). */
+  contact: 'legal@jonasseifried.com',
+  /** Öffentliche Adresse der Seite. Leer = keine canonical-/og:url-Angaben. Domain steht noch aus. */
+  url: '',
+  /** Start des Altersvorsorgedepots; der Hinweis in der Oberfläche schaltet sich ab diesem Datum selbst ab. */
+  avdStart: '01.01.2027',
+  avdStartISO: '2027-01-01',
 } as const;

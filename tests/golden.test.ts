@@ -6,7 +6,7 @@ import { JSDOM } from 'jsdom';
 import { describe, expect, it, beforeAll } from 'vitest';
 import { readParams, model, type ProductKey } from '../src/lib/engine/engine';
 import { analyze, scenarios } from '../src/lib/engine/analyze';
-import { DEFAULTS, INPUT_KEYS, type Inputs } from '../src/lib/engine/inputs';
+import { DEFAULTS, LEGACY_KEYS, type Inputs } from '../src/lib/engine/inputs';
 
 const CENT = 0.005;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -27,7 +27,7 @@ beforeAll(() => {
 });
 
 function setLegacyInputs(v: Inputs) {
-  for (const k of INPUT_KEYS) {
+  for (const k of LEGACY_KEYS) {
     const el = doc.getElementById(k) as HTMLInputElement | null;
     if (!el) throw new Error('Feld fehlt im Original: ' + k);
     if (el.type === 'checkbox') el.checked = v[k] as boolean;

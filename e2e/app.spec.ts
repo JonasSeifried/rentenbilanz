@@ -17,7 +17,7 @@ async function stubClipboard(page: Page) {
 }
 const saved = (page: Page) => page.evaluate(k => {
   const raw = localStorage.getItem(k); return raw ? JSON.parse(raw).inputs : null;
-}, STORAGE_KEY);
+}, STORAGE_KEY).then(diff => (diff ? { ...DEFAULTS, ...diff } : null)); // Speicherformat v2 enthält nur Abweichungen
 const field = (page: Page, id: string) => page.getByTestId(id);
 
 async function setField(page: Page, id: string, value: string) {
@@ -159,7 +159,8 @@ test('Link mit denselben Werten wie gespeichert zeigt kein Banner', async ({ pag
   await setField(page, 'a0', '40');
   await expect.poll(() => saved(page).then(s => s?.a0)).toBe(40);
   await page.goto('about:blank');
-  await page.goto('./#v=1&a0=40');
+  // kvRate=21.1: Die Link-Basis v1 hat 21,7 (eingefroren), der aktuelle Standard ist 21,1
+  await page.goto('./#v=1&a0=40&kvRate=21.1');
   await expect(field(page, 'a0')).toHaveValue('40');
   await expect(page.getByTestId('shared-banner')).toHaveCount(0);
 });

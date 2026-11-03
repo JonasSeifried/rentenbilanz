@@ -1,7 +1,9 @@
 // Szenario im Link (#…): kompakt kodiert als Abweichung von einer eingefrorenen Basis.
 // Die Basis ist bewusst NICHT an DEFAULTS gekoppelt: Ändern sich die Standardwerte später,
 // bleiben alte Links trotzdem gültig. Bei einer neuen Basis LINK_VERSION erhöhen und die alte hier behalten.
-import { BOOL_KEYS, INPUT_KEYS, type InputKey, type Inputs } from './engine/inputs';
+// Regel: Neue Schlüssel dürfen an eine bestehende Basis angehängt werden, wenn ihr Basiswert das bisherige
+// Verhalten ergibt; bestehende Werte nie ändern, sonst neue Version.
+import { BOOL_KEYS, INPUT_KEYS, inLimits, type InputKey, type Inputs } from './engine/inputs';
 
 export const TABS = ['overview', 'detail', 'heirs', 'settings'] as const;
 export type Tab = (typeof TABS)[number];
@@ -20,8 +22,13 @@ const BASES: Record<string, Inputs> = {
     insM: 150, insEff: 0.9,
     fondM: 150, fondAA: 5, fondTer: 1.6,
     real: true,
+    // Später angehängt (Wave 2); Basiswerte = bisheriges Verhalten (kein Kombi-Modus, Erben wie bisher).
+    incHeir: 38000, kvKind: 0,
+    combo: false, cBudget: 450, cEtf: 150, cAvd: 150, cIns: 150, cFond: 0,
   },
 };
+/** Die eingefrorene Basis von Version 1 (Tests und Speicher-Migration). */
+export const LINK_BASE_V1: Readonly<Inputs> = BASES['1'];
 
 export function encodeState(inputs: Inputs, tab: Tab): string {
   const base = BASES[LINK_VERSION];
@@ -62,7 +69,7 @@ export function decodeState(hash: string): Decoded {
       else if (raw === '0' || raw === 'false') (inputs[key] as boolean) = false;
     } else {
       const x = Number(raw);
-      if (raw.trim() !== '' && isFinite(x)) (inputs[key] as number) = x; // Müll im Link ignorieren
+      if (raw.trim() !== '' && isFinite(x) && inLimits(key, x)) (inputs[key] as number) = x; // Müll und Unsinn im Link ignorieren
     }
   }
   return { inputs, tab, unsupported: false };
