@@ -43,7 +43,7 @@
     </div>
     <div class="row">
       <span class="status" class:warn={!ok} role="status" data-testid="split-status">
-        Verteilt {eurAmount(sum)} von {eurAmount(budget)}{#if !ok && gap > 0} · noch {eurAmount(gap)} offen{:else if !ok} · {eurAmount(-gap)} zu viel{/if}
+        Verteilt {eurAmount(sum)} von {eurAmount(budget)}{#if !ok && gap > 0}{' · noch ' + eurAmount(gap) + ' offen'}{:else if !ok}{' · ' + eurAmount(-gap) + ' zu viel'}{/if}
       </span>
       {#if !ok && targetPr}
         <button class="btn small" type="button" onclick={giveRest} data-testid="split-rest">{gap > 0 ? 'Rest' : 'Überschuss'} {target === 'etf' ? 'dem ETF-Depot' : 'bei ' + targetPr.short} {gap > 0 ? 'geben' : 'abziehen'}</button>

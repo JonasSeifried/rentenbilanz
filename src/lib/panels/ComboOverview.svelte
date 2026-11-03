@@ -46,7 +46,7 @@
       <div class="card-head"><h2 id="cmp-h">Aufteilungen im Vergleich</h2></div>
       <div class="table-scroll" {@attach scrollRegion('Tabelle: Aufteilungen im Vergleich')}>
         <table class="cmp">
-          <thead><tr><th>Aufteilung</th><th>Ø netto pro Monat</th><th>Summe bis Alter {p.H}</th><th><span class="sr-only">Aktion</span></th></tr></thead>
+          <thead><tr><th>Aufteilung</th><th>Ø netto pro Monat</th><th>Summe bis Alter {p.H}</th></tr></thead>
           <tbody>
             {#each entries as e (e.id)}
               <tr class:mine={e.mine} class:busy={e.busy} data-testid="combo-row-{e.id}">
@@ -55,11 +55,11 @@
                   <div class="split-txt">
                     {#each keyOf(e.split) as k}{@const pr = PRODUCTS.find(x => x.key === k)!}<span class="chipk"><span class="key" style:background={pr.color}></span>{eur(e.split[k])} {pr.short}</span>{/each}
                   </div>
+                  {#if e.best && !e.busy}<div class="adopt"><button type="button" class="btn small" onclick={() => adopt(e.split)} aria-label="Rechnerisch beste Aufteilung übernehmen: {splitText(e.split, 'short')}" data-testid="combo-adopt">übernehmen</button></div>{/if}
                 </td>
                 <td data-label="Ø netto pro Monat">{eur(e.stats.avgMonthly)}</td>
                 <td data-label="Summe bis Alter {p.H}">{eurRound(e.stats.cumH)}</td>
-                <td class="act">{#if e.best && !e.busy}<button type="button" class="btn small" onclick={() => adopt(e.split)} aria-label="Rechnerisch beste Aufteilung übernehmen: {splitText(e.split, 'short')}" data-testid="combo-adopt">übernehmen</button>{/if}</td>
-              </tr>
+                              </tr>
             {/each}
           </tbody>
         </table>
@@ -78,7 +78,7 @@
   .cmp tr.busy { opacity: .6; }
   .split-txt { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 2px; font-size: .8rem; color: var(--text-2); }
   .chipk { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
-  .act { text-align: right; white-space: nowrap; }
+  .adopt { margin-top: 6px; }
   .verdict { border-left: 4px solid var(--accent); padding-top: 16px; scroll-margin-top: 64px; margin-bottom: 16px; }
   .verdict.neutral { border-left-color: var(--warn-border); }
   .eyebrow { font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
