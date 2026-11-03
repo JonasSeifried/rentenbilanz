@@ -106,14 +106,14 @@
     <p class="hint">Beiträge werden normalerweise oben für alle Produkte gemeinsam gesetzt. Hier nur, um sie einzeln zu ändern.</p>
   </div>
   <div class="grid">
-    <section class="card" class:off={!i.etfOn} aria-labelledby="s-etf" data-testid="card-etf">
+    <section class="card" aria-labelledby="s-etf" data-testid="card-etf">
       <h3 id="s-etf"><span class="key" style:background="var(--s1)"></span>ETF-Depot</h3>
       {@render offNote('etfOn')}
       <NumberField layout="row" label="Beitrag" value={i.etfM} onchange={v => setInput('etfM', v)} step={10} min={0} unit="€/Monat" testid="etfM" limits={LIMITS.etfM} />
       <NumberField layout="row" label="Laufende Kosten (TER)" value={i.etfTer} onchange={v => setInput('etfTer', v)} step={0.05} min={0} unit="% p. a." info="ter" limits={LIMITS.etfTer} effective={pc(p.etfTer)} />
     </section>
 
-    <section class="card" class:off={!i.avdOn} aria-labelledby="s-avd" data-testid="card-avd">
+    <section class="card" aria-labelledby="s-avd" data-testid="card-avd">
       <h3 id="s-avd"><span class="key" style:background="var(--s2)"></span>Altersvorsorgedepot</h3>
       {@render offNote('avdOn')}
       <NumberField layout="row" label="Beitrag (max. 150 gefördert)" value={i.avdM} onchange={v => setInput('avdM', v)} step={10} min={0} unit="€/Monat" info="nebendepot" limits={LIMITS.avdM} />
@@ -123,7 +123,7 @@
       <p class="hint">Kinder und Berufseinsteigerbonus: oben unter „Deine Situation“.</p>
     </section>
 
-    <section class="card" class:off={!i.insOn} aria-labelledby="s-ins" data-testid="card-ins">
+    <section class="card" aria-labelledby="s-ins" data-testid="card-ins">
       <h3 id="s-ins"><span class="key" style:background="var(--s3)"></span>Fondsgebundene Rentenversicherung</h3>
       {@render offNote('insOn')}
       <NumberField layout="row" label="Beitrag" value={i.insM} onchange={v => setInput('insM', v)} step={10} min={0} unit="€/Monat" limits={LIMITS.insM} />
@@ -132,7 +132,7 @@
       <p class="hint">Kapitalauszahlung oder Rente, Rentenfaktor und Garantiezeit: unter „Rente im Detail“.</p>
     </section>
 
-    <section class="card" class:off={!i.fondOn} aria-labelledby="s-fond" data-testid="card-fond">
+    <section class="card" aria-labelledby="s-fond" data-testid="card-fond">
       <h3 id="s-fond"><span class="key" style:background="var(--s4)"></span>Aktiver Fonds</h3>
       {@render offNote('fondOn')}
       <NumberField layout="row" label="Beitrag" value={i.fondM} onchange={v => setInput('fondM', v)} step={10} min={0} unit="€/Monat" limits={LIMITS.fondM} />

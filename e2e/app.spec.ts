@@ -59,11 +59,11 @@ test('Eingaben werden gespeichert und beim nächsten Besuch wiederhergestellt', 
   await page.goto('./');
   expect(await saved(page)).toBeNull(); // ohne Änderung wird nichts gespeichert
   await setField(page, 'incWork', '52.500');
-  await page.getByTestId('kvOn').check();
+  await page.getByTestId('kv-1').check();
   await expect.poll(() => saved(page).then(s => s?.incWork)).toBe(52500);
   await page.reload();
   await expect(field(page, 'incWork')).toHaveValue('52.500');
-  await expect(page.getByTestId('kvOn')).toBeChecked();
+  await expect(page.getByTestId('kv-1')).toBeChecked();
   await expect(page).toHaveURL(/\/$/); // Adresszeile bleibt sauber
 });
 
@@ -169,7 +169,7 @@ test('Ungültige oder fremde Link-Werte werden ignoriert', async ({ page }) => {
   await page.goto('./#v=1&a0=abc&foo=1&kvOn=vielleicht&g=7');
   await expect(field(page, 'a0')).toHaveValue('22');
   await expect(field(page, 'g')).toHaveValue('7');
-  await expect(page.getByTestId('kvOn')).not.toBeChecked();
+  await expect(page.getByTestId('kv-1')).not.toBeChecked();
   await page.goto('about:blank');
   await page.goto('./#v=99&a0=50');
   await expect(page.getByTestId('toast')).toContainText('neueren Version');
@@ -240,9 +240,9 @@ test('Tabs per Tastatur, Glossar-Popover, Diagramm per Tastatur', async ({ page,
   const chart = page.locator('#panel-overview [role=slider]');
   await chart.focus();
   await page.keyboard.press('Home');
-  await expect(chart).toHaveAttribute('aria-valuetext', /^Alter 67: ETF 0 €/);
+  await expect(chart).toHaveAttribute('aria-valuetext', /^Bis Alter 67 ausgezahlt \(netto\): ETF 0 €/);
   await page.keyboard.press('ArrowRight');
-  await expect(chart).toHaveAttribute('aria-valuetext', /^Alter 68: ETF [1-9]/);
+  await expect(chart).toHaveAttribute('aria-valuetext', /^Bis Alter 68 ausgezahlt \(netto\): ETF [1-9]/);
 });
 
 test('Farbschema umschalten bleibt erhalten', async ({ page }) => {

@@ -38,8 +38,8 @@ test('keine CSP-Verletzung beim Durchklicken (Tabs, Popover, Diagramm, Farbschem
   await page.goto('./');
   for (const t of ['detail', 'heirs', 'settings', 'overview']) await page.click('#tab-' + t);
   await page.getByRole('button', { name: /Farbschema/ }).click();
-  await page.getByTestId('kvOn').check();
-  await page.getByTestId('kvOn').uncheck();
+  await page.getByTestId('kv-1').check();
+  await page.getByTestId('kv-0').check();
   await page.click('#tab-settings');
   await page.getByRole('button', { name: 'Erklärung: Basiszins' }).click();
   await expect(page.getByRole('note').filter({ hasText: 'Bundesfinanzministerium' })).toBeVisible();
@@ -390,6 +390,7 @@ test('Glossar-Popover ist beim ersten Frame schon platziert, bleibt bei Höhenä
   await page.goto('./');
   await page.click('#tab-settings');
   const q = page.getByRole('button', { name: 'Erklärung: Basiszins' });
+  await q.scrollIntoViewIfNeeded();
   // Jeden Frame nach dem Klick prüfen: sichtbar nur, wenn schon platziert (nie bei 0,0)
   const frames = await q.evaluate((btn: HTMLElement) => new Promise<{ vis: string; l: number; t: number }[]>(resolve => {
     const pop = document.getElementById(btn.getAttribute('aria-controls')!)!;
@@ -502,13 +503,13 @@ test('forced-colors: Schalter an und aus sind unterscheidbar', async ({ page, br
   test.skip(browserName !== 'chromium', 'forced-colors-Emulation nur in Chromium');
   await page.emulateMedia({ forcedColors: 'active' });
   await page.goto('./');
-  const sw = page.getByTestId('kvOn');
+  const sw = page.getByTestId('real');
   const look = () => sw.evaluate((el) => {
     const cs = getComputedStyle(el), th = getComputedStyle(el, '::before');
     return { track: cs.backgroundColor, border: cs.borderTopColor, thumb: th.backgroundColor, x: th.transform };
   });
   const off = await look();
-  await sw.check();
+  await sw.click();
   await page.waitForTimeout(400); // Übergänge (.15 s) abwarten
   const on = await look();
   expect(on.track).not.toBe(off.track);
