@@ -16,6 +16,7 @@ export const GLOSSARY = {
     text: [
       'Steuerpflichtiges Einkommen im Ruhestand ohne die hier verglichenen Produkte, zum Beispiel gesetzliche Rente, Betriebsrente oder Mieteinnahmen. Bei Rentenbeginn ab 2058 ist die gesetzliche Rente voll steuerpflichtig.',
       'Dieser Wert bestimmt den Steuersatz auf die Auszahlungen im Alter. Betrag in heutigem Geld.',
+      'Die voraussichtliche gesetzliche Rente steht in der jährlichen Renteninformation (Monatsbetrag × 12).',
     ],
   },
   rendite: {
@@ -27,32 +28,34 @@ export const GLOSSARY = {
   },
   rentenbeginn: {
     title: 'Rentenbeginn',
-    text: ['Ab diesem Alter wird ausgezahlt. Das Altersvorsorgedepot erlaubt einen Rentenbeginn zwischen 65 und 70, deshalb ist der Rechner auf diesen Bereich begrenzt.'],
+    text: ['Ab diesem Alter wird ausgezahlt. Das Altersvorsorgedepot erlaubt einen Rentenbeginn zwischen 65 und 70; früher nur, wenn vorher eine gesetzliche Altersrente beginnt. Der Rechner ist auf 65–70 begrenzt.'],
   },
   kvFreiwillig: {
     title: 'Freiwillig gesetzlich versichert im Alter',
     text: [
       'Wer als Rentner nicht in die Krankenversicherung der Rentner (KVdR) kommt, aber gesetzlich versichert bleibt, ist freiwillig versichert. Dann zählen auch Auszahlungen aus privater Vorsorge für den Beitrag, bis zur Beitragsbemessungsgrenze (2026: 69.750 € im Jahr).',
       'Das betrifft häufig Menschen, die zeitweise privat versichert waren, etwa weil sie über der Versicherungspflichtgrenze (2026: 77.400 €) verdient haben.',
-      'In der KVdR oder privat versichert: Schalter aus.',
+      'In der KVdR oder privat versichert: Dann fallen im Modell keine Beiträge auf die Auszahlungen an.',
     ],
   },
   kvdr: {
     title: 'KVdR (Krankenversicherung der Rentner)',
     text: [
       'Pflichtversicherung für Rentner. Hinein kommt, wer in der zweiten Hälfte des Erwerbslebens zu mindestens 90 % gesetzlich versichert war; freiwillige Zeiten zählen mit.',
+      'Je Kind werden 3 Jahre angerechnet.',
       'Auf Auszahlungen aus privater Vorsorge fallen dort im Modell keine Beiträge an.',
     ],
   },
   kvRate: {
     title: 'Beitragssatz bei freiwilliger Versicherung',
-    text: ['Voller Satz auf die Zusatzeinnahmen: 14,6 % allgemeiner Beitrag, Ø-Zusatzbeitrag 2,9 % und Pflegeversicherung 4,2 % (kinderlos), zusammen etwa 21,7 %.'],
+    text: ['Satz auf die Zusatzeinnahmen für Mitglieder ohne Anspruch auf Krankengeld: 14,0 % ermäßigter Beitrag (§ 243 SGB V), Ø-Zusatzbeitrag 2026 2,9 % und Pflegeversicherung 4,2 % (kinderlos; mit Kind 3,6 %), zusammen etwa 21,1 % (mit Kind 20,5 %).'],
   },
   kaufkraft: {
     title: 'Heutige Kaufkraft',
     text: [
       'Alle Beträge werden mit der angenommenen Inflation in heutiges Geld umgerechnet. So lassen sich Beträge aus verschiedenen Jahrzehnten vergleichen.',
       'Beispiel: 1.000 € in 40 Jahren sind bei 2 % Inflation heute nur rund 450 € wert.',
+      'Welches Produkt vorne liegt, wird immer in heutiger Kaufkraft verglichen. In knappen Fällen kann das vorne liegende Produkt in der nominalen Ansicht die kleinere Summe zeigen.',
     ],
   },
   avd: {
@@ -71,7 +74,10 @@ export const GLOSSARY = {
   },
   bonus: {
     title: 'Berufseinsteigerbonus',
-    text: ['Einmalig 200 € zusätzliche Zulage, wenn man zu Beginn des Beitragsjahres jünger als 25 ist (§ 84 EStG n. F.). Der Rechner berücksichtigt ihn nur, solange das Alter passt.'],
+    text: [
+      'Einmalig 200 € zusätzliche Zulage, wenn man zu Beginn des Beitragsjahres jünger als 25 ist (§ 84 EStG n. F.). Der Rechner berücksichtigt ihn nur, solange das Alter passt.',
+      'Er erhöht nur die Zulage, nicht den Sonderausgabenabzug in der Günstigerprüfung (§ 2 Abs. 6 S. 2 EStG).',
+    ],
   },
   guenstiger: {
     title: 'Günstigerprüfung',
@@ -94,7 +100,7 @@ export const GLOSSARY = {
   foerderberechtigt: {
     title: 'Förderberechtigt',
     text: [
-      'Förderberechtigt ist, wer im Beitragsjahr zumindest zeitweise rentenversicherungspflichtig ist (z. B. Werkstudentenjob, Minijob mit Rentenversicherungspflicht, Berufsstart) oder selbstständig tätig ist und Gewinneinkünfte erklärt (§ 10a EStG n. F.).',
+      'Förderberechtigt ist, wer im Beitragsjahr zumindest zeitweise rentenversicherungspflichtig ist (z. B. Werkstudentenjob, Minijob mit Rentenversicherungspflicht, Berufsstart) oder als Selbstständige oder Selbstständiger unter 67 ist und Gewinneinkünfte aus Gewerbe oder freiberuflicher Tätigkeit hat (§ 10a Abs. 1 S. 5 EStG n. F.).',
       'Ohne Förderberechtigung fließen die AVD-Beiträge im Rechner ins ETF-Nebendepot.',
     ],
   },
@@ -129,7 +135,7 @@ export const GLOSSARY = {
   },
   avdKosten: {
     title: 'Kosten des Altersvorsorgedepots',
-    text: ['Das Standarddepot ist auf 1,0 % Effektivkosten gedeckelt, schichtet aber ab 5 Jahre vor Rentenbeginn in sichere Anlagen um (weniger Rendite, hier nicht gerechnet). Ein selbst gewähltes ETF-Depot ist meist günstiger und schichtet nicht um.'],
+    text: ['Das Standarddepot ist auf 1,0 % Effektivkosten gedeckelt, schichtet aber ab 5 Jahre vor Rentenbeginn in sichere Anlagen um (weniger Rendite, hier nicht gerechnet). Andere Anteile für die Umschichtung kann man verlangen. Ein selbst gewähltes ETF-Depot ist meist günstiger und schichtet nicht um.'],
   },
   ausgabeaufschlag: {
     title: 'Ausgabeaufschlag',
@@ -139,7 +145,7 @@ export const GLOSSARY = {
     title: 'Auszahlplan',
     text: [
       'Das Kapital wird bis zu einem festen Alter in Raten entnommen, der Rest bleibt angelegt. Danach ist das Geld aufgebraucht.',
-      'Beim Altersvorsorgedepot läuft er mindestens bis 85. Jedes Jahr wird Restkapital ÷ Restlaufzeit ausgezahlt (§ 1 AltZertG), die Rate steigt deshalb meist mit der Zeit.',
+      'Beim Altersvorsorgedepot läuft er mindestens bis 85. Gerechnet wird jedes Jahr Restkapital ÷ Restlaufzeit, die Rate steigt deshalb meist. Gesetzlich muss mindestens 80 % davon gezahlt und die Rate spätestens alle 3 Jahre neu festgelegt werden (§ 1 Abs. 1 Nr. 4 b AltZertG).',
     ],
   },
   einmal: {
@@ -173,12 +179,16 @@ export const GLOSSARY = {
     title: 'Erbfall beim Altersvorsorgedepot',
     text: [
       'Ehepartner können das Guthaben ohne Abzug auf einen eigenen Vertrag übertragen. Die spätere Einkommensteuer darauf ist grob geschätzt abgezogen.',
-      'Erben alle anderen, gilt das AVD als „schädlich verwendet“ (§ 93 EStG): Zulagen und Steuervorteil gehen zurück, die Erträge (Guthaben − eigene Beiträge − Zulagen) werden versteuert (§ 22 Nr. 5 S. 3 EStG).',
+      'Erben alle anderen, gilt das AVD als „schädlich verwendet“ (§ 93 EStG): Zulagen und Steuervorteil gehen zurück, die Erträge (Guthaben − eigene Beiträge − Zulagen) werden von den Erben mit ihrem eigenen Steuersatz versteuert (§ 22 Nr. 5 S. 3 EStG).',
     ],
   },
   heirHalf: {
-    title: 'Hälftige Besteuerung im Erbfall',
-    text: ['Ob die Erträge im Erbfall ab 62 und nach 12 Jahren Laufzeit nur zur Hälfte steuerpflichtig sind, ist rechtlich noch unklar. Standardmäßig wird deshalb voll versteuert.'],
+    title: 'Erbe mindestens 62',
+    text: ['Die Erben versteuern die Erträge aus dem AVD selbst, mit ihrem eigenen Steuersatz. Nur zur Hälfte, wenn der Erbe bei der Auszahlung mindestens 62 Jahre alt ist und der Vertrag mindestens 12 Jahre lief (BMF-Schreiben vom 05.10.2023, Rn. 148 und 229 f., zur Riester-Rente; für das AVD gilt dieselbe Vorschrift).'],
+  },
+  incHeir: {
+    title: 'Einkommen der Erben',
+    text: ['Zu versteuerndes Einkommen der Erben im Todesjahr, in heutigem Geld. Danach richtet sich der Steuersatz auf die AVD-Erträge und auf Restrenten der Versicherung. Standard: 38.000 €.'],
   },
   erbschaftsteuer: {
     title: 'Erbschaftsteuer',

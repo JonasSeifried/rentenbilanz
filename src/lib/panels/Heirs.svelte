@@ -42,8 +42,9 @@
     <h2 id="heir-in-h">Annahmen Erbfall</h2>
     <NumberField layout="row" label="Angenommenes Todesalter" value={i.deathAge} onchange={v => setInput('deathAge', v)} min={p.a0 + 1} max={100} unit="J." testid="deathAge"
       clampNote={v => { const c = Math.min(100, Math.max(p.a0 + 1, Math.round(v))); return c !== v ? 'Gerechnet wird mit ' + c + '.' : null; }} />
-    <Switch checked={i.heirHalf} onchange={v => setInput('heirHalf', v)} label="AVD: Erträge im Erbfall nur zur Hälfte versteuern (ab 62 und 12 Jahren Laufzeit)" info="heirHalf" />
-    <p class="hint">Wie das Altersvorsorgedepot im Erbfall behandelt wird: <Info k="erbfallAvd">Erbfall beim AVD</Info>. <Info k="erbschaftsteuer">Erbschaftsteuer</Info> ist nicht gerechnet.</p>
+    <Switch checked={i.heirHalf} onchange={v => setInput('heirHalf', v)} label="Erbe ist bei der Auszahlung mindestens 62 (AVD-Erträge nur zur Hälfte steuerpflichtig, wenn der Vertrag mindestens 12 Jahre lief)" info="heirHalf" />
+    <NumberField layout="row" label="Zu versteuerndes Einkommen der Erben" value={i.incHeir} onchange={v => setInput('incHeir', v)} min={0} step={1000} unit="€/Jahr" info="incHeir" testid="incHeir" />
+    <p class="hint">Die Erben versteuern die AVD-Erträge mit ihrem eigenen Steuersatz, nicht mit deinem. Wie das Altersvorsorgedepot im Erbfall behandelt wird: <Info k="erbfallAvd">Erbfall beim AVD</Info>. <Info k="erbschaftsteuer">Erbschaftsteuer</Info> ist nicht gerechnet.</p>
   </section>
 
   <div class="main">

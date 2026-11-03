@@ -61,10 +61,13 @@
   const parse = (raw: string) => parseDe(raw, { allowThousands: thousands });
   const allowNegative = $derived((min === undefined || min < 0) && (limits === undefined || limits[0] < 0));
 
+  // Kein endlicher Wert (z. B. NaN = „kein gemeinsamer Wert“): Feld bleibt leer, `placeholder` erklärt es.
+  const fmt = (v: number) => (isFinite(v) ? formatDe(v) : '');
+
   // Externe Änderungen (Zurücksetzen, Link, anderer Tab, gemeinsamer Beitrag) übernehmen, solange nicht getippt wird.
   $effect(() => {
     const v = value;
-    untrack(() => { if (!focused) { text = formatDe(v); error = ''; } });
+    untrack(() => { if (!focused) { text = fmt(v); error = ''; } });
   });
 
   const fmtLimit = (v: number) => v.toLocaleString('de-DE', { maximumFractionDigits: 6 });
@@ -103,18 +106,18 @@
   }
   function onblur() {
     focused = false;
-    if (!text.trim()) { error = 'Bitte eine Zahl eingeben.'; edited = false; return; } // Text bleibt leer stehen
+    if (!text.trim()) { error = isFinite(value) ? 'Bitte eine Zahl eingeben.' : ''; edited = false; return; } // Text bleibt leer stehen
     if (!error) {
       if (edited && alwaysCommit) commit(text, true);
-      text = formatDe(value);
+      text = fmt(value);
     }
     edited = false;
   }
-  function cancel() { text = formatDe(value); error = ''; edited = false; }
+  function cancel() { text = fmt(value); error = ''; edited = false; }
 
   function stepBy(dir: 1 | -1, times = 1) {
     const raw = text.trim() ? parse(text) : null;
-    const cur = raw ?? value;
+    const cur = raw ?? (isFinite(value) ? value : (min ?? 0));
     let next = cur + dir * step * times;
     next = Math.round(next * 1000) / 1000;
     if (min !== undefined) next = Math.max(min, next);
@@ -130,8 +133,8 @@
       e.preventDefault();
       stepBy(e.key === 'ArrowUp' ? 1 : -1, e.shiftKey ? 10 : 1);
     } else if (e.key === 'Enter') {
-      if (!error && text.trim() && edited && alwaysCommit) { commit(text, true); text = formatDe(value); edited = false; }
-    } else if (e.key === 'Escape' && (error || edited) && text !== formatDe(value)) {
+      if (!error && text.trim() && edited && alwaysCommit) { commit(text, true); text = fmt(value); edited = false; }
+    } else if (e.key === 'Escape' && (error || edited) && text !== fmt(value)) {
       e.preventDefault(); e.stopPropagation(); cancel();
     }
   }

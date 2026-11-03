@@ -38,8 +38,8 @@
     const out: string[] = ['„Nach Einkommensteuer“: ETF/Fonds bei komplettem Verkauf, AVD bei Entnahme über den Auszahlplan (grob), Versicherung bei Kapitalauszahlung. Ohne Krankenversicherung.'];
     if (res.avd) out.push('AVD: Zulagen ' + eur(p.real ? res.avd.zulReal! : res.avd.zul!) + ', zusätzliche Steuererstattungen ' + eur(p.real ? res.avd.refReal! : res.avd.ref!) + (p.reinvest ? ' (im ETF-Nebendepot angelegt)' : ' (ausgegeben)') + '. Die Erstattungen sind zum Teil nur Steuerstundung, weil die Auszahlungen später voll steuerpflichtig sind. Kapital bei Rentenbeginn: AVD-Vertrag ' + eur(A.R(res.avd.capAVD!, A.n)) + ', ETF-Nebendepot ' + eur(A.R(res.avd.sideR!, A.n)) + '.');
     if (res.ins) out.push(res.ins.lump
-      ? 'Versicherung: Kapitalauszahlung ' + eur(A.R(res.ins.kapNet!, A.n)) + ' netto, angelegt im ETF und bis ' + p.H + ' entnommen. Alternativ lebenslange Rente: ' + eur(A.R(res.ins.annual! / 12, A.n)) + ' brutto im Monat (Ertragsanteil ' + ERTRAG[p.R] + ' %).'
-      : 'Versicherung: Bruttorente ' + eur(A.R(res.ins.annual! / 12, A.n)) + ' im Monat, besteuert mit Ertragsanteil ' + ERTRAG[p.R] + ' %. Alternativ Kapitalauszahlung: ' + eur(A.R(res.ins.kapNet!, A.n)) + ' netto.');
+      ? 'Versicherung: Kapitalauszahlung ' + eur(A.R(res.ins.kapNet!, A.n)) + ' nach Steuern' + (p.kvOn ? ' (die Krankenversicherungsbeiträge darauf fallen über 10 Jahre verteilt an und sind hier noch nicht abgezogen)' : '') + ', angelegt im ETF und bis ' + p.H + ' entnommen. Alternativ lebenslange Rente: ' + eur(A.R(res.ins.annual! / 12, A.n)) + ' brutto im Monat (Ertragsanteil ' + ERTRAG[p.R] + ' %).'
+      : 'Versicherung: Bruttorente ' + eur(A.R(res.ins.annual! / 12, A.n)) + ' im Monat, besteuert mit Ertragsanteil ' + ERTRAG[p.R] + ' %. Alternativ Kapitalauszahlung: ' + eur(A.R(res.ins.kapNet!, A.n)) + ' nach Steuern.');
     return out;
   });
 

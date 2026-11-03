@@ -15,6 +15,11 @@
   import Detail from './lib/panels/Detail.svelte';
   import Heirs from './lib/panels/Heirs.svelte';
   import Settings from './lib/panels/Settings.svelte';
+  import KvQuestion from './lib/components/KvQuestion.svelte';
+  import ResultPeek from './lib/components/ResultPeek.svelte';
+  import { changedSettings } from './lib/components/AssumptionCheck.svelte';
+  import { verdict } from './lib/verdict';
+  import { DEFAULTS, INPUT_KEYS } from './lib/engine/inputs';
 
   const p = $derived(readParams(app.inputs));
   const A = $derived(analyze(p));
@@ -24,7 +29,11 @@
   const TAB_LABELS: Record<Tab, string> = {
     overview: 'Überblick', detail: 'Rente im Detail', heirs: 'Erbfall', settings: 'Weitere Einstellungen & Annahmen',
   };
-  const TAB_SHORT: Record<Tab, string> = { overview: 'Überblick', detail: 'Rente', heirs: 'Erbfall', settings: 'Einstellungen' };
+  const TAB_SHORT: Record<Tab, string> = { overview: 'Überblick', detail: 'Rente', heirs: 'Erbfall', settings: 'Annahmen' };
+  const V = $derived(verdict(A, scen));
+  const changedN = $derived(changedSettings(i).length);
+  const isExample = $derived(INPUT_KEYS.every(k => k === 'real' || i[k] === DEFAULTS[k]));
+  const peekText = $derived(V.kind === 'ok' ? V.headline : 'Ergebnis siehe Überblick');
 
   const contribDiffer = $derived(CONTRIB_KEYS.some(k => i[k] !== i.setAll));
   const today = new Date().toLocaleDateString('de-DE');
@@ -109,7 +118,7 @@
     </div>
   {/if}
 
-  <section class="card eck" aria-labelledby="eck-h">
+  <section class="card eck" id="eck" aria-labelledby="eck-h">
     <div class="eck-head">
       <h2 id="eck-h">Eckdaten <span class="sub">gelten für alle Ansichten</span></h2>
       <div class="eck-actions noprint">
@@ -121,6 +130,7 @@
         <button class="btn small" type="button" onclick={resetToDefaults} data-testid="reset"><Icon name="reset" />Auf Standardwerte zurücksetzen</button>
       </div>
     </div>
+    {#if isExample && app.mode !== 'shared'}<p class="example-hint noprint" data-testid="example-hint">Diese Werte sind ein Beispiel. Trage deine eigenen Zahlen ein.</p>{/if}
     <div class="eck-grid">
       <NumberField label="Alter heute" value={i.a0} onchange={v => setInput('a0', v)} min={16} max={60} unit="Jahre" testid="a0"
         clampNote={v => (v < 16 || v > 60 ? 'Gerechnet wird mit ' + Math.min(60, Math.max(16, Math.round(v))) + '.' : null)} />
@@ -134,7 +144,7 @@
     </div>
     <div class="eck-foot">
       <div class="kv">
-        <Switch checked={i.kvOn} onchange={v => setInput('kvOn', v)} info="kvFreiwillig" testid="kvOn">Als Rentner <em>freiwillig</em> gesetzlich krankenversichert</Switch>
+        <KvQuestion />
       </div>
       <fieldset class="compare">
         <legend>Vergleichen</legend>
@@ -155,7 +165,7 @@
         <button bind:this={tabEls[idx]} class="tab" type="button" role="tab" id="tab-{t}" aria-controls="panel-{t}"
           aria-selected={app.tab === t} tabindex={app.tab === t ? 0 : -1}
           onclick={() => setTab(t)} onkeydown={(e) => onTabKey(e, idx)}>
-          <span class="long">{TAB_LABELS[t]}</span><span class="short">{TAB_SHORT[t]}</span>
+          <span class="long">{TAB_LABELS[t]}</span><span class="short">{TAB_SHORT[t]}</span>{#if t === 'settings' && changedN > 0}<span class="badge" data-testid="settings-badge"><span class="sr-only">{changedN} Annahmen geändert</span><span aria-hidden="true">{changedN}</span></span>{/if}
         </button>
       {/each}
     </div>
@@ -191,6 +201,7 @@
   </div>
 </footer>
 
+<ResultPeek text={peekText} color={V.kind === 'ok' ? A.lead?.color : ''} targetId="verdict" watchId="eck" />
 <Toast />
 
 <style>
@@ -268,6 +279,8 @@
   .tab:hover { color: var(--text); background: var(--surface-2); }
   .tab[aria-selected='true'] { color: var(--text); border-bottom-color: var(--accent); }
   .tab .short { display: none; }
+  .tab .badge { margin-left: 6px; min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent); color: var(--on-accent, #fff); font-size: .72rem; line-height: 18px; display: inline-block; text-align: center; }
+  .example-hint { margin: 0 0 10px; font-size: .85rem; color: var(--text-2); }
   @media (max-width: 760px) { .tab .long { display: none; } .tab .short { display: inline; } .tab { padding: 12px 10px 10px; } }
   .real { padding-bottom: 4px; }
   .real :global(.sw) { padding: 4px 0; }

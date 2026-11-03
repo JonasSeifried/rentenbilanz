@@ -1,15 +1,63 @@
-// Empfehlung als Satz. Logik wie verdictText() im Original, Formulierungen neutral (nicht auf eine Person bezogen).
-import type { Analysis, Scenario } from './engine/analyze';
-import { eur } from './format';
+// Ergebnis als Satz. Logik wie verdictText() im Original, Formulierungen neutral (nicht auf eine Person bezogen).
+// Abweichungen vom Original (Wave 2):
+// - Zweitplatzierter und Abstand immer in heutiger Kaufkraft (`cumHReal`, Befund E1). Im Nominalmodus steht
+//   „(in heutiger Kaufkraft)“ dabei, weil die nominalen Summen in knappen Fällen andersherum liegen können.
+// - Das Szenario „Steuererstattung ausgegeben“ zählt nicht als Kippen (dort gibt es keinen fairen Vergleich, U6).
+// - Robustheitsstufen (U5): kippt mindestens ein Drittel der Szenarien, heißt es „Kein klarer Favorit“.
+import type { Analysis, Product, Scenario } from './engine/analyze';
+import type { ProductKey } from './engine/engine';
+import { eur, eurRound } from './format';
 
 export type VerdictKind = 'ok' | 'needTwo' | 'unequal' | 'refundSpent';
-export interface Verdict { kind: VerdictKind; headline: string; lines: string[] }
+/** 0 = hält in allen Szenarien, 1 = kippt in weniger als einem Drittel, 2 = kippt in mindestens einem Drittel */
+export type Robustness = 0 | 1 | 2;
+export interface Verdict {
+  kind: VerdictKind;
+  headline: string;
+  lines: string[];
+  /** Nur bei `ok`: wie viele der vergleichbaren Szenarien ein anderes Produkt vorne sehen. */
+  robust?: { level: Robustness; flips: number; total: number; example?: string };
+}
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+/** „als beim ETF-Depot“, „als bei der Rentenversicherung“ … */
+export const DATIV: Record<ProductKey, string> = {
+  etf: 'beim ETF-Depot', avd: 'beim Altersvorsorgedepot', ins: 'bei der Rentenversicherung', fond: 'beim aktiven Fonds',
+};
+
+/** Szenarien, die für die Robustheit zählen: ohne „Steuererstattung ausgegeben“ (dort ist kein fairer Vergleich möglich). */
+export function comparableScenarios(scen: Scenario[]): Scenario[] {
+  return scen.filter(s => s.id !== 'refund' && !s.a.refundSpent);
+}
+
+export function robustness(flips: number, total: number): Robustness {
+  if (flips <= 0 || total <= 0) return 0;
+  return flips * 3 >= total ? 2 : 1;
+}
+
+// ---------------------------------------------------------------- Anzeigenamen
+
+/** Name in Kacheln (kurz, ohne Auszahlungsart). */
+export function tileName(pr: Product): string {
+  return pr.key === 'ins' ? 'Rentenversicherung' : pr.name;
+}
+/** Zweite Zeile in der Kachel (nur Versicherung). */
+export function tileSub(A: Analysis, pr: Product): string {
+  if (pr.key !== 'ins' || !A.res.ins) return '';
+  return 'fondsgebunden · ' + (A.res.ins.lump ? 'Kapitalauszahlung' : 'lebenslange Rente');
+}
+/** Name in Legenden und Tabellen: „Rentenversicherung (Kapital)“ statt des langen Produktnamens. */
+export function legendName(A: Analysis, pr: Product): string {
+  if (pr.key !== 'ins' || !A.res.ins) return pr.name;
+  return 'Rentenversicherung (' + (A.res.ins.lump ? 'Kapital' : 'Leibrente') + ')';
+}
+
+// ---------------------------------------------------------------- Ergebnis
+
 export function verdict(A: Analysis, scen: Scenario[]): Verdict {
-  const { p, active, stats } = A;
-  if (active.length < 2) return { kind: 'needTwo', headline: 'Bitte mindestens zwei Produkte zum Vergleich auswählen.', lines: [] };
+  const { p, active, stats, res } = A;
+  if (active.length < 2) return { kind: 'needTwo', headline: 'Für einen Vergleich mindestens ein weiteres Produkt dazunehmen.', lines: [] };
   if (!A.fairOwn) return {
     kind: 'unequal',
     headline: 'Die Monatsbeiträge sind nicht bei allen Produkten gleich.',
@@ -21,17 +69,45 @@ export function verdict(A: Analysis, scen: Scenario[]): Verdict {
     lines: ['Beim Altersvorsorgedepot fließt dann netto weniger eigenes Geld hinein als bei den anderen Produkten. Wird die Erstattung angelegt, ist der Vergleich wieder fair.'],
   };
   const w = A.lead!;
-  const second = active.filter(pr => pr.key !== w.key).reduce((a, b) => stats[b.key]!.cumH > stats[a.key]!.cumH ? b : a);
-  const sw = stats[w.key]!, ss = stats[second.key]!, rel = ss.cumH > 0 ? (sw.cumH - ss.cumH) / ss.cumH : 1;
-  const headline = (rel < 0.05 ? 'Knapp vorne: ' : 'Rechnerisch vorne: ') + cap(w.nom) + ' mit Ø ' + eur(sw.avgMonthly) + ' netto im Monat (' + p.R + '–' + p.H + ').';
+  // Rangfolge und Abstand immer real (E1): Im Nominalmodus kann die nominale Summe andersherum liegen.
+  const real = (k: ProductKey) => stats[k]!.cumHReal;
+  const second = active.filter(pr => pr.key !== w.key).reduce((a, b) => real(b.key) > real(a.key) ? b : a);
+  const delta = real(w.key) - real(second.key);
+  const rel = real(second.key) > 0 ? delta / real(second.key) : 1;
+
+  const comp = comparableScenarios(scen);
+  const flipped = comp.filter(s => s.a.canRank && s.a.lead && s.a.lead.key !== w.key);
+  const level = robustness(flipped.length, comp.length);
+
+  const sw = stats[w.key]!;
+  const what = w.nom + ' mit Ø ' + eur(sw.avgMonthly) + ' netto im Monat (' + p.R + '–' + p.H + ').';
+  const headline = level === 2
+    ? 'Kein klarer Favorit – knapp vorne liegt ' + what
+    : (rel < 0.05 ? 'Knapp vorne: ' : 'Rechnerisch vorne: ') + cap(what);
+
   const lines: string[] = [];
-  lines.push('Das sind bis ' + p.H + ' insgesamt ' + eur(sw.cumH - ss.cumH) + ' mehr als ' + second.nom + '.');
-  if (w.key === 'avd') lines.push('Unter diesen Annahmen lohnen sich bis zu 150 € im Monat im Altersvorsorgedepot (mehr wird nicht gefördert), alles darüber im ETF' + (p.reinvest ? ', die Steuererstattung jedes Jahr mit angelegt.' : '.'));
-  else if (w.key === 'etf') lines.push('Ein ETF-Depot ist außerdem jederzeit verfügbar und damit flexibel, etwa für Notgroschen, Wohnung oder Auszeit.');
-  else lines.push('Das ist ungewöhnlich. Ein Blick auf die Kostenannahmen unter „Weitere Einstellungen“ lohnt sich.');
-  const flips = scen.filter(s => s.a.lead && s.a.lead.key !== w.key);
-  lines.push(flips.length
-    ? 'Aber: In ' + flips.length + ' von ' + scen.length + ' Szenarien unten liegt ein anderes Produkt vorne, z. B. bei „' + flips[0].label + '“.'
-    : 'Das Ergebnis hält in allen ' + scen.length + ' Szenarien unten.');
-  return { kind: 'ok', headline, lines };
+  lines.push('Bis zum Alter von ' + p.H + ' sind das zusammen rund ' + eurRound(delta) + ' mehr netto als ' + DATIV[second.key]
+    + (p.real ? '.' : ' (in heutiger Kaufkraft).'));
+  if (level < 2) {
+    if (w.key === 'avd') {
+      let s = 'Gefördert werden beim Altersvorsorgedepot höchstens 150 € im Monat.';
+      if (res.avd && res.avd.sideOwn! > 0) s += ' Was darüber hinausgeht, rechnet der Rechner im ETF-Nebendepot.';
+      if (p.reinvest && res.avd && res.avd.ref! > 0) s += ' Gerechnet ist, dass die Steuererstattung jedes Jahr mit angelegt wird.';
+      lines.push(s);
+    } else if (w.key === 'etf') lines.push('Ein ETF-Depot ist außerdem jederzeit verfügbar und damit flexibel, etwa für Notgroschen, Wohnung oder Auszeit.');
+    else lines.push('Das ist ungewöhnlich. Ein Blick auf die Kostenannahmen unter „Weitere Einstellungen & Annahmen“ lohnt sich.');
+  }
+  return {
+    kind: 'ok', headline, lines,
+    robust: { level, flips: flipped.length, total: comp.length, example: flipped[0]?.label },
+  };
+}
+
+/** Satz zur Robustheit (ohne Verweis); die Oberfläche macht „Szenarien“ zum Sprungziel. */
+export function robustText(r: NonNullable<Verdict['robust']>): { before: string; link: string; after: string } {
+  if (!r.flips) return { before: 'Das Ergebnis hält in allen ' + r.total + ' ', link: 'Szenarien', after: ' unten.' };
+  return {
+    before: 'Aber: In ' + r.flips + ' von ' + r.total + ' ', link: 'Szenarien',
+    after: ' unten liegt ein anderes Produkt vorne' + (r.example ? ', z. B. bei „' + r.example + '“.' : '.'),
+  };
 }
