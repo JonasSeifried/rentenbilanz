@@ -42,6 +42,22 @@ Für die Browser-Tests einmalig: `npx playwright install chromium webkit`.
 - **Standardwerte** (`DEFAULTS` in `inputs.ts`) dürfen sich ändern; geteilte Links bleiben gültig, weil sie gegen eine eingefrorene Basis kodiert sind (`link.ts`, `LINK_VERSION`).
 - **Rechtsstand und Prüfdatum** stehen in `src/lib/site.ts` und werden im Kopf, im Druck und in der Fußzeile angezeigt.
 
+## Jährliche Pflege (Checkliste)
+
+Die Rechnung nutzt Werte, die sich jedes Jahr ändern. Nach jeder Änderung: `npm run test:all`, dann Rechtsstand und Prüfdatum in `src/lib/site.ts` anpassen.
+
+- [ ] **Januar – Basiszins** für die Vorabpauschale (BMF-Schreiben): Standardwert `basis` in `src/lib/engine/inputs.ts`, Text in `glossary.ts` (`basiszins`) und unter „Weitere Einstellungen“.
+- [ ] **Einkommensteuertarif** (§ 32a EStG) und **Soli-Freigrenze**: `est()` / `soli()` in `src/lib/engine/engine.ts` (Steuerreform 2027 im Blick behalten).
+- [ ] **Beitragsbemessungsgrenze KV/PV** (`KV_BBG` in `engine.ts`), **Versicherungspflichtgrenze** und **Zusatzbeitrag/Pflegesatz** (Standard `kvRate`, Texte `kvFreiwillig`/`kvRate` im Glossar).
+- [ ] **Altersvorsorgedepot:** Zulagen, Höchstbeträge, Bonus, Auszahlregeln gegen das aktuelle Gesetz/BMF-Schreiben prüfen; Hinweis zum Start (`avdStart`) entfällt ab 2027 automatisch.
+- [ ] Änderungen an der Rechnung bewusst machen: Golden-Tests vergleichen mit `legacy/index.html` (Korrekturen aus), `tests/fixes.test.ts` und `tests/combo*.test.ts` prüfen die aktuelle Rechnung. Abweichungen in `docs/abweichungen-vom-original.md` dokumentieren.
+- [ ] Standardwerte ändern sich nur in `DEFAULTS`; die Link-Basis in `link.ts` nie ändern (sonst neue `LINK_VERSION`).
+
+## Weitere Dokumentation
+
+- `docs/abweichungen-vom-original.md`: Korrekturen an der ursprünglichen Rechnung mit Rechtsquellen und Wirkung.
+- `docs/kombi-modus.md`: Rechenmodell des Kombi-Modus (gemeinsame Besteuerung, Suche nach der besten Aufteilung).
+
 ## Speichern und Teilen
 
 - Eingaben werden automatisch im `localStorage` dieses Browsers gespeichert; die Adresszeile bleibt sauber.

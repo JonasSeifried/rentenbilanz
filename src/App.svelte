@@ -212,6 +212,7 @@
     <nav aria-label="Rechtliches" class="noprint">
       <a href="./impressum.html">Impressum</a>
       <a href="./datenschutz.html">Datenschutz</a>
+      <a href={'mailto:' + SITE.contact + '?subject=' + encodeURIComponent(SITE.name + ': Fehler oder Hinweis')}>Fehler melden</a>
     </nav>
   </div>
 </footer>
