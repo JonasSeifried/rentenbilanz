@@ -11,7 +11,9 @@
 }
 
 /* Design-Tokens. Diagrammfarben (--s1…--s4) sind die validierte Kategorienpalette
-   (hell und dunkel jeweils eigene Stufen, CVD-geprüft). */
+   (hell und dunkel jeweils eigene Stufen, CVD-geprüft).
+   Die dunklen Tokens stehen zweimal (System dunkel / manuell dunkel); tests/ui-logic.test.ts prüft,
+   dass beide Blöcke identisch bleiben. Änderungen immer in beiden Blöcken machen. */
 :root {
   color-scheme: light;
   --page: #f5f5f2;
@@ -21,7 +23,7 @@
   --text: #0b0b0b;
   --text-2: #4a4946;
   --muted: #6b6a66;      /* ≥ 4.5:1 auf --surface, für kleine Texte */
-  --axis-text: #898781;  /* nur Achsenbeschriftung */
+  --axis-text: #6f6e69;  /* nur Achsenbeschriftung, ≥ 4.5:1 auf --surface */
   --grid: #e1e0d9;
   --axis: #c3c2b7;
   --border: rgba(11, 11, 11, 0.10);
@@ -87,6 +89,8 @@ strong { font-weight: 650; }
 small { font-size: .85em; }
 
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+/* Die Tab-Leiste klebt oben: fokussierte Elemente nicht darunter scrollen (WCAG 2.4.11) */
+input, button, select, textarea, [tabindex] { scroll-margin-top: 110px; }
 
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 @media (max-width: 640px) { .wrap { padding: 0 14px; } }
@@ -121,6 +125,11 @@ small { font-size: .85em; }
 .btn svg { width: 16px; height: 16px; flex: none; }
 @media (pointer: coarse) { .btn { min-height: 44px; } .btn.small { min-height: 36px; } }
 
+/* Inaktive Karten (z. B. nicht verglichene Produkte): gedämpft, im Druck ausgeblendet */
+.off { opacity: .6; }
+.off:focus-within, .off:hover { opacity: 1; }
+@media print { .off { display: none !important; } }
+
 .key { display: inline-block; width: 14px; height: 3px; border-radius: 2px; flex: none; }
 .key.dash { height: 0; border-top: 2px dashed currentColor; background: none !important; }
 
@@ -145,6 +154,11 @@ td.best::after { content: ''; }
 .note svg { flex: none; margin-top: 2px; color: var(--warn-text); }
 
 .print-only { display: none; }
+
+/* Windows-Kontrastmodus: Farbmarken behalten ihre Farbe (sie tragen Information) */
+@media (forced-colors: active) {
+  .key { forced-color-adjust: none; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
