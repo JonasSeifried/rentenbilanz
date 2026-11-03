@@ -15,13 +15,17 @@
     info?: GlossaryKey;
     hint?: string;
     testid?: string;
+    /** Stabile ID des Schalters (z. B. `f-study`) für Direktlinks (`focusField`). */
+    id?: string;
+    disabled?: boolean;
   }
-  let { checked, onchange, label, children, info, hint, testid }: Props = $props();
-  const id = `sw-${++seq}`;
+  let { checked, onchange, label, children, info, hint, testid, id: idProp, disabled = false }: Props = $props();
+  const uid = `sw-${++seq}`;
+  const id = $derived(idProp ?? uid);
 </script>
 
 <div class="sw">
-  <input {id} type="checkbox" role="switch" {checked} data-testid={testid}
+  <input {id} type="checkbox" role="switch" {checked} {disabled} data-testid={testid}
     aria-describedby={hint ? id + '-h' : undefined}
     onchange={(e) => onchange(e.currentTarget.checked)} />
   <label for={id}>{#if children}{@render children()}{:else}{label}{/if}</label>
@@ -45,6 +49,18 @@
   input:checked { background: var(--accent); border-color: var(--accent); }
   input:checked::before { transform: translateX(14px); }
   input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  input:disabled { opacity: .5; cursor: not-allowed; }
+  .sw:has(input:disabled) label { color: var(--muted); cursor: not-allowed; }
   .msg { flex-basis: 100%; margin: 0 0 0 46px; font-size: .78rem; color: var(--muted); line-height: 1.4; }
+  /* Windows-Kontrastmodus: Hintergründe werden ersetzt. Zustand über Systemfarben, Daumen über Position */
+  @media (forced-colors: active) {
+    input { forced-color-adjust: none; background: Canvas; border: 2px solid ButtonText; }
+    input::before { background: ButtonText; box-shadow: none; top: 1px; left: 1px; }
+    input:checked { background: Highlight; border-color: Highlight; }
+    input:checked::before { background: HighlightText; }
+    input:disabled { border-color: GrayText; }
+    input:disabled::before { background: GrayText; }
+    input:focus-visible { outline-color: Highlight; }
+  }
   @media print { input { width: 28px; height: 16px; } input::before { width: 10px; height: 10px; } input:checked::before { transform: translateX(12px); } }
 </style>
