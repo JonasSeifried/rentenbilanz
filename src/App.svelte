@@ -6,10 +6,11 @@
   import { SITE } from './lib/site';
   import { THEME_KEY } from './lib/storage';
   import { eur } from './lib/format';
-  import { app, setInput, setTab, adoptShared, leaveShared, resetToDefaults, shareUrl, showToast, hideToast } from './lib/state.svelte';
+  import { app, setInput, setTab, adoptShared, leaveShared, resetToDefaults, shareUrl, showToast } from './lib/state.svelte';
   import NumberField from './lib/components/NumberField.svelte';
   import Switch from './lib/components/Switch.svelte';
   import Icon from './lib/components/Icon.svelte';
+  import Toast from './lib/components/Toast.svelte';
   import Overview from './lib/panels/Overview.svelte';
   import Detail from './lib/panels/Detail.svelte';
   import Heirs from './lib/panels/Heirs.svelte';
@@ -190,17 +191,7 @@
   </div>
 </footer>
 
-<div class="toast-region noprint" aria-live="polite" aria-atomic="true">
-  {#if app.toast}
-    {#key app.toast.id}
-      <div class="toast" data-testid="toast">
-        <span>{app.toast.message}</span>
-        {#if app.toast.action}<button class="btn small" type="button" onclick={app.toast.action.run} data-testid="toast-action">{app.toast.action.label}</button>{/if}
-        <button class="x" type="button" onclick={hideToast} aria-label="Hinweis schließen"><Icon name="close" size={14} /></button>
-      </div>
-    {/key}
-  {/if}
-</div>
+<Toast />
 
 <style>
   .skip { position: absolute; left: -9999px; top: 8px; z-index: 50; background: var(--surface); padding: 8px 12px; border-radius: 8px; }
@@ -286,16 +277,6 @@
   .foot-row { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; line-height: 1.7; }
   .foot-row nav { display: flex; gap: 16px; }
 
-  .toast-region { position: fixed; left: 0; right: 0; bottom: 16px; display: flex; justify-content: center; pointer-events: none; z-index: 40; padding: 0 12px; }
-  .toast {
-    pointer-events: auto; display: flex; align-items: center; gap: 12px; max-width: 560px;
-    background: var(--text); color: var(--page); border-radius: 12px; padding: 10px 10px 10px 16px;
-    box-shadow: var(--shadow-pop); font-size: .88rem; animation: up .18s ease-out;
-  }
-  .toast .btn { background: transparent; color: var(--page); border-color: color-mix(in srgb, var(--page) 40%, transparent); }
-  .toast .btn:hover { background: color-mix(in srgb, var(--page) 15%, transparent); }
-  .toast .x { background: none; border: 0; color: inherit; cursor: pointer; padding: 6px; display: grid; place-items: center; border-radius: 6px; opacity: .8; }
-  @keyframes up { from { transform: translateY(8px); opacity: 0; } }
 
   @media print {
     .site-head { padding: 0 0 4px; }
