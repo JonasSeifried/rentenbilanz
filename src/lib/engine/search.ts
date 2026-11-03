@@ -1,0 +1,220 @@
+// Suche nach der rechnerisch besten Aufteilung eines Monatsbudgets (Kombi-Modus).
+// Zielgröße: Summe netto von Rentenbeginn bis Auszahlplan-Ende in heutiger Kaufkraft (cumHReal, Fix rankReal, E1),
+// unabhängig vom Anzeige-Schalter. Reine Funktionen auf serialisierbaren Eingaben (worker-fähig).
+//
+// Verfahren „AVD-Raster“ (docs/kombi-modus.md): Die AVD-Kurve hat zwei Buckel (Ende der 50-%-Grundzulage bei 30 €
+// und Förderhöchstbetrag 150 €; mit Kindern ein Knick bei 25 €). Deshalb wird jeder AVD-Betrag des Rasters
+// einzeln gerechnet und nur der Rest per Tauschsuche (50 €, dann 10 €) auf die anderen Produkte verteilt,
+// warm gestartet vom Optimum des vorigen AVD-Betrags.
+
+import type { Params, ProductKey } from './engine';
+import { fixesOf, type EngineOptions } from './fixes';
+import { combo, comboStats, emptySplit, SPLIT_KEYS, type ComboStats, type Split } from './combo';
+
+/** Unterschiede bis 1 € (Summe bis H, heutige Kaufkraft) gelten als gleich. */
+export const TIE_EUR = 1;
+/** Rasterweite der Suche in €/Monat. */
+export const STEP = 10;
+/** Förderhöchstbetrag AVD in €/Monat (1.800 €/Jahr). Darüber rechnet das AVD im ETF-Nebendepot. */
+export const AVD_CAP = 150;
+
+export interface Cand { split: Split; stats: ComboStats; value: number }
+
+/** Zielgröße: mit Fix rankReal (Standard) immer cumHReal, sonst cumH in der Anzeige-Einheit. */
+export function objective(stats: ComboStats, opts?: EngineOptions): number {
+  return fixesOf(opts).has('rankReal') ? stats.cumHReal : stats.cumH;
+}
+
+let evalCount = 0;
+/** Anzahl der Auswertungen seit Programmstart (für Tests und Messungen). */
+export const evaluations = () => evalCount;
+
+export function evaluate(p: Params, split: Split, opts?: EngineOptions): Cand {
+  evalCount++;
+  const stats = comboStats(p, combo(p, split, opts));
+  return { split, stats, value: objective(stats, opts) };
+}
+
+const nonzero = (s: Split) => SPLIT_KEYS.filter(k => s[k] > 0).length;
+/**
+ * a besser als b? Mehr Zielgröße; bei Gleichstand (≤ TIE_EUR): weniger Produkte, dann mehr ETF (jederzeit verfügbar,
+ * nicht eingepreist), dann weniger Versicherung, dann der höhere Wert. Deterministisch.
+ */
+export function better(a: Cand, b: Cand): boolean {
+  if (a.value > b.value + TIE_EUR) return true;
+  if (b.value > a.value + TIE_EUR) return false;
+  const na = nonzero(a.split), nb = nonzero(b.split);
+  if (na !== nb) return na < nb;
+  if (a.split.etf !== b.split.etf) return a.split.etf > b.split.etf;
+  if (a.split.ins !== b.split.ins) return a.split.ins < b.split.ins;
+  return a.value > b.value;
+}
+
+export interface Space {
+  budget: number; step: number; keys: ProductKey[];
+  /** Mögliche AVD-Beträge (aufsteigend); [0], wenn das AVD nicht gewählt ist. */
+  avdValues: number[];
+  /** Produkte außer dem AVD, auf die der Rest in Schritten von `step` verteilt wird. */
+  others: ProductKey[];
+  /** Nimmt den Rest auf, der kein Vielfaches von `step` ist: ETF, sonst das erste andere Produkt. */
+  sink: ProductKey | null;
+}
+
+/**
+ * Suchraum: Σ = Budget, nur gewählte Produkte, Schritt 10 €. AVD ∈ {0, 10, …, 150} (+ 25 €, wenn Kinder angegeben sind,
+ * dort ist die Kinderzulage voll). Ist kein ETF gewählt, darf das AVD bis zum ganzen Budget gehen.
+ */
+export function searchSpace(p: Params, budget: number, keys: readonly ProductKey[], step = STEP): Space {
+  const ks = SPLIT_KEYS.filter(k => keys.includes(k));
+  const others = ks.filter(k => k !== 'avd');
+  const sink = others.includes('etf') ? 'etf' : others[0] ?? null;
+  const avdValues: number[] = [];
+  if (ks.includes('avd')) {
+    if (!others.length) avdValues.push(budget);
+    else {
+      const max = ks.includes('etf') ? Math.min(budget, AVD_CAP) : budget;
+      for (let u = 0; u * step <= max + 1e-9; u++) avdValues.push(u * step);
+      if (p.kids > 0 && 25 <= max && step === STEP) { avdValues.push(25); avdValues.sort((a, b) => a - b); }
+    }
+  } else avdValues.push(0);
+  return { budget, step, keys: ks, avdValues, others, sink };
+}
+
+/** Rest nach dem AVD in ganze Schritte und einen Rest für `sink` zerlegen. */
+function restOf(sp: Space, avd: number): { units: number; rem: number } | null {
+  const rest = sp.budget - avd;
+  if (rest < -1e-9) return null;
+  const units = Math.floor(rest / sp.step + 1e-9);
+  return { units, rem: Math.max(0, Math.round((rest - units * sp.step) * 100) / 100) };
+}
+
+function compose(sp: Space, avd: number, units: readonly number[], rem: number): Split {
+  const s = emptySplit();
+  if (sp.keys.includes('avd')) s.avd = avd;
+  sp.others.forEach((k, i) => { s[k] = units[i] * sp.step; });
+  if (sp.sink && rem > 0) s[sp.sink] = Math.round((s[sp.sink] + rem) * 100) / 100;
+  return s;
+}
+
+/** Alle Gitterpunkte des Suchraums (für die erschöpfende Suche in Tests). */
+export function* lattice(sp: Space): Generator<Split> {
+  for (const a of sp.avdValues) {
+    const r = restOf(sp, a); if (!r) continue;
+    const m = sp.others.length;
+    if (!m) { if (r.units === 0 && r.rem === 0) yield compose(sp, a, [], 0); continue; }
+    const u = new Array<number>(m).fill(0);
+    const rec = function* (i: number, left: number): Generator<Split> {
+      if (i === m - 1) { u[i] = left; yield compose(sp, a, u, r.rem); return; }
+      for (let x = 0; x <= left; x++) { u[i] = x; yield* rec(i + 1, left - x); }
+    };
+    yield* rec(0, r.units);
+  }
+}
+
+export function exhaustive(p: Params, sp: Space, opts?: EngineOptions): { best: Cand; max: number; count: number } {
+  let best: Cand | null = null, max = -Infinity, count = 0;
+  for (const s of lattice(sp)) { const c = evaluate(p, s, opts); count++; if (c.value > max) max = c.value; if (!best || better(c, best)) best = c; }
+  return { best: best!, max, count };
+}
+
+export interface PureStrategy { key: ProductKey; label: string; split: Split; stats: ComboStats; value: number }
+
+/** Bezeichnung einer reinen Strategie (UX Teil D). */
+export function pureLabel(key: ProductKey, budget: number): string {
+  switch (key) {
+    case 'etf': return 'Alles ins ETF-Depot';
+    case 'avd': return budget > AVD_CAP + 1e-9
+      ? 'Alles ins Altersvorsorgedepot (150 € gefördert + ' + Math.round(budget - AVD_CAP).toLocaleString('de-DE') + ' € Nebendepot)'
+      : 'Alles ins Altersvorsorgedepot';
+    case 'ins': return 'Alles in die Rentenversicherung';
+    case 'fond': return 'Alles in den aktiven Fonds';
+  }
+}
+
+/** Reine Strategien: das ganze Budget in ein Produkt (AVD: bis 150 € gefördert, Rest im Nebendepot wie im Einzelvergleich). */
+export function pureStrategies(p: Params, budget: number, keys: readonly ProductKey[], opts?: EngineOptions): PureStrategy[] {
+  return SPLIT_KEYS.filter(k => keys.includes(k)).map(k => {
+    const c = evaluate(p, { ...emptySplit(), [k]: budget }, opts);
+    return { key: k, label: pureLabel(k, budget), ...c };
+  });
+}
+
+export interface CurvePoint { avd: number; split: Split; value: number; avgMonthly: number }
+
+export interface BestSplitResult {
+  /** Signatur der Eingaben (comboSig); analyzeCombo nutzt das Ergebnis nur bei gleicher Signatur. */
+  sig: string;
+  budget: number; keys: ProductKey[];
+  split: Split; stats: ComboStats; value: number;
+  /** Bestes Ergebnis je AVD-Betrag (Rest bestmöglich verteilt), z. B. für ein Mini-Diagramm. */
+  curve: CurvePoint[];
+  /** Anzahl Auswertungen der Kombi-Engine. */
+  evals: number;
+}
+
+/** Signatur von Params, Budget, Produkten und Fixes (stabil, serialisierbar). */
+export function comboSig(p: Params, budget: number, keys: readonly ProductKey[], opts?: EngineOptions): string {
+  return JSON.stringify([p, budget, SPLIT_KEYS.filter(k => keys.includes(k)), [...fixesOf(opts)].sort()]);
+}
+
+/**
+ * Rechnerisch beste Aufteilung („AVD-Raster“, warm gestartet). Reine strategien, die außerhalb des Rasters liegen
+ * (AVD über 150 € bei gewähltem ETF), werden zusätzlich geprüft und nur übernommen, wenn sie mehr als TIE_EUR besser sind.
+ * Bei weniger als einem Produkt oder Budget 0 gibt es kein Ergebnis (null).
+ */
+export function bestSplit(p: Params, budget: number, keys: readonly ProductKey[], opts?: EngineOptions): BestSplitResult | null {
+  const sp = searchSpace(p, budget, keys);
+  if (!sp.keys.length || !(budget > 0)) return null;
+  const before = evalCount;
+  const cache = new Map<string, Cand>();
+  const ev = (s: Split) => { const key = s.etf + '/' + s.avd + '/' + s.ins + '/' + s.fond; let c = cache.get(key); if (!c) { c = evaluate(p, s, opts); cache.set(key, c); } return c; };
+  const m = sp.others.length;
+  const climb = (a: number, start: number[], rem: number): { c: Cand; u: number[] } => {
+    let u = start.slice(), cur = ev(compose(sp, a, u, rem));
+    for (const d of [5, 1]) for (let it = 0; it < 1000; it++) {
+      let next: Cand | null = null, nu: number[] | null = null;
+      for (let i = 0; i < m; i++) for (let j = 0; j < m; j++) {
+        if (i === j || u[i] < d) continue;
+        const v = u.slice(); v[i] -= d; v[j] += d;
+        const c = ev(compose(sp, a, v, rem));
+        if (better(c, next ?? cur)) { next = c; nu = v; }
+      }
+      if (!next) break;
+      cur = next; u = nu!;
+    }
+    return { c: cur, u };
+  };
+  let best: Cand | null = null, prev: number[] | null = null;
+  const curve: CurvePoint[] = [];
+  sp.avdValues.forEach((a, idx) => {
+    const r = restOf(sp, a); if (!r) return;
+    let local: { c: Cand; u: number[] } | null = null;
+    if (!m) local = { c: ev(compose(sp, a, [], 0)), u: [] };
+    else {
+      const starts: number[][] = [];
+      const edge = idx === 0 || idx === sp.avdValues.length - 1 || !prev;
+      if (edge) for (let i = 0; i < m; i++) { const u = new Array<number>(m).fill(0); u[i] = r.units; starts.push(u); }
+      if (prev) {
+        // vorige Lösung übernehmen, die Differenz beim größten Posten ausgleichen
+        const u = prev.slice(); let diff = r.units - u.reduce((x, y) => x + y, 0);
+        while (diff !== 0) {
+          const big = u.reduce((bi, x, k) => x > u[bi] ? k : bi, 0);
+          if (diff > 0) { u[big] += diff; diff = 0; }
+          else { const take = Math.min(u[big], -diff); if (take === 0) break; u[big] -= take; diff += take; }
+        }
+        if (diff === 0) starts.push(u);
+      }
+      for (const s0 of starts) { const c = climb(a, s0, r.rem); if (!local || better(c.c, local.c)) local = c; }
+    }
+    prev = local!.u;
+    curve.push({ avd: a, split: local!.c.split, value: local!.c.value, avgMonthly: local!.c.stats.avgMonthly });
+    if (!best || better(local!.c, best)) best = local!.c;
+  });
+  // Reine Strategien außerhalb des Rasters (AVD > 150 € bei gewähltem ETF): nur bei echtem Vorteil
+  for (const k of sp.keys) {
+    const c = ev({ ...emptySplit(), [k]: budget });
+    if (best && c.value > (best as Cand).value + TIE_EUR) best = c;
+  }
+  const b = best!;
+  return { sig: comboSig(p, budget, sp.keys, opts), budget, keys: sp.keys, split: b.split, stats: b.stats, value: b.value, curve, evals: evalCount - before };
+}
