@@ -24,19 +24,30 @@
     marker?: { x: number; label: string } | null;
     height?: number;
     tableStep?: number;
+    /** Überschrift im Tooltip (und im vorgelesenen Wert) für den x-Wert; Standard: „{xTitle} {x}“. */
+    tipTitle?: (x: number) => string;
+    /** Letzter angezeigter x-Wert; Werte danach werden weggelassen (Achse, Skala, Tabelle). */
+    xMax?: number;
   }
-  let { series, x0, xTitle = 'Alter', title, marker = null, height = 300, tableStep = 5 }: Props = $props();
+  let { series: allSeries, x0, xTitle = 'Alter', title, marker = null, height = 300, tableStep = 5, tipTitle, xMax }: Props = $props();
 
   const uid = `ch-${++seq}`;
+  /** Letzte gemessene Breite > 0 (verborgene Tabs melden 0 und werden ignoriert). */
   let width = $state(0);
+  let printing = $state(false);
   let hover = $state<number | null>(null);
   let svgEl: SVGSVGElement | undefined = $state();
 
-  // Breite messen, Update im nächsten Frame (vermeidet „ResizeObserver loop“, weil die Höhe von der Breite abhängt)
+  // Breite messen. Anfangswert synchron (kein Frame mit falscher Breite), Updates im nächsten Frame
+  // (vermeidet „ResizeObserver loop“, weil die Höhe von der Breite abhängt). Breite 0 (Tab verborgen)
+  // wird ignoriert: Die letzte Breite bleibt, beim Einblenden gibt es keinen gestauchten Frame.
   function observeWidth(node: HTMLElement) {
     let raf = 0;
+    const w0 = Math.round(node.clientWidth);
+    if (w0 > 0) width = w0;
     const ro = new ResizeObserver(entries => {
       const w = Math.round(entries[0].contentRect.width);
+      if (w <= 0) return;
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => { if (w !== width) width = w; });
     });
@@ -44,13 +55,36 @@
     return () => { cancelAnimationFrame(raf); ro.disconnect(); };
   }
 
-  const W = $derived(Math.max(300, width || 760));
+  // Druck: feste Breite, damit das Diagramm nicht im Bildschirmlayout gemessen (und gestaucht) wird.
+  const PRINT_WIDTH = 680;
+  $effect(() => {
+    const mq = window.matchMedia('print');
+    const on = () => { printing = true; };
+    const off = () => { printing = false; };
+    const sync = (e: MediaQueryListEvent) => (e.matches ? on() : off());
+    window.addEventListener('beforeprint', on);
+    window.addEventListener('afterprint', off);
+    mq.addEventListener('change', sync);
+    return () => {
+      window.removeEventListener('beforeprint', on);
+      window.removeEventListener('afterprint', off);
+      mq.removeEventListener('change', sync);
+    };
+  });
+
+  // Auf xMax begrenzte Sicht auf die Reihen
+  const len = $derived.by(() => {
+    const raw = Math.max(1, ...allSeries.map(s => s.values.length));
+    return xMax === undefined ? raw : Math.max(1, Math.min(raw, Math.floor(xMax) - x0 + 1));
+  });
+  const series = $derived(allSeries.map(s => ({ ...s, values: s.values.slice(0, len) })));
+
+  const W = $derived(Math.max(300, printing ? PRINT_WIDTH : width || 760));
   const narrow = $derived(W < 560);
   const H = $derived(narrow ? Math.min(height, 250) : height);
   const m = $derived({ l: narrow ? 36 : 48, r: narrow ? 14 : 104, t: 24, b: 30 });
   const iw = $derived(W - m.l - m.r);
   const ih = $derived(H - m.t - m.b);
-  const len = $derived(Math.max(1, ...series.map(s => s.values.length)));
 
   const yScale = $derived.by(() => {
     let ymax = 0;
@@ -137,8 +171,9 @@
     return xs + 14 + tipW > (width || W) ? Math.max(0, xs - 14 - tipW) : xs + 14;
   });
 
+  const xLabel = (i: number) => (tipTitle ? tipTitle(x0 + i) : xTitle + ' ' + (x0 + i));
   function valueText(i: number): string {
-    return xTitle + ' ' + (x0 + i) + ': ' + series.filter(s => s.values[i] != null).map(s => (s.short || s.name) + ' ' + eur(s.values[i]!)).join(', ');
+    return xLabel(i) + ': ' + series.filter(s => s.values[i] != null).map(s => (s.short || s.name) + ' ' + eur(s.values[i]!)).join(', ');
   }
 
   const tableRows = $derived.by(() => {
@@ -176,8 +211,8 @@
         {#if !narrow}<text class="tick" x={m.l + iw + 18} y={H - 10}>{xTitle}</text>{/if}
 
         {#if markerI != null && markerI >= 0 && markerI < len}
-          <line x1={x(markerI)} x2={x(markerI)} y1={m.t} y2={m.t + ih} stroke="var(--axis)" stroke-width="1" />
-          <text class="mlabel" x={x(markerI) + 5} y={m.t + 10} text-anchor={markerI > len * 0.75 ? 'end' : 'start'} dx={markerI > len * 0.75 ? -10 : 0}>{marker!.label}</text>
+          <line x1={x(markerI)} x2={x(markerI)} y1={m.t - 6} y2={m.t + ih} stroke="var(--axis)" stroke-width="1" />
+          <text class="mlabel" x={x(markerI) + (markerI > len * 0.75 ? -4 : 4)} y={m.t - 9} text-anchor={markerI > len * 0.75 ? 'end' : 'start'}>{marker!.label}</text>
         {/if}
 
         {#each series as s, k}
@@ -205,8 +240,8 @@
       </svg>
     </div>
     {#if hover != null}
-      <div class="tip" style:left="{tipLeft}px" aria-hidden="true">
-        <div class="t">{xTitle} {x0 + hover}</div>
+      <div class="tip" class:fixed={narrow} style:left={narrow ? undefined : tipLeft + 'px'} aria-hidden="true">
+        <div class="t">{xLabel(hover)}</div>
         {#each series as s}
           {@const v = s.values[hover]}
           {#if v != null}
@@ -249,6 +284,14 @@
     background: var(--surface); border: 1px solid var(--border-strong); border-radius: 10px;
     padding: 8px 10px; font-size: .8rem; box-shadow: var(--shadow-pop);
   }
+  /* Schmal (Handy): fester Streifen oben über der Fläche statt eines Tooltips, den der Finger verdeckt */
+  .tip.fixed {
+    left: 0; right: 0; top: 0; width: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 0 14px;
+    padding: 5px 10px; border-radius: 8px; font-size: .78rem; background: color-mix(in srgb, var(--surface) 96%, transparent);
+  }
+  .tip.fixed .t { margin: 0; font-weight: 600; color: var(--text-2); }
+  .tip.fixed .r { gap: 5px; line-height: 1.5; }
+  .tip.fixed .r b { margin-left: 2px; }
   .tip .t { color: var(--muted); margin-bottom: 4px; }
   .tip .r { display: flex; align-items: center; gap: 8px; line-height: 1.6; }
   .tip .n { color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
