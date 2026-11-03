@@ -1,14 +1,19 @@
-// Golden-Tests: Original-Engine (legacy/index.html) gegen portierte Engine (src/lib/engine).
+// Golden-Tests: Original-Engine (legacy/index.html) gegen portierte Engine (src/lib/engine) ohne Korrekturen (NO_FIXES).
 // Beide bekommen exakt dieselben Eingaben; jede Zahl muss auf den Cent übereinstimmen.
+// Die Korrekturen selbst prüft tests/fixes.test.ts (siehe docs/abweichungen-vom-original.md).
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 import { describe, expect, it, beforeAll } from 'vitest';
 import { readParams, model, type ProductKey } from '../src/lib/engine/engine';
 import { analyze, scenarios } from '../src/lib/engine/analyze';
+import { NO_FIXES } from '../src/lib/engine/fixes';
 import { DEFAULTS, LEGACY_KEYS, type Inputs } from '../src/lib/engine/inputs';
 
 const CENT = 0.005;
+const OPTS = { fixes: NO_FIXES };
+// Einzige erlaubte neue Schlüssel (fehlen im Original): params.incHeir und stats.*.cumHReal. Alles andere muss strukturell gleich sein.
+const ALLOW_NEW = [/^(params|scen\[\d+\]\.p)\.incHeir$/, /^(scen\[\d+\]\.)?stats\.\w+\.cumHReal$/];
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
 let legacy: { readParams: () => Any; model: (p: Any) => Any; analyze: (p: Any) => Any; scenarios: (p: Any) => Any };
@@ -57,6 +62,7 @@ function cmp(a: unknown, b: unknown, path: string) {
     const keys = new Set([...Object.keys(a as object), ...Object.keys(b as object)]);
     for (const k of keys) {
       const x = (a as Any)[k], y = (b as Any)[k];
+      if (x === undefined && ALLOW_NEW.some(re => re.test(`${path}.${k}`))) continue;
       if (typeof x === 'function' || typeof y === 'function') {
         expect(typeof y, `${path}.${k} ist Funktion`).toBe(typeof x);
         continue; // Funktionen werden gezielt unten ausgewertet
@@ -74,7 +80,7 @@ function compareAll(inputs: Inputs) {
   const pN = readParams(inputs);
   cmp(pL, pN, 'params');
 
-  const mL = legacy.model(pL), mN = model(pN);
+  const mL = legacy.model(pL), mN = model(pN, OPTS);
   cmp({ T: mL.T, n: mL.n, tH: mL.tH }, { T: mN.T, n: mN.n, tH: mN.tH }, 'model');
   for (let t = 0; t <= mL.T; t++) cmp(mL.I(t), mN.I(t), `I(${t})`);
   const keys = Object.keys(mL.res) as ProductKey[];
@@ -93,7 +99,7 @@ function compareAll(inputs: Inputs) {
     }
   }
 
-  const aL = legacy.analyze(pL), aN = analyze(pN);
+  const aL = legacy.analyze(pL), aN = analyze(pN, OPTS);
   cmp(aL.stats, aN.stats, 'stats');
   expect(aN.fairOwn).toBe(aL.fairOwn);
   expect(aN.refundSpent).toBe(aL.refundSpent);
@@ -102,7 +108,7 @@ function compareAll(inputs: Inputs) {
   expect(aN.active.map(x => x.name)).toEqual([...aL.active].map((x: Any) => x.name));
   for (const pr of aL.active) cmp(aL.ownOf(pr), aN.ownOf(pr), `ownOf(${pr.key})`);
 
-  const sL = legacy.scenarios(pL), sN = scenarios(pN);
+  const sL = legacy.scenarios(pL), sN = scenarios(pN, OPTS);
   expect(sN.length, 'Anzahl Szenarien').toBe(sL.length);
   sL.forEach((s: Any, i: number) => {
     cmp(s.p, sN[i].p, `scen[${i}].p`);
