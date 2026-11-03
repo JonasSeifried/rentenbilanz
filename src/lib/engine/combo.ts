@@ -34,6 +34,8 @@ export interface ComboPart {
   foerder: number; foerderReal: number; payEnd: number; lumpNet: number;
   /** Anteil an den gemeinsamen Abzügen je Jahr (nominal): Einkommensteuer im Alter, Abgeltungsteuer, KV/PV. */
   incTax: number[]; abgTax: number[]; kv: number[];
+  /** Einkommensteuerpflichtiger Betrag je Jahr (nominal), Grundlage der gemeinsamen Steuer (Fonds: 0). */
+  taxBase: number[];
   // AVD
   capAVD?: number; sideR?: number; sideOwn?: number; sideOwnReal?: number;
   zul?: number; zulReal?: number; ref?: number; refReal?: number; noElig?: number;
@@ -304,7 +306,7 @@ function run(p: Params, split: Split, opts: EngineOptions, zeroCost: boolean): C
   const parts: ComboResult['parts'] = {};
   const fundPart = (k: ProductKey, f: Fund): ComboPart => ({
     key: k, vals: f.vals, net: f.net, own: f.own, ownReal: f.ownReal, capR: f.vals[n], capNet: sellNet(f, n), cost: 0,
-    foerder: 0, foerderReal: 0, payEnd: p.H, lumpNet: 0, incTax: zero(), abgTax: f.abg, kv: f.kvInline,
+    foerder: 0, foerderReal: 0, payEnd: p.H, lumpNet: 0, incTax: zero(), abgTax: f.abg, kv: f.kvInline, taxBase: zero(),
   });
   if (fEtf) parts.etf = fundPart('etf', fEtf);
   if (fFond) parts.fond = fundPart('fond', fFond);
@@ -326,18 +328,18 @@ function run(p: Params, split: Split, opts: EngineOptions, zeroCost: boolean): C
       capNet: avd.vals[n] - latentTax(avd.vals[n], n) + sellNet(side, n),
       zul: avd.zul, zulReal: avd.zulReal, ref: avd.ref, refReal: avd.refReal,
       foerder: avd.zul + avd.ref, foerderReal: avd.zulReal + avd.refReal, cost: 0, payEnd: p.H, noElig: avd.noElig, lumpNet,
-      incTax: taxAvd, abgTax: side.abg, kv: aKv,
+      incTax: taxAvd, abgTax: side.abg, kv: aKv, taxBase: avd.payY,
     };
   }
   if (ins) {
     const base = {
       key: 'ins' as const, own: ins.own, ownReal: ins.ownReal, capR: ins.C, capNet: ins.C - kapTax, kapNet, foerder: 0, foerderReal: 0,
-      cost: 0, annual: ins.annual, lump: p.insLump, lumpNet: 0, incTax: taxIns,
+      cost: 0, annual: ins.annual, lump: p.insLump, lumpNet: 0, incTax: taxIns, taxBase: xIns,
     };
     if (p.insLump && fIns) {
       const f = fIns, iKv = f.kvInline;
       iKv[n] += kvLi;
-      abgTaxAdd(f.abg, n, kapTaxFlat);
+      if (kapTaxFlat > 0) f.abg[n] += kapTaxFlat;
       // Fix kvLumpSpread (E8): C/10 in den Jahren n … n+9 beitragspflichtig
       if (F.kvSpread) for (let j = 0; j < 10 && n + j < T; j++) {
         if (F.kvShared) claims.ins![n + j] += ins.C / 10;
@@ -392,8 +394,6 @@ function run(p: Params, split: Split, opts: EngineOptions, zeroCost: boolean): C
     incTax, abgTax, kv, kvClipped, T, n, tH, I,
   };
 }
-
-function abgTaxAdd(arr: number[], t: number, x: number) { if (x > 0) arr[t] += x; }
 
 /** Wie analyze(): Zeitraum Rentenbeginn … Auszahlplan-Ende; cumH/avgMonthly/cum100/lump in der Anzeige-Einheit. */
 export function comboStats(p: Params, c: ComboResult, net: number[] = c.net, lumpNom: number = c.lumpNet): ComboStats {
