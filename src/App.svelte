@@ -19,6 +19,10 @@
   import ResultPeek from './lib/components/ResultPeek.svelte';
   import { changedSettings } from './lib/components/AssumptionCheck.svelte';
   import { verdict } from './lib/verdict';
+  import { createComboRun } from './lib/comboRun.svelte';
+  import ComboSplit from './lib/components/ComboSplit.svelte';
+  import ComboOverview from './lib/panels/ComboOverview.svelte';
+  import ComboDetail from './lib/panels/ComboDetail.svelte';
   import { DEFAULTS, INPUT_KEYS } from './lib/engine/inputs';
 
   const p = $derived(readParams(app.inputs));
@@ -33,7 +37,9 @@
   const V = $derived(verdict(A, scen));
   const changedN = $derived(changedSettings(i).length);
   const isExample = $derived(INPUT_KEYS.every(k => k === 'real' || i[k] === DEFAULTS[k]));
-  const peekText = $derived(V.kind === 'ok' ? V.headline : 'Ergebnis siehe Überblick');
+  const run = createComboRun(() => app.inputs);
+  const combo = $derived(i.combo);
+  const peekText = $derived(combo ? (run.V?.headline ?? 'Ergebnis siehe Überblick') : V.kind === 'ok' ? V.headline : 'Ergebnis siehe Überblick');
 
   const contribDiffer = $derived(CONTRIB_KEYS.some(k => i[k] !== i.setAll));
   const today = new Date().toLocaleDateString('de-DE');
@@ -136,8 +142,12 @@
         clampNote={v => (v < 16 || v > 60 ? 'Gerechnet wird mit ' + Math.min(60, Math.max(16, Math.round(v))) + '.' : null)} />
       <NumberField label="Gehalt, zu versteuern" value={i.incWork} onchange={v => setInput('incWork', v)} min={0} step={1000} unit="€/Jahr" info="zve" testid="incWork" />
       <NumberField label="Einkommen im Alter" value={i.incRet} onchange={v => setInput('incRet', v)} min={0} step={1000} unit="€/Jahr" info="incRet" testid="incRet" />
-      <NumberField label="Monatsbeitrag je Produkt" value={i.setAll} onchange={v => setInput('setAll', v)} min={0} step={10} unit="€" testid="setAll"
-        clampNote={() => (contribDiffer ? 'Einzelbeiträge weichen ab (siehe Einstellungen).' : null)} />
+      {#if combo}
+        <NumberField label="Monatliches Budget" value={i.cBudget} onchange={v => setInput('cBudget', v)} min={0} step={10} unit="€" testid="cBudget" />
+      {:else}
+        <NumberField label="Monatsbeitrag je Produkt" value={i.setAll} onchange={v => setInput('setAll', v)} min={0} step={10} unit="€" testid="setAll"
+          clampNote={() => (contribDiffer ? 'Einzelbeiträge weichen ab (siehe Einstellungen).' : null)} />
+      {/if}
       <NumberField label="Rendite vor Kosten" value={i.g} onchange={v => setInput('g', v)} step={0.5} unit="% p. a." info="rendite" testid="g" />
       <NumberField label="Rentenbeginn mit" value={i.R} onchange={v => setInput('R', v)} min={65} max={70} unit="Jahren" info="rentenbeginn" testid="R"
         clampNote={v => (v < 65 || v > 70 ? 'Gerechnet wird mit ' + Math.min(70, Math.max(65, Math.round(v))) + '.' : null)} />
@@ -145,6 +155,10 @@
     <div class="eck-foot">
       <div class="kv">
         <KvQuestion />
+      </div>
+      <div class="seg noprint" role="group" aria-label="Beitragsmodus">
+        <button type="button" class:on={!combo} aria-pressed={!combo} onclick={() => setInput('combo', false)} data-testid="mode-equal">Gleich viel je Produkt</button>
+        <button type="button" class:on={combo} aria-pressed={combo} onclick={() => setInput('combo', true)} data-testid="mode-combo">Budget aufteilen</button>
       </div>
       <fieldset class="compare">
         <legend>Vergleichen</legend>
@@ -157,6 +171,7 @@
         {/each}
       </fieldset>
     </div>
+    {#if combo}<ComboSplit />{/if}
   </section>
 
   <div class="tabbar noprint">
@@ -178,9 +193,9 @@
     {#each TABS as t}
       <div class="panel" id="panel-{t}" role="tabpanel" aria-labelledby="tab-{t}" hidden={app.tab !== t}
         class:print={t !== 'heirs'} tabindex="-1">
-        {#if t === 'overview'}<Overview {A} {scen} />
-        {:else if t === 'detail'}<Detail {A} />
-        {:else if t === 'heirs'}<Heirs {A} />
+        {#if t === 'overview'}{#if combo}<ComboOverview {run} />{:else}<Overview {A} {scen} />{/if}
+        {:else if t === 'detail'}{#if combo}<ComboDetail {run} />{:else}<Detail {A} />{/if}
+        {:else if t === 'heirs'}{#if combo}<section class="card" data-testid="combo-heirs"><h2>Erbfall</h2><p class="hint">Der Erbfall wird nur im Einzelvergleich gerechnet. Wechsle oben auf „Gleich viel je Produkt“, um ihn zu sehen.</p></section>{:else}<Heirs {A} />{/if}
         {:else}<Settings />{/if}
       </div>
     {/each}
@@ -250,6 +265,11 @@
   @media (max-width: 640px) { .eck-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 10px; } }
   .eck-foot { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--grid); }
   .kv { flex: 0 1 auto; min-width: 260px; }
+  .seg { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 999px; overflow: hidden; margin-left: auto; }
+  .seg button { font: inherit; font-size: .85rem; padding: 6px 14px; border: 0; background: var(--surface); color: var(--text-2); cursor: pointer; }
+  .seg button.on { background: var(--accent); color: var(--on-accent, #fff); font-weight: 600; }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  @media (pointer: coarse) { .seg button { min-height: 44px; } }
   .compare { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
   .compare legend { float: left; margin-right: 6px; font-size: .82rem; color: var(--text-2); padding: 0; }
   .chip {
