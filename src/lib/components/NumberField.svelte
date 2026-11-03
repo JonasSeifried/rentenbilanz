@@ -168,7 +168,7 @@
   $effect(() => () => { clearTimeout(holdTimer); clearInterval(holdRepeat); });
 </script>
 
-<div class="field {layout}" class:disabled>
+<div class="field {layout}" class:disabled class:neg={allowNegative && !stepper} class:stepper>
   <div class="lab">
     <label for={id}>{label}</label>
     {#if info}<Info k={info} />{/if}
@@ -246,11 +246,15 @@
   /* ± nur auf Touch-Geräten (dort fehlt das Minus auf der Dezimaltastatur) */
   .pm {
     display: none; flex: none; align-items: center; justify-content: center; align-self: stretch;
-    min-width: 44px; padding: 0; margin: 0; border: 0; border-right: 1px solid var(--border);
+    min-width: 38px; padding: 0; margin: 0; border: 0; border-right: 1px solid var(--border);
     border-radius: var(--radius-sm) 0 0 var(--radius-sm); background: var(--surface-2); color: var(--text-2);
     font: 600 1.05rem/1 var(--font); cursor: pointer;
   }
-  @media (pointer: coarse) { .pm { display: inline-flex; } }
+  @media (pointer: coarse) {
+    .pm { display: inline-flex; }
+    .row.neg { grid-template-columns: 1fr minmax(150px, 170px); } /* Platz für ± neben der Zahl */
+  }
+  .row.stepper { grid-template-columns: 1fr minmax(180px, 200px); }
   .st {
     display: inline-grid; place-items: center; flex: none; align-self: stretch;
     width: 44px; min-height: 44px; padding: 0; margin: 0; border: 0; background: var(--surface-2); color: var(--text);
