@@ -23,6 +23,7 @@ export const app = $state({
 });
 
 let saved: Inputs | null = null;
+let dirty = false; // ungespeicherte Änderungen vorhanden
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 let toastId = 0;
@@ -36,12 +37,14 @@ export function hideToast() { clearTimeout(toastTimer); app.toast = null; }
 
 function persistSoon() {
   if (app.mode !== 'own') return;
+  dirty = true;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(persistNow, 250);
 }
 function persistNow() {
   clearTimeout(saveTimer);
   if (app.mode !== 'own') return;
+  dirty = false;
   const snap = $state.snapshot(app.inputs) as Inputs;
   if (saveInputs(snap)) saved = snap;
 }
@@ -84,7 +87,7 @@ export function init() {
   applyLocation(true);
   window.addEventListener('hashchange', () => applyLocation(false));
   // Beim Verlassen sicher speichern (falls der Debounce noch läuft)
-  window.addEventListener('pagehide', persistNow);
+  window.addEventListener('pagehide', () => { if (dirty) persistNow(); });
 }
 
 export function setInput<K extends InputKey>(key: K, value: Inputs[K]) {
@@ -129,6 +132,8 @@ export function resetToDefaults() {
 }
 
 export function forgetSaved() {
+  clearTimeout(saveTimer);
+  dirty = false;
   clearSaved();
   saved = null;
   if (app.mode === 'own') { app.inputs = { ...DEFAULTS }; }

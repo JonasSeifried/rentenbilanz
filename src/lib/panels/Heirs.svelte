@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { scrollRegion } from '../attach';
   import type { Analysis } from '../engine/analyze';
   import type { HeirValue } from '../engine/engine';
   import { eur } from '../format';
@@ -51,7 +52,7 @@
         <h2 id="heir-h">Was die Erben bekommen</h2>
         <p class="hint">Bei Tod mit {p.deathAge}, {p.deathAge < p.R ? 'vor' : 'nach'} Rentenbeginn. Ohne Erbschaftsteuer.</p>
       </div>
-      <div class="table-scroll">
+      <div class="table-scroll" {@attach scrollRegion('Tabelle: Was die Erben bekommen')}>
         <table class="heirs" data-testid="heirs-table">
           <thead><tr><th>Wer erbt was</th><th>Erben bekommen (ca.)</th><th class="l">Hinweis</th></tr></thead>
           <tbody>
@@ -83,4 +84,13 @@
   .side .hint { margin: 10px 0 0; }
   .heirs th.l, .heirs td.l { text-align: left; white-space: normal; }
   .note-cell { color: var(--text-2); font-size: .82rem; min-width: 220px; }
+  /* Mobil: Name und Betrag nebeneinander, Hinweis darunter */
+  @media (max-width: 640px) {
+    .heirs thead { display: none; }
+    .heirs, .heirs tbody { display: block; }
+    .heirs tr { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 10px 0; border-bottom: 1px solid var(--grid); }
+    .heirs tbody tr:last-child { border-bottom: 0; }
+    .heirs td { border: 0; padding: 0; }
+    .heirs td.l { grid-column: 1 / -1; min-width: 0; }
+  }
 </style>

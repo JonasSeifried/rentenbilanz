@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { scrollRegion } from '../attach';
   import type { Analysis, Scenario } from '../engine/analyze';
   import { eur } from '../format';
   import { verdict } from '../verdict';
@@ -90,7 +91,7 @@
     <h2 id="scen-h">Was das Ergebnis kippen würde</h2>
   </div>
   <p class="hint">Ø netto pro Monat von Rentenbeginn bis Auszahlplan-Ende, jeweils mit nur <em>einer</em> geänderten Annahme. „Vorne“ = meistes Netto-Geld bis Auszahlplan-Ende. <span class="flipkey">Markiert</span>: Ein anderes Produkt liegt vorne als mit den Eingaben oben.</p>
-  <div class="table-scroll">
+  <div class="table-scroll" {@attach scrollRegion('Tabelle: Was das Ergebnis kippen würde')}>
     <table class="scen" data-testid="scenarios">
       <thead>
         <tr><th>Szenario</th>

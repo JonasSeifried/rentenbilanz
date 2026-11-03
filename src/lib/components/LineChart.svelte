@@ -13,6 +13,7 @@
   // (mit Führungslinie, wenn sie ausweichen müssen), Fadenkreuz-Tooltip für Maus, Touch und Tastatur
   // sowie eine Tabellenansicht als Alternative.
   import { eur } from '../format';
+  import { scrollRegion } from '../attach';
 
   interface Props {
     series: Series[];
@@ -30,6 +31,18 @@
   let width = $state(0);
   let hover = $state<number | null>(null);
   let svgEl: SVGSVGElement | undefined = $state();
+
+  // Breite messen, Update im nächsten Frame (vermeidet „ResizeObserver loop“, weil die Höhe von der Breite abhängt)
+  function observeWidth(node: HTMLElement) {
+    let raf = 0;
+    const ro = new ResizeObserver(entries => {
+      const w = Math.round(entries[0].contentRect.width);
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => { if (w !== width) width = w; });
+    });
+    ro.observe(node);
+    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
+  }
 
   const W = $derived(Math.max(300, width || 760));
   const narrow = $derived(W < 560);
@@ -142,7 +155,7 @@
     {/each}
   </ul>
 
-  <div class="plot" bind:clientWidth={width}>
+  <div class="plot" {@attach observeWidth}>
     <!-- Tastatur/Screenreader: das Diagramm ist ein Schieberegler über die x-Achse, der Wert wird vorgelesen -->
     <div class="focus" tabindex="0" role="slider" aria-roledescription="Diagramm"
       aria-label={title + '. Pfeiltasten links und rechts wählen das ' + xTitle + '.'}
@@ -206,7 +219,7 @@
 
   <details class="tbl noprint-toggle">
     <summary>Werte als Tabelle</summary>
-    <div class="table-scroll">
+    <div class="table-scroll" {@attach scrollRegion('Werte als Tabelle: ' + title)}>
       <table aria-describedby={uid}>
         <caption id={uid} class="sr-only">{title}</caption>
         <thead><tr><th>{xTitle}</th>{#each series as s}<th>{s.short || s.name}</th>{/each}</tr></thead>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { scrollRegion } from '../attach';
   import type { Analysis, Product } from '../engine/analyze';
   import { ERTRAG } from '../engine/engine';
   import { eur } from '../format';
@@ -74,7 +75,7 @@
   <div class="main">
     <section class="card" aria-labelledby="cmp-h">
       <div class="card-head"><h2 id="cmp-h">Vergleich</h2></div>
-      <div class="table-scroll">
+      <div class="table-scroll" {@attach scrollRegion('Tabelle: Vergleich')}>
         <table data-testid="detail-table">
           <thead><tr><th><span class="sr-only">Kennzahl</span></th>
             {#each A.active as pr}<th><span class="th-key"><span class="key" style:background={pr.color}></span>{pr.short}</span></th>{/each}</tr></thead>
