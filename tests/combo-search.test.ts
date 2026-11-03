@@ -8,7 +8,8 @@ import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
 import { emptySplit, readCombo, splitSum, type ComboSetup, type Split } from '../src/lib/engine/combo';
 import { bestSplit, better, evaluate, exhaustive, lattice, pureStrategies, searchSpace, TIE_EUR, type BestSplitResult } from '../src/lib/engine/search';
 import { analyzeCombo, restTarget, robustLevel, robustRows, robustScenarios, robustSummary, type ComboAnalysis, type RobustRow } from '../src/lib/engine/comboAnalyze';
-import { comboVerdict, eurAmount, eurRound, splitText } from '../src/lib/comboVerdict';
+import { comboVerdict, eurAmount, splitText } from '../src/lib/comboVerdict';
+import { eurRound } from '../src/lib/format';
 
 const S = (patch: Partial<Split>): Split => ({ ...emptySplit(), ...patch });
 const P = (patch: Partial<Inputs> = {}) => readParams({ ...DEFAULTS, ...patch });
@@ -265,7 +266,7 @@ describe('Ergebnissätze (comboVerdict)', () => {
   };
   const all = (v: ReturnType<typeof comboVerdict>) => [v.headline, ...v.lines, v.note].join(' ');
 
-  it('Formatierung: eurRound (U17), eurAmount, splitText', () => {
+  it('Formatierung: eurRound (U17, format.ts), eurAmount, splitText', () => {
     expect(eurRound(20419)).toBe('20.400 €'); expect(eurRound(6234)).toBe('6.230 €'); expect(eurRound(987.6)).toBe('988 €'); expect(eurRound(-6234)).toBe('-6.230 €');
     expect(eurAmount(50)).toBe('50 €'); expect(eurAmount(12.5)).toBe('12,50 €');
     expect(splitText(S({ etf: 350, avd: 150 }))).toBe('350 € ETF-Depot + 150 € Altersvorsorgedepot');

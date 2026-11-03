@@ -5,7 +5,7 @@ import type { ProductKey } from './engine/engine';
 import { SPLIT_KEYS, type Split } from './engine/combo';
 import type { ComboAnalysis, RobustSummary } from './engine/comboAnalyze';
 import { TIE_EUR } from './engine/search';
-import { eur } from './format';
+import { eur, eurRound } from './format';
 
 export type ComboVerdictKind = 'needTwo' | 'unallocated' | 'refundSpent' | 'ok';
 export interface ComboVerdict {
@@ -27,15 +27,6 @@ const SHORT: Record<ProductKey, string> = { etf: 'ETF', avd: 'AVD', ins: 'Versic
 export function eurAmount(x: number): string {
   const r = Math.round(x * 100) / 100;
   return r.toLocaleString('de-DE', Number.isInteger(r) ? {} : { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
-}
-
-/**
- * Gerundeter Betrag (U17): ab 10.000 € auf 100 €, ab 1.000 € auf 10 €, sonst auf 1 €.
- * Gleiche Regel wie eurRound in format.ts (WP3a); hier lokal, damit dieses Modul unabhängig bleibt.
- */
-export function eurRound(x: number): string {
-  const a = Math.abs(x), step = a >= 10000 ? 100 : a >= 1000 ? 10 : 1;
-  return eur(Math.round(x / step) * step);
 }
 
 /** „350 € ETF-Depot + 150 € Altersvorsorgedepot“, absteigend nach Betrag. */
