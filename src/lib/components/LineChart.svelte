@@ -106,7 +106,7 @@
     return out;
   });
   // Würden Endlabels weit von ihrer Linie wegrutschen, lieber ganz weglassen (Legende + Tooltip tragen die Zuordnung)
-  const showEndLabels = $derived(!narrow && ends.every(e => Math.abs(e.ly - e.yy) <= 22));
+  const showEndLabels = $derived(!narrow && ends.every(e => Math.abs(e.ly - e.yy) <= 12));
 
   const markerI = $derived(marker ? marker.x - x0 : null);
 
@@ -259,5 +259,6 @@
   .tbl th, .tbl td { padding: 4px 8px; }
   @media print {
     .tbl, .tip { display: none; }
+    .lc { break-inside: avoid; }
   }
 </style>

@@ -46,9 +46,5 @@
   input:checked::before { transform: translateX(14px); }
   input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .msg { flex-basis: 100%; margin: 0 0 0 46px; font-size: .78rem; color: var(--muted); line-height: 1.4; }
-  @media print {
-    input { width: 14px; height: 14px; border-radius: 3px; background: #fff; border-color: #888; }
-    input::before { display: none; }
-    input:checked { background: #444; }
-  }
+  @media print { input { width: 28px; height: 16px; } input::before { width: 10px; height: 10px; } input:checked::before { transform: translateX(12px); } }
 </style>

@@ -119,5 +119,6 @@
   @media print {
     .ctl { border-color: transparent; }
     input { padding: 2px 0; }
+    .unit { padding-left: 4px; }
   }
 </style>

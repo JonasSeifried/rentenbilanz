@@ -120,7 +120,7 @@
   <div class="card-head"><h2 id="cum-h">Summe aller Netto-Auszahlungen ab Rentenbeginn</h2></div>
   <LineChart title="Summe aller Netto-Auszahlungen ab Rentenbeginn nach Alter" x0={p.R} series={cumSeries} marker={{ x: p.H, label: 'Auszahlplan-Ende' }} />
   {#if breakEven}<p class="hint below">{breakEven}</p>{/if}
-  <p class="hint below">Mehr Details zu Kapital, Förderung und Kosten unter <button type="button" class="linkish" onclick={() => setTab('detail')}>Rente im Detail</button>. Begriffe wie <Info k="vorabpauschale">Vorabpauschale</Info> oder <Info k="guenstiger">Günstigerprüfung</Info> lassen sich per Klick erklären.</p>
+  <p class="hint below noprint">Mehr Details zu Kapital, Förderung und Kosten unter <button type="button" class="linkish" onclick={() => setTab('detail')}>Rente im Detail</button>. Begriffe wie <Info k="vorabpauschale">Vorabpauschale</Info> oder <Info k="guenstiger">Günstigerprüfung</Info> lassen sich per Klick erklären.</p>
 </section>
 
 <style>
@@ -169,5 +169,9 @@
   .flipkey { background: var(--flip-bg); padding: 0 4px; border-radius: 3px; color: var(--text); }
   .below { margin: 10px 0 0; }
   .linkish { font: inherit; color: var(--accent-text); background: none; border: 0; padding: 0; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
-  @media print { .acts { display: none; } .tiles { grid-template-columns: repeat(4, 1fr); } }
+  @media print {
+    .acts { display: none; }
+    .tiles { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; }
+    .verdict, .tile { break-inside: avoid; }
+  }
 </style>

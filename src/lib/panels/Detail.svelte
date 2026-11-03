@@ -108,5 +108,7 @@
   .dnotes li { margin: 4px 0; }
   .below { margin: 10px 0 0; }
   .print-h { margin: 0 0 10px; }
-  @media print { .layout { grid-template-columns: 220px 1fr; } }
+  @media print {
+    .layout { grid-template-columns: 1fr; }
+  }
 </style>
