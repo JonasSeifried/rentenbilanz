@@ -197,7 +197,7 @@
       aria-valuemin={x0} aria-valuemax={x0 + len - 1} aria-valuenow={x0 + (hover ?? markerI ?? 0)}
       aria-valuetext={valueText(hover ?? markerI ?? 0)}
       onkeydown={onkey} onblur={() => (hover = null)}>
-      <svg bind:this={svgEl} viewBox="0 0 {W} {H}" aria-hidden="true"
+      <svg bind:this={svgEl} class:unmeasured={width === 0 && !printing} viewBox="0 0 {W} {H}" aria-hidden="true"
         onpointermove={(e) => pick(e.clientX)} onpointerdown={(e) => pick(e.clientX)}
         onpointerleave={(e) => { if (e.pointerType === 'mouse') hover = null; }}>
         {#each yTicks as v}
@@ -275,6 +275,7 @@
   .focus { border-radius: 8px; }
   .focus:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
   svg { display: block; width: 100%; height: auto; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+  svg.unmeasured { visibility: hidden; } /* noch nie sichtbar gewesen: erst zeigen, wenn die Breite bekannt ist */
   svg :global(text) { font-family: var(--font); }
   .tick { font-size: 11px; fill: var(--axis-text); font-variant-numeric: tabular-nums; }
   .endlabel { font-size: 12px; fill: var(--text-2); font-weight: 500; }

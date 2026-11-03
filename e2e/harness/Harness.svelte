@@ -4,6 +4,8 @@
   import Switch from '../../src/lib/components/Switch.svelte';
   import LineChart from '../../src/lib/components/LineChart.svelte';
   import Info from '../../src/lib/components/Info.svelte';
+  import Toast from '../../src/lib/components/Toast.svelte';
+  import { focusField, showToast } from '../../src/lib/state.svelte';
 
   let pct = $state(6);
   let money = $state(38000);
@@ -45,6 +47,11 @@
     <NumberField id="t-off" testid="t-off" label="Gesperrt" value={5} onchange={() => {}} disabled unit="Jahre" />
     <Switch id="t-sw" testid="t-sw" label="Schalter" checked={sw} onchange={v => (sw = v)} />
     <Switch id="t-sw-off" testid="t-sw-off" label="Schalter gesperrt" checked={true} onchange={() => {}} disabled />
+    <p class="btns">
+      <button type="button" class="btn" data-testid="go-focus" onclick={() => focusField('settings', 't-money')}>Fokus</button>
+      <button type="button" class="btn" data-testid="toast-plain" onclick={() => showToast('Kurzer Hinweis.')}>Hinweis</button>
+      <button type="button" class="btn" data-testid="toast-act" onclick={() => showToast('Etwas ist passiert.', { label: 'Aktion', run: () => (sw = !sw) })}>Hinweis mit Aktion</button>
+    </p>
     <p>Begriff <Info k="basiszins">Basiszins</Info> im Text.</p>
   </div>
 
@@ -55,6 +62,7 @@
     <LineChart {series} x0={50} title="Narrow" marker={{ x: 67, label: 'Rentenbeginn' }} tipTitle={(x) => 'Mit ' + x + ' Jahren'} />
   </div>
 </main>
+<Toast />
 
 <style>
   .h { padding-top: 16px; padding-bottom: 80px; }

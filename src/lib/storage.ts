@@ -9,6 +9,8 @@ import { DEFAULTS, INPUT_KEYS, inLimits, type InputKey, type Inputs } from './en
 import { LINK_BASE_V1 } from './link';
 
 export const STORAGE_KEY = 'vorsorge-rechner:eingaben';
+// Der Schlüssel steht bewusst auch in public/theme.js (klassisches Skript vor dem Laden, kann nichts importieren):
+// bei Änderung beide Stellen anpassen.
 export const THEME_KEY = 'vorsorge-rechner:theme';
 const STORAGE_VERSION = 2;
 
