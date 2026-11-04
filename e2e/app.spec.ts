@@ -52,7 +52,7 @@ test('Startseite rechnet mit den Standardwerten wie die Engine', async ({ page }
   await expect(page.getByTestId('disclaimer')).toContainText('Rechtsstand 26.05.2026');
   await expect(field(page, 'a0')).toHaveValue('22');
   await expect(field(page, 'incWork')).toHaveValue('38.000');
-  await expect(page.locator('.scen tbody tr')).toHaveCount(10);
+  await expect(page.locator('.scen tbody tr')).toHaveCount(11); // Ausgangslage + 9 Zeilen des Originals + „Alle schichten vor der Rente um“
 });
 
 test('Eingaben werden gespeichert und beim nächsten Besuch wiederhergestellt', async ({ page }) => {
@@ -204,6 +204,20 @@ test('Warnungen bei unfairen Vergleichen mit Korrektur per Klick', async ({ page
   await expect(page.locator('.note').first()).toContainText('Steuererstattung ausgegeben');
   await page.getByRole('button', { name: 'Steuererstattung anlegen' }).click();
   await expect(page.getByTestId('verdict')).toContainText('vorne');
+});
+
+test('Umschichtung vor Rentenbeginn: Schalter unter „Markt“, Szenario-Zeile, Ergebnis wie die Engine', async ({ page }) => {
+  await page.goto('./');
+  await expect(page.getByTestId('scenarios')).toContainText('Alle schichten vor der Rente um');
+  await page.click('#tab-settings');
+  await expect(page.getByTestId('safeRate')).toHaveCount(0);
+  await page.getByTestId('shift').check();
+  await setField(page, 'safeRate', '1,5');
+  await page.click('#tab-overview');
+  await expect(page.getByTestId('scenarios')).toContainText('Niemand schichtet vor der Rente um');
+  const A = analyze(readParams({ ...DEFAULTS, shift: true, safeRate: 1.5 }));
+  await expect(page.getByTestId('tile-etf')).toContainText(eur(A.stats.etf!.avgMonthly));
+  await expect(page.getByTestId('tile-avd')).toContainText(eur(A.stats.avd!.avgMonthly));
 });
 
 test('Kaufkraft-Umschalter ändert die Beträge', async ({ page }) => {

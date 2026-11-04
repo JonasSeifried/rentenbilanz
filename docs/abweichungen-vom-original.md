@@ -359,36 +359,79 @@ Laufzeit: `analyze` und `scenarios` mit allen Fixes etwa ×1,03 gegenüber `NO_F
 ## Weitere Änderungen ohne Rechenwirkung
 
 - `scenarioList(p)` liefert je Szenario eine stabile `id`: `kv`, `avdCost`, `refund`, `g`, `incWork`,
-  `incRetLow`, `incRetHigh`, `insMode`, `insCost`.
+  `incRetLow`, `incRetHigh`, `insMode`, `insCost`, außerhalb des Originalpfads zusätzlich `shift` (Umschichtung, siehe
+  unten).
 - `scenarios(p, opts)` gibt die Optionen an `analyze` weiter.
 - Das Label des Szenarios `refund` heißt jetzt „Steuererstattung ausgegeben statt angelegt“, ohne Klammerzusatz.
 - Der neue Standardwert `kvRate` 21,1 % statt 21,7 % (Befund E5, ermäßigter Satz nach § 243 SGB V) ist keine
   Engine-Korrektur. Er steht in `inputs.ts`. Beide Engines bekommen im Golden-Test dieselben Eingaben.
 
-## Erweiterung: Standarddepot-Umschichtung (`avdStd`, kein Fix)
+## Erweiterung: Umschichtung vor Rentenbeginn (`shift`, kein Fix)
 
 Neue Eingabe, kein Befund am Original; Standard **aus**, dann bitgleich (Golden-Test erlaubt nur die neuen Schlüssel
-`params.avdStd`/`avdSafe`).
+`params.shift`/`safeRate`). Gerechnet nur in `combo.ts`; `engine.ts` (Referenz) kennt sie nicht. Ersetzt den früheren
+Schalter `avdStd`/`avdSafe` (nur AVD): Alte Links und Speicherstände werden auf `shift`/`safeRate` übertragen
+(`RETIRED_KEYS` in `inputs.ts`; die Link-Basis v1 behält die alten Schlüssel, die neuen sind angehängt). Damit schichtet
+ein alter Link mit `avdStd=1` jetzt alle Produkte um.
 
-**Quelle.** § 1 Abs. 1c Nr. 5 AltZertG in der Fassung ab 01.01.2027 (Art. 6 AltVRefG, BGBl. 2026 I Nr. 156): Das
-Standarddepot muss ein Verfahren vorsehen, nach dem „fünf Jahre vor der Auszahlungsphase höchstens 50 Prozent des
-gebildeten Kapitals sowie zwei Jahre vor der Auszahlungsphase und am Beginn der Auszahlungsphase höchstens 30 Prozent“
-im OGAW der Risikoklasse 3–5 liegen; der Vertragspartner kann andere Prozentsätze verlangen (Buchst. b). Kostendeckel
-des Standarddepots 1,0 % (§ 2a Abs. 2 AltZertG n. F.).
+**Quelle der Anteile.** § 1 Abs. 1c Nr. 5 AltZertG in der Fassung ab 01.01.2027 (Art. 6 AltVRefG, BGBl. 2026 I
+Nr. 156): Das Standarddepot muss ein Verfahren vorsehen, nach dem „fünf Jahre vor der Auszahlungsphase höchstens
+50 Prozent des gebildeten Kapitals sowie zwei Jahre vor der Auszahlungsphase und am Beginn der Auszahlungsphase
+höchstens 30 Prozent“ im OGAW der Risikoklasse 3–5 liegen; der Vertragspartner kann andere Prozentsätze verlangen
+(Buchst. b). Kostendeckel des Standarddepots 1,0 % (§ 2a Abs. 2 AltZertG n. F.). Dieselben Anteile gelten mit dem
+Schalter für **alle** Produkte, damit der Vergleich fair bleibt.
 
-**Formel.** `avdGrowth(p, t, n)` in `core.ts` (von `engine.ts` und `combo.ts` benutzt): Ansparjahre mit `n − t ≤ 5` rechnen mit
-`0,5 · g + 0,5 · avdSafe`, mit `n − t ≤ 2` mit `0,3 · g + 0,7 · avdSafe`, gestuft zu Jahresbeginn; sonst `g`. Gilt für
-den geförderten und den ungeförderten Teil (ein Vertrag), nicht für das ETF-Nebendepot. Auszahlphase: `gPay` wie bei
-allen Produkten. Wirkung Standardwerte, 450 €/Monat, `avdSafe` 2 %: AVD-Kapital bei Rentenbeginn rund 10 % niedriger (150 €: Ø 634 € → 575 € im Monat, ETF 557 €).
+**Formel.** `riskyShare(p, t, n)` in `core.ts`: Anteil Aktien zu Beginn von Ansparjahr t: 0,5 für `n − t ≤ 5`, 0,3 für
+`n − t ≤ 2`, sonst 1.
+
+| Produkt | Umschichtung | Quelle |
+|---|---|---|
+| AVD (gefördert und ungefördert) | im Vertrag, steuerfrei: Rendite `w · g + (1 − w) · safeRate` (`contractGrowth`) | Besteuerung erst bei Leistung, § 22 Nr. 5 EStG |
+| Versicherung | ebenso, Ansparphase | Fondswechsel im Vertrag ohne Zufluss; Besteuerung bei Leistung, § 20 Abs. 1 Nr. 6, § 22 Nr. 1 EStG |
+| ETF, aktiver Fonds, AVD-Nebendepot, ETF aus der Kapitalauszahlung | zweites Teil-Depot „sicher“ (Anleihe-/Geldmarkt-ETF, `etfTer`, kein Ausgabeaufschlag, Rendite `safeRate`, Teilfreistellung 0); Beiträge und Einmalbeträge nach `w` aufgeteilt; zu Beginn jedes Ansparjahres Verkauf aus dem übergewichteten Teil auf den Zielanteil | § 19 Abs. 1 InvStG, § 20 Abs. 4 EStG (Veräußerungsgewinn), § 20 Abs. 1 InvStG (Teilfreistellung 30 % nur Aktienfonds), § 20 Abs. 9 EStG (Pauschbetrag) |
+
+- **Verkaufssteuer:** Gewinn = Verkaufsbetrag · (V − B)/V (Durchschnitt), steuerpflichtig zu 70 % (Aktienteil) bzw.
+  100 % (sicherer Teil). Er zählt in Phase 1 des Jahres zusammen mit den Entnahmen in den **einen** Sparer-Pauschbetrag
+  (in der Kombi für alle Depots), der Rest danach für die Vorabpauschalen. Die Steuer wird aus dem Verkaufserlös
+  bezahlt, der Rest umgeschichtet (Anschaffungskosten = umgeschichteter Betrag).
+- **Sicherer Teil:** eigene Vorabpauschale (Basisertrag wie beim ETF), ohne Teilfreistellung voll steuerpflichtig.
+- **KV (E6):** In der Rentenphase zählen beim sicheren Teil 100 % von Entnahmegewinn und Vorabpauschale, beim
+  Aktienteil 70 % (GKV-Katalog: § 16 InvStG „unter Berücksichtigung der §§ 20 und 56 Abs. 6 InvStG“). Vor
+  Rentenbeginn keine KV (pflichtversichert), wie bisher.
+- **Auszahlphase:** `gPay` für alle Produkte und beide Teil-Depots (Annahme des Nutzers). Die Aufteilung 30/70 bleibt;
+  entnommen wird aus beiden Teilen nach Auszahlplan.
+- **Kapital nach Steuern, Erbfall:** beide Teil-Depots zusammen verkauft, ein Pauschbetrag, Gewinne je Teilfreistellung.
+
+**Szenario-Zeile** `shift`: „Alle schichten vor der Rente um (wie das Standarddepot)“ bzw. „Niemand schichtet vor der
+Rente um“, am Ende der Liste. Sie gibt es nur außerhalb des Originalpfads (`scenarioList(p, kombi, opts)` mit
+`NO_FIXES` ohne diese Zeile), damit der Golden-Test die Zeilen des Originals 1:1 vergleicht; die App rechnet immer mit
+allen Korrekturen.
+
+**Wirkung (Standardwerte, `safeRate` 2 %, cumH in heutiger Kaufkraft).**
+
+| Fall | ETF | AVD | Versicherung | aktiver Fonds |
+|---|---|---|---|---|
+| Default, aus | 153.730 € | 174.891 € | 127.324 € | 90.829 € |
+| Default, an | 133.142 € | 156.530 € | 113.080 € | 89.459 € |
+| DK, aus | 137.576 € | 128.027 € | 97.162 € | 84.133 € |
+| DK, an | 122.571 € | 114.885 € | 84.465 € | 83.232 € |
+
+Das ETF-Depot verliert mehr als das AVD (−13,4 % gegen −10,5 %), weil es beim Umschichten Steuern zahlt und der sichere
+Teil keine Teilfreistellung hat. Der aktive Fonds verliert kaum: Der sichere Teil liegt im günstigen Anleihe-ETF statt im
+teuren Fonds. Beste Aufteilung bei 450 € (Default): ohne Umschichtung 170 € ETF + 280 € AVD, mit 50 € ETF + 400 € AVD.
 
 **Vereinfachungen / offen.**
-- Gerechnet werden die gesetzlichen Höchstanteile, Stufen statt eines gleitenden Verfahrens; Anbieter dürfen weniger
-  Aktien halten und die Beitragsaufteilung schon vorher anpassen (Buchst. c).
-- Die Aufteilung in der Auszahlphase regelt das Gesetz nicht. Gerechnet wird wie bei allen Produkten mit `gPay`.
-- Ein ETF-Depot, das vor der Rente ebenfalls umschichtet, ist nicht gerechnet (Verkauf mit Abgeltungsteuer). Die
-  Oberfläche nennt das unter „Was die Zahlen nicht zeigen“.
+- Gesetzliche Höchstanteile, Stufen zu Jahresbeginn statt eines gleitenden Verfahrens; Anbieter dürfen weniger Aktien
+  halten und die Beitragsaufteilung schon vorher anpassen (Buchst. c). Wer selbst umschichtet, kann anders vorgehen.
+- **FIFO:** Tatsächlich gelten die zuerst angeschafften Anteile als zuerst verkauft (§ 20 Abs. 4 S. 7 EStG über § 19
+  Abs. 1 InvStG); gerechnet ist der Durchschnitt. Bei steigenden Kursen ist der echte Gewinn höher, die Steuer also
+  eher unterschätzt.
+- **Verluste** beim Umschichten werden nicht verrechnet (wie bei Entnahmen); Ordergebühren und Spreads fehlen.
+- Die Aufteilung in der Auszahlphase regelt das Gesetz nicht; gerechnet wird mit `gPay` für alle.
 
-**Tests.** `tests/avd-std.test.ts` (aus = bitgleich, Rendite je Jahr, nur AVD betroffen, Kombi-Engine gleich).
+**Tests.** `tests/shift.test.ts` (aus = bitgleich, Anteile, steuerfreie Verträge, Nullrendite, Steuer im ersten
+Umschichtungsjahr nachgerechnet, KV-Faktor 0,91/0,7, ein Pauschbetrag in der Kombi, Nebendepot und Folge-ETF,
+Erbfall, Szenario-Zeile, Migration der alten Schlüssel); e2e „Umschichtung vor Rentenbeginn“.
 
 ## Bewusst übernommene Vereinfachungen des Originals
 

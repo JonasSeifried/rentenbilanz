@@ -23,7 +23,9 @@ export function prosCons(p: Params, keys: readonly ProductKey[]): ProsCons[] {
       { text: 'Vererbbar ohne Förderrückzahlung, die Erben übernehmen die Anschaffungskosten.' },
     ],
     cons: [
-      { text: 'Umschichten kostet Steuern: Wer den ETF wechselt oder vor der Rente in sichere Anlagen umschichtet, verkauft und versteuert die Gewinne über dem Sparer-Pauschbetrag sofort. Gerechnet ist ein ETF ohne Umschichtung bis zur Auszahlung.' },
+      p.shift
+        ? { text: 'Umschichten kostet Steuern: Wer vor der Rente in sichere Anlagen umschichtet, verkauft und versteuert die Gewinne über dem Sparer-Pauschbetrag sofort. Gerechnet ist das so (ab 5 Jahre vorher 50 %, ab 2 Jahren 30 % in Aktien, der Rest in einem Anleihe-ETF mit ' + pc(p.safeRate) + ' im Jahr, ohne Teilfreistellung).', field: 'f-shift', fieldLabel: 'Umschichtung ändern' }
+        : { text: 'Umschichten kostet Steuern: Wer vor der Rente in sichere Anlagen umschichtet, verkauft und versteuert die Gewinne über dem Sparer-Pauschbetrag sofort. Gerechnet ist ein ETF ohne Umschichtung bis zur Auszahlung.', field: 'f-shift', fieldLabel: 'Umschichtung einschalten' },
       { text: 'Bei der ' + GRUNDSICHERUNG + ' zählt das Depot über den Freibeträgen als Vermögen, anders als gefördertes Altersvorsorgevermögen und Altersvorsorge-Versicherungen (§ 12 SGB II).' },
       { text: 'Kein Schutz vor dem eigenen Zugriff: Was jederzeit verfügbar ist, ist auch schnell vor der Rente ausgegeben.' },
       { text: 'Der Auszahlplan endet mit ' + p.H + '. Wer älter wird, braucht dann anderes Geld.' },
@@ -40,9 +42,9 @@ export function prosCons(p: Params, keys: readonly ProductKey[]): ProsCons[] {
       { text: 'Gebunden bis zum Rentenbeginn (65 bis 70, früher nur mit gesetzlicher Altersrente). Wer vorher kündigt, zahlt Zulagen und Steuervorteile zurück, die Erträge werden versteuert (schädliche Verwendung, § 93 EStG).' },
       { text: 'Ausgezahlt wird als Auszahlplan bis mindestens 85, höchstens 30 % auf einmal. Über das ganze Kapital frei verfügen kann man nicht.' },
       { text: 'Die Kosten stehen erst mit den Angeboten fest. Gedeckelt sind sie nur im Standarddepot, auf 1,0 % (§ 2a Abs. 2 AltZertG). Gerechnet: ' + pc(p.avdCost) + ' im Jahr.', field: 'f-avdCost', fieldLabel: 'Kosten ändern' },
-      p.avdStd
-        ? { text: 'Gerechnet mit der Umschichtung des Standarddepots: ab 5 Jahre vor Rentenbeginn höchstens 50 %, ab 2 Jahren höchstens 30 % in Aktien, der Rest mit ' + pc(p.avdSafe) + ' im Jahr.', field: 'f-avdStd', fieldLabel: 'Umschichtung ändern' }
-        : { text: 'Das Standarddepot schichtet ab 5 Jahre vor Rentenbeginn in sichere Anlagen um (§ 1 Abs. 1c Nr. 5 AltZertG). Gerechnet ist ein Depot ohne Umschichtung.', field: 'f-avdStd', fieldLabel: 'Umschichtung einschalten' },
+      p.shift
+        ? { text: 'Gerechnet mit der Umschichtung des Standarddepots: ab 5 Jahre vor Rentenbeginn höchstens 50 %, ab 2 Jahren höchstens 30 % in Aktien, der Rest mit ' + pc(p.safeRate) + ' im Jahr. Die anderen Produkte schichten gleich um.', field: 'f-shift', fieldLabel: 'Umschichtung ändern' }
+        : { text: 'Das Standarddepot schichtet ab 5 Jahre vor Rentenbeginn in sichere Anlagen um (§ 1 Abs. 1c Nr. 5 AltZertG). Gerechnet ist ohne Umschichtung, wie bei den anderen Produkten.', field: 'f-shift', fieldLabel: 'Umschichtung einschalten' },
       { text: 'Erben alle außer dem Ehepartner, gehen Zulagen und Steuervorteil zurück (siehe „Erbfall“).' },
       { text: 'Neues Produkt ab ' + SITE.avdStart + ': Anbieter, Kosten und Verwaltungspraxis (z. B. BMF-Schreiben, Krankenkassen) stehen teils noch nicht fest.' },
     ],
@@ -100,7 +102,17 @@ export function faqs(p: Params, keys: readonly ProductKey[]): Faq[] {
     id: 'crash', q: 'Was ist mit Kursschwankungen und einem Crash kurz vor der Rente?',
     a: [
       'Der Rechner rechnet mit einer konstanten Rendite (' + pc(p.g) + ' bis zur Rente, ' + pc(p.gPay) + ' danach). Echte Kurse schwanken. Ein Einbruch kurz vor Rentenbeginn trifft ein reines Aktiendepot voll.',
-      'Dagegen hilft Umschichten in sichere Anlagen in den letzten Jahren: im Altersvorsorgedepot und in der Versicherung steuerfrei, im ETF-Depot nur durch Verkauf mit Steuer. Das Standarddepot macht das automatisch (in den Einstellungen einschaltbar). Der Schutz selbst ist im Kapital nicht sichtbar, nur die niedrigere Rendite.',
+      'Dagegen hilft Umschichten in sichere Anlagen in den letzten Jahren: im Altersvorsorgedepot und in der Versicherung steuerfrei, im ETF-Depot und im aktiven Fonds nur durch Verkauf mit Steuer. Das Standarddepot macht das automatisch.',
+      p.shift
+        ? 'Gerechnet ist die Umschichtung für alle Produkte (' + pc(p.safeRate) + ' Rendite im sicheren Teil). Der Schutz selbst ist im Kapital nicht sichtbar, nur die niedrigere Rendite und beim ETF die Steuer auf die Verkäufe. Die Zeile „Niemand schichtet vor der Rente um“ unter den Szenarien zeigt den Unterschied.'
+        : 'Gerechnet ist ohne Umschichtung. Die Zeile „Alle schichten vor der Rente um“ unter den Szenarien zeigt, was sie kostet; einschalten lässt sie sich unter „Weitere Einstellungen“, „Markt“. Der Schutz selbst ist im Kapital nicht sichtbar, nur die niedrigere Rendite.',
+    ],
+  });
+  if (etf || keys.includes('fond')) out.push({
+    id: 'etfSwitch', q: 'Muss ich verkaufen, wenn ich nach Jahren einen anderen ETF besparen will?',
+    a: [
+      'Meist nicht. Den alten ETF liegen lassen und nur den Sparplan auf den neuen umstellen: Steuer fällt erst an, wenn du Anteile verkaufst. So bleibt der Steueraufschub erhalten.',
+      'Verkaufen musst du nur, wenn du das vorhandene Geld selbst umschichten willst, etwa vor der Rente in sichere Anlagen. Dann zählt der Gewinn der verkauften Anteile, die zuerst gekauften gelten als zuerst verkauft.',
     ],
   });
   if (avd && etf) out.push({

@@ -34,7 +34,9 @@ der Fassung **mit allen Korrekturen** (`docs/abweichungen-vom-original.md`). Gem
      (Vereinfachung des Originals).
 2. **Ein Sparer-Pauschbetrag** von 1.000 € im Jahr gilt für alle Depots zusammen: ETF, aktiver Fonds,
    AVD-Nebendepot und das ETF aus der Kapitalauszahlung. Zuerst deckt er die Entnahmegewinne aller Depots, der Rest
-   dann die Vorabpauschalen.
+   dann die Vorabpauschalen. Mit der Umschichtung vor Rentenbeginn (`shift`) zählen die Gewinne der Umschichtungs-Verkäufe
+   wie Entnahmegewinne zuerst; jedes Fondsdepot hat dann ein sicheres Teil-Depot ohne Teilfreistellung
+   (`docs/abweichungen-vom-original.md`, „Erweiterung: Umschichtung vor Rentenbeginn“).
 3. **Ein KV/PV-Jahresbuch** bis zur Beitragsbemessungsgrenze, gemeinsam für alle Produkte (Fix E7). Darin stehen
    der AVD-Auszahlplan, die Leibrente, die Kapitalauszahlung als C/10 über 10 Jahre (E8) und die Fondsbasis aller
    Depots (70 % des Gewinns plus 70 % der Vorabpauschale in der Rentenphase, E6). Die AVD-30-%-Auszahlung bleibt

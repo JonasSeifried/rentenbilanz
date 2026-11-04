@@ -119,11 +119,7 @@
       <NumberField layout="row" label="Beitrag (max. 150 gefördert)" value={i.avdM} onchange={v => setInput('avdM', v)} step={10} min={0} unit="€/Monat" info="nebendepot" limits={LIMITS.avdM} />
       <NumberField id="f-avdCost" layout="row" label="Kosten" value={i.avdCost} onchange={v => setInput('avdCost', v)} step={0.1} min={0} unit="% p. a." info="avdKosten" testid="avdCost"
         limits={LIMITS.avdCost} effective={pc(p.avdCost)} />
-      <Switch checked={i.avdStd} onchange={v => setInput('avdStd', v)} label="Standarddepot: Umschichtung vor Rentenbeginn" info="standarddepot" testid="avdStd" id="f-avdStd" />
-      {#if i.avdStd}
-        <NumberField id="f-avdSafe" layout="row" label="Rendite sichere Anlage" value={i.avdSafe} onchange={v => setInput('avdSafe', v)} step={0.5} unit="% p. a." info="standarddepot" testid="avdSafe"
-          limits={LIMITS.avdSafe} effective={pc(p.avdSafe)} />
-      {/if}
+      <p class="hint">Umschichtung vor Rentenbeginn wie im Standarddepot: unter „Markt“ (für alle Produkte).</p>
       <Switch checked={i.reinvest} onchange={v => setInput('reinvest', v)} label="Zusätzliche Steuererstattung in ETF anlegen" info="reinvest" testid="reinvest" />
       <p class="hint">Kinder und Berufseinsteigerbonus: oben unter „Deine Situation“.</p>
     </section>
@@ -159,6 +155,11 @@
     <div>
       <NumberField layout="row" label="Basiszins für Vorabpauschale" value={i.basis} onchange={v => setInput('basis', v)} step={0.1} min={0} max={10} unit="%" info="basiszins"
         limits={LIMITS.basis} effective={pc(p.basis)} hint="2026: 3,2 % (BMF, 13.01.2026). Für spätere Jahre eine Annahme." />
+      <Switch checked={i.shift} onchange={v => setInput('shift', v)} label="Vor Rentenbeginn in sichere Anlagen umschichten (alle Produkte, wie im Standarddepot)" info="umschichtung" testid="shift" id="f-shift" />
+      {#if i.shift}
+        <NumberField id="f-safeRate" layout="row" label="Rendite sichere Anlage" value={i.safeRate} onchange={v => setInput('safeRate', v)} step={0.5} unit="% p. a." info="umschichtung" testid="safeRate"
+          limits={LIMITS.safeRate} effective={pc(p.safeRate)} />
+      {/if}
     </div>
   </div>
 </section>

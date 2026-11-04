@@ -3,13 +3,14 @@
 // bleiben alte Links trotzdem gültig. Bei einer neuen Basis LINK_VERSION erhöhen und die alte hier behalten.
 // Regel: Neue Schlüssel dürfen an eine bestehende Basis angehängt werden, wenn ihr Basiswert das bisherige
 // Verhalten ergibt; bestehende Werte nie ändern, sonst neue Version.
-import { BOOL_KEYS, INPUT_KEYS, inLimits, type InputKey, type Inputs } from './engine/inputs';
+import { BOOL_KEYS, INPUT_KEYS, inLimits, RETIRED_KEYS, type InputKey, type Inputs } from './engine/inputs';
 
 export const TABS = ['overview', 'detail', 'heirs', 'settings'] as const;
 export type Tab = (typeof TABS)[number];
 
 export const LINK_VERSION = '1';
-const BASES: Record<string, Inputs> = {
+// Basis = alle Eingaben plus nicht mehr verwendete Schlüssel (RETIRED_KEYS), die in der Basis stehen bleiben.
+const BASES: Record<string, Inputs & { avdStd: boolean; avdSafe: number }> = {
   '1': {
     a0: 22, incWork: 38000, incRet: 20000, setAll: 150, g: 6, R: 67, kvOn: false,
     etfOn: true, avdOn: true, insOn: true, fondOn: false,
@@ -25,12 +26,20 @@ const BASES: Record<string, Inputs> = {
     // Später angehängt (Wave 2); Basiswerte = bisheriges Verhalten (keine Kombi, Erben wie bisher).
     incHeir: 38000, kvKind: 0,
     combo: false, cEtf: 0, cAvd: 0, cIns: 0, cFond: 0,
-    // Später angehängt: Standarddepot-Umschichtung aus (bisheriges Verhalten).
+    // Später angehängt: Standarddepot-Umschichtung aus (bisheriges Verhalten). Nicht mehr verwendet, ersetzt durch shift/safeRate.
     avdStd: false, avdSafe: 2,
+    // Später angehängt: Umschichtung vor Rentenbeginn in allen Produkten aus (bisheriges Verhalten).
+    shift: false, safeRate: 2,
   },
 };
 /** Die eingefrorene Basis von Version 1 (Tests und Speicher-Migration). */
-export const LINK_BASE_V1: Readonly<Inputs> = BASES['1'];
+export const LINK_BASE_V1: Readonly<Inputs> = withoutRetired(BASES['1']);
+
+function withoutRetired(x: Inputs): Inputs {
+  const out = { ...x } as Record<string, unknown>;
+  for (const k of Object.keys(RETIRED_KEYS)) delete out[k];
+  return out as unknown as Inputs;
+}
 
 export function encodeState(inputs: Inputs, tab: Tab): string {
   const base = BASES[LINK_VERSION];
@@ -62,8 +71,10 @@ export function decodeState(hash: string): Decoded {
   if (!hasInputs) return { inputs: null, tab, unsupported: false };
   const base = BASES[v];
   if (!base) return { inputs: null, tab, unsupported: true };
-  const inputs: Inputs = { ...base };
-  for (const [k, raw] of q) {
+  const inputs: Inputs = withoutRetired(base);
+  for (const [k0, raw] of q) {
+    // Alter Schlüssel: auf den Nachfolger übertragen, sofern der Link diesen nicht selbst enthält.
+    const k = k0 in RETIRED_KEYS && !q.has(RETIRED_KEYS[k0]) ? RETIRED_KEYS[k0] : k0;
     if (!(INPUT_KEYS as string[]).includes(k)) continue; // Unbekanntes ignorieren
     const key = k as InputKey;
     if (BOOL_KEYS.has(key)) {

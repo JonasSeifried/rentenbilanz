@@ -120,14 +120,16 @@ export function analyze(p: Params, opts?: EngineOptions, kombi?: Split | null): 
 }
 
 /** Stabile Kennung je Szenario-Zeile (für Oberfläche und Kombi-Robustheit; das Label kann sich ändern). */
-export type ScenarioId = 'kv' | 'avdCost' | 'refund' | 'g' | 'incWork' | 'incRetLow' | 'incRetHigh' | 'insMode' | 'insCost';
+export type ScenarioId = 'kv' | 'avdCost' | 'refund' | 'g' | 'incWork' | 'incRetLow' | 'incRetHigh' | 'insMode' | 'insCost' | 'shift';
 
 export interface ScenarioDef { id: ScenarioId; label: string; p: Params }
 export interface Scenario extends ScenarioDef { a: Analysis }
 
 // „Was die Empfehlung kippen würde“: je Zeile genau eine Annahme geändert. Reihenfolge wie im Original.
 // `kombi`: Enthält die Kombi AVD oder Versicherung, kommen deren Zeilen auch ohne das Einzelprodukt dazu.
-export function scenarioList(p: Params, kombi?: Split | null): ScenarioDef[] {
+// Zeilen, die es im Original nicht gibt (`shift`), kommen nur außerhalb des Originalpfads (NO_FIXES) dazu, damit der
+// Golden-Test die Zeilen des Originals 1:1 vergleicht. Die App rechnet immer mit allen Korrekturen, hat sie also immer.
+export function scenarioList(p: Params, kombi?: Split | null, opts?: EngineOptions): ScenarioDef[] {
   const list: ScenarioDef[] = [];
   const avd = p.on.avd || (kombi?.avd ?? 0) > 0, ins = p.on.ins || (kombi?.ins ?? 0) > 0;
   const add = (id: ScenarioId, label: string, patch: Partial<Params>) => list.push({ id, label, p: Object.assign({}, p, patch) });
@@ -140,9 +142,10 @@ export function scenarioList(p: Params, kombi?: Split | null): ScenarioDef[] {
   add('incRetHigh', 'Einkommen im Alter ' + eur(p.incRet + 20000) + ' statt ' + eur(p.incRet), { incRet: p.incRet + 20000 });
   if (ins) add('insMode', p.insLump ? 'Versicherung als lebenslange Rente' : 'Versicherung mit Kapitalauszahlung', { insLump: !p.insLump });
   if (ins && p.insEff < 0.015) add('insCost', 'Versicherung mit 1,5 % Kosten (typisch für Provisionstarife)', { insEff: 0.015 });
+  if (fixesOf(opts).size > 0) add('shift', p.shift ? 'Niemand schichtet vor der Rente um' : 'Alle schichten vor der Rente um (wie das Standarddepot)', { shift: !p.shift });
   return list;
 }
 
 export function scenarios(p: Params, opts?: EngineOptions, kombi?: Split | null): Scenario[] {
-  return scenarioList(p, kombi).map(s => Object.assign(s, { a: analyze(s.p, opts, kombi) }));
+  return scenarioList(p, kombi, opts).map(s => Object.assign(s, { a: analyze(s.p, opts, kombi) }));
 }

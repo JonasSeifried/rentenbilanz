@@ -5,7 +5,7 @@
 // Basiszins) auch Nutzer, die schon etwas eingegeben haben.
 // Format v1 (altes Format, volles Objekt): Werte, die der eingefrorenen Link-Basis v1 entsprechen, waren
 // nie bewusst gesetzt und werden verworfen; der Rest bleibt erhalten.
-import { DEFAULTS, INPUT_KEYS, inLimits, type InputKey, type Inputs } from './engine/inputs';
+import { DEFAULTS, INPUT_KEYS, inLimits, RETIRED_KEYS, type InputKey, type Inputs } from './engine/inputs';
 import { LINK_BASE_V1 } from './link';
 
 export const STORAGE_KEY = 'vorsorge-rechner:eingaben';
@@ -38,9 +38,12 @@ export const storageAvailable = (): boolean => store() !== null;
 function pick(raw: unknown): Partial<Inputs> {
   const out: Partial<Inputs> = {};
   if (!raw || typeof raw !== 'object') return out;
+  const has = (k: string) => Object.prototype.hasOwnProperty.call(raw, k);
+  const old = Object.entries(RETIRED_KEYS).filter(([o, k]) => has(o) && !has(k)); // alter Schlüssel → Nachfolger
   for (const k of INPUT_KEYS) {
-    if (!Object.prototype.hasOwnProperty.call(raw, k)) continue;
-    const v = (raw as Record<string, unknown>)[k];
+    const src = has(k) ? k : old.find(([, nk]) => nk === k)?.[0];
+    if (src === undefined) continue;
+    const v = (raw as Record<string, unknown>)[src];
     if (typeof v !== typeof DEFAULTS[k]) continue;
     if (typeof v === 'number' && !inLimits(k, v)) continue;
     (out[k] as unknown) = v;

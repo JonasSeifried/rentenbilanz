@@ -4,6 +4,7 @@
 //  - einem Sparer-Pauschbetrag (1.000 €/Jahr) über alle Fondsdepots (ETF, aktiver Fonds, AVD-Nebendepot,
 //    ETF aus der Kapitalauszahlung): erst die Entnahmegewinne, dann die Vorabpauschale mit dem Rest,
 //  - einem KV/PV-Jahresbuch bis zur Beitragsbemessungsgrenze über ALLE Produkte (Fix kvSharedRoom, E7).
+// Optional (Schalter shift, Standard aus): Umschichtung vor Rentenbeginn in allen Produkten (Abschnitt 4, Teil-Depots).
 // Gemeinsame Abzüge werden anteilig nach Bemessungsgrundlage auf die Produkte verteilt (Konvention, docs/kombi-modus.md).
 //
 // Eine Engine: Die App rechnet auch jedes Einzelprodukt hier (Kombi mit einem Teil, single() in analyze.ts).
@@ -17,7 +18,7 @@
 // also mit ALL_FIXES. Ohne kvSharedRoom wird (wie im Original) jeder KV-Strom einzeln bis zur BBG begrenzt.
 
 import { eur } from '../format';
-import { tax, avdGrowth, AVD_MAX, AVD_SUB_MAX, ERTRAG, KV_BBG, numOf, type HeirValue, type Params, type ProductKey, type ProductResult } from './core';
+import { tax, contractGrowth, riskyShare, AVD_MAX, AVD_SUB_MAX, ERTRAG, KV_BBG, numOf, type HeirValue, type Params, type ProductKey, type ProductResult } from './core';
 import { fixesOf, type EngineOptions } from './fixes';
 import type { Inputs } from './inputs';
 
@@ -148,6 +149,12 @@ export function shareAllowance(xs: readonly number[], allowance: number): { taxe
 interface Fund {
   part: ProductKey; // etf, fond, avd (Nebendepot), ins (ETF aus der Kapitalauszahlung)
   monthly: number[]; lumpEnd: number[] | null; ter: number; aa: number; tEnd: number;
+  /** Rendite vor Kosten in der Ansparphase; Teilfreistellung (0,7 Aktienfonds, 1 sichere Anlage ohne Teilfreistellung). */
+  gA: number; tf: number;
+  /** Umschichtung (shift): sicheres Teil-Depot dieses Depots (Anleihe-/Geldmarkt-ETF) bzw. das Aktien-Depot dazu. */
+  safe: Fund | null; risky: Fund | null;
+  /** Umschichtung im laufenden Jahr: Verkaufsbetrag aus diesem Depot (> 0) und dessen Gewinn. */
+  sell: number; sellGain: number;
   V: number; B: number; own: number; ownReal: number;
   vals: number[]; bases: number[]; net: number[]; abg: number[]; kvInline: number[];
   pay: boolean; W: number; gain: number; rm: number; vp: number; payY: number; dedY: number; kvBase: number;
@@ -231,7 +238,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       const E = elig ? Math.min(want, AVD_SUB_MAX) : 0;
       const U = F.unsub && elig ? Math.min(want, AVD_MAX) - E : 0;
       overflow[t] = (want - E - U) / 12;
-      const rm = Math.pow(1 + avdGrowth(p, t, n) - cost, 1 / 12) - 1;
+      const rm = Math.pow(1 + contractGrowth(p, t, n) - cost, 1 / 12) - 1;
       for (let m = 1; m <= 12; m++) {
         if (E > 0) { V += E / 12; own += E / 12; }
         if (U > 0) { Vu += U / 12; Bu += U / 12; ownU += U / 12; }
@@ -261,7 +268,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     const eff = zeroCost ? 0 : p.insEff;
     let V = 0, own = 0, ownReal = 0; const vals: (number | null)[] = [0];
     for (let t = 0; t < T; t++) {
-      if (t < n) { const c = split.ins * dynF(t), rm = Math.pow(1 + p.g - eff, 1 / 12) - 1; for (let m = 0; m < 12; m++) { V += c; own += c; V *= 1 + rm; } ownReal += 12 * c / I(t); vals.push(V); }
+      if (t < n) { const c = split.ins * dynF(t), rm = Math.pow(1 + contractGrowth(p, t, n) - eff, 1 / 12) - 1; for (let m = 0; m < 12; m++) { V += c; own += c; V *= 1 + rm; } ownReal += 12 * c / I(t); vals.push(V); }
       else vals.push(null);
     }
     const C = vals[n] as number;
@@ -308,15 +315,27 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
 
   // ---------- 4) Fonds im Gleichschritt: runFund() aus model(), mit gemeinsamem Pauschbetrag ----------
   const funds: Fund[] = [];
-  const mk = (part: ProductKey, monthly: number[], lumpEnd: number[] | null, ter: number, aa: number): Fund => ({
-    part, monthly, lumpEnd, ter, aa, tEnd, V: 0, B: 0, own: 0, ownReal: 0, vals: [0], bases: [0], net: zero(), abg: zero(), kvInline: zero(),
+  const mk = (part: ProductKey, monthly: number[], lumpEnd: number[] | null, ter: number, aa: number, gA = p.g, tf = 0.7): Fund => ({
+    part, monthly, lumpEnd, ter, aa, tEnd, gA, tf, safe: null, risky: null, sell: 0, sellGain: 0,
+    V: 0, B: 0, own: 0, ownReal: 0, vals: [0], bases: [0], net: zero(), abg: zero(), kvInline: zero(),
     pay: false, W: 0, gain: 0, rm: 0, vp: -1, payY: 0, dedY: 0, kvBase: 0,
   });
+  // Umschichtung (shift): Beiträge und Einmalbeträge gehen nach Zielanteil in das Aktien-Depot und ein sicheres Teil-Depot
+  // (Anleihe-/Geldmarkt-ETF: ETF-Kosten, kein Ausgabeaufschlag, Rendite safeRate, keine Teilfreistellung).
+  // Ohne Umschichtung gibt es kein Teil-Depot, und jedes Depot rechnet exakt wie runFund() in model().
+  const add = (part: ProductKey, monthly: number[], lumpEnd: number[] | null, ter: number, aa: number): Fund => {
+    if (!p.shift) { const f = mk(part, monthly, lumpEnd, ter, aa); funds.push(f); return f; }
+    const w = (t: number) => riskyShare(p, t, n);
+    const r = mk(part, monthly.map((m, t) => m * w(t)), lumpEnd && lumpEnd.map((x, t) => x * w(t)), ter, aa);
+    const sf = mk(part, monthly.map((m, t) => m * (1 - w(t))), lumpEnd && lumpEnd.map((x, t) => x * (1 - w(t))), etfTer, 0, p.safeRate, 1);
+    r.safe = sf; sf.risky = r; funds.push(r, sf);
+    return r;
+  };
   let fEtf: Fund | null = null, fFond: Fund | null = null, fSide: Fund | null = null, fIns: Fund | null = null;
-  if (on('etf')) funds.push(fEtf = mk('etf', monthlyArr(split.etf), null, etfTer, 0));
-  if (on('fond')) funds.push(fFond = mk('fond', monthlyArr(split.fond), null, zeroCost ? 0 : p.fondTer, zeroCost ? 0 : p.fondAA));
-  if (avd) funds.push(fSide = mk('avd', avd.overflow, p.reinvest ? avd.refunds : null, etfTer, 0));
-  if (ins && p.insLump) { const la = zero(); la[n - 1] = kapNet; funds.push(fIns = mk('ins', zero(), la, etfTer, 0)); }
+  if (on('etf')) fEtf = add('etf', monthlyArr(split.etf), null, etfTer, 0);
+  if (on('fond')) fFond = add('fond', monthlyArr(split.fond), null, zeroCost ? 0 : p.fondTer, zeroCost ? 0 : p.fondAA);
+  if (avd) fSide = add('avd', avd.overflow, p.reinvest ? avd.refunds : null, etfTer, 0);
+  if (ins && p.insLump) { const la = zero(); la[n - 1] = kapNet; fIns = add('ins', zero(), la, etfTer, 0); }
 
   const nf = funds.length, xs = new Array<number>(nf);
   for (let t = 0; t < T; t++) {
@@ -324,18 +343,35 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     // Phase 1: Entnahmen am Jahresanfang, Gewinnanteil
     for (let i = 0; i < nf; i++) {
       const f = funds[i];
-      f.rm = Math.pow(1 + (accum ? p.g : p.gPay) - f.ter, 1 / 12) - 1;
+      f.rm = Math.pow(1 + (accum ? f.gA : p.gPay) - f.ter, 1 / 12) - 1;
       f.W = 0; f.gain = 0; f.payY = 0; f.dedY = 0; f.kvBase = 0; f.vp = -1;
       f.pay = !accum && t < f.tEnd && f.V > 0;
       if (f.pay) { f.W = annuityDue(f.V, p.gPay - f.ter, f.tEnd - t); f.gain = Math.max(0, f.W * (f.V - f.B) / f.V); }
-      xs[i] = f.gain * 0.7;
+      xs[i] = f.gain * f.tf;
+      // Umschichtung zu Jahresbeginn auf den Zielanteil (nur Ansparphase): Verkauf aus dem übergewichteten Teil-Depot,
+      // Gewinn anteilig nach Anschaffungskosten (Durchschnitt statt FIFO), Verlust ohne Verrechnung (wie bei Entnahmen).
+      f.sell = 0; f.sellGain = 0;
+      if (accum && f.safe) {
+        const r = f, sf = f.safe, tot = r.V + sf.V, target = riskyShare(p, t, n) * tot;
+        const from = r.V > target ? r : sf, x = r.V > target ? r.V - target : target - r.V;
+        if (tot > 0 && x > 0 && from.V > 0) { from.sell = x; from.sellGain = Math.max(0, x * (from.V - from.B) / from.V); }
+      }
     }
+    for (let i = 0; i < nf; i++) if (funds[i].sell > 0) xs[i] += funds[i].sellGain * funds[i].tf;
     const s1 = shareAllowance(xs, 1000);
+    // Umschichtung ausführen: Die Abgeltungsteuer wird aus dem Verkaufserlös bezahlt, der Rest wird umgeschichtet.
+    for (let i = 0; i < nf; i++) {
+      const f = funds[i];
+      if (!(f.sell > 0)) continue;
+      const tx = s1.taxed[i] * 0.26375, to = (f.safe ?? f.risky)!;
+      f.B -= f.sell * f.B / f.V; f.V -= f.sell; f.abg[t] += tx;
+      to.V += f.sell - tx; to.B += f.sell - tx;
+    }
     for (let i = 0; i < nf; i++) {
       const f = funds[i];
       if (f.pay) {
         const tb = s1.taxed[i];
-        if (F.kvInv || F.kvShared) { f.dedY = tb * 0.26375; f.kvBase = F.kvInv ? 0.7 * f.gain : f.gain; }
+        if (F.kvInv || F.kvShared) { f.dedY = tb * 0.26375; f.kvBase = F.kvInv ? f.tf * f.gain : f.gain; }
         else { const k = kvAdd(f.gain, t); f.dedY = tb * 0.26375 + k; f.kvInline[t] += k; }
         f.abg[t] += tb * 0.26375;
         f.B -= f.W * f.B / f.V; f.V -= f.W; f.payY = f.W;
@@ -347,7 +383,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
         f.V *= 1 + f.rm;
       }
       if (f.V > 0 && p.basis > 0) f.vp = Math.min((Vs + newSh) * p.basis * 0.7, Math.max(0, f.V - Vs - cY));
-      xs[i] = f.vp >= 0 ? f.vp * 0.7 : 0;
+      xs[i] = f.vp >= 0 ? f.vp * f.tf : 0;
     }
     // Phase 2: Vorabpauschale mit dem Rest des gemeinsamen Pauschbetrags
     const s2 = shareAllowance(xs, s1.left);
@@ -357,7 +393,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
         const tx = s2.taxed[i] * 0.26375;
         if (tx > 0) { f.B *= (f.V - tx) / f.V; f.V -= tx; f.abg[t] += tx; }
         f.B += f.vp;
-        if (F.kvInv && !accum && t < f.tEnd) f.kvBase += 0.7 * f.vp; // Vorabpauschale in der Rentenphase (E6)
+        if (F.kvInv && !accum && t < f.tEnd) f.kvBase += f.tf * f.vp; // Vorabpauschale in der Rentenphase (E6)
       }
       if (f.kvBase > 0) {
         if (F.kvShared) claims[f.part]![t] += f.kvBase;
@@ -369,20 +405,35 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     }
   }
   for (const f of funds) for (let t = 0; t < T; t++) { abgTax[t] += f.abg[t]; kv[t] += f.kvInline[t]; }
-  const sellNet = (f: Fund, idx: number) => { const V = f.vals[idx], B = f.bases[idx]; return V - Math.max(0, (V - B) * 0.7 - 1000) * 0.26375; };
+  // Ein Depot eines Teils: das Fondsdepot, mit Umschichtung zusammen mit seinem sicheren Teil-Depot (Zahlen summiert).
+  interface Depot { vals: number[]; bases: number[]; net: number[]; abg: number[]; kvInline: number[]; own: number; ownReal: number; members: Fund[] }
+  const depot = (f: Fund): Depot => {
+    if (!f.safe) return { vals: f.vals, bases: f.bases, net: f.net, abg: f.abg, kvInline: f.kvInline, own: f.own, ownReal: f.ownReal, members: [f] };
+    const a = f, b = f.safe, sum = (x: number[], y: number[]) => x.map((v, i) => v + y[i]);
+    return { vals: sum(a.vals, b.vals), bases: sum(a.bases, b.bases), net: sum(a.net, b.net), abg: sum(a.abg, b.abg), kvInline: sum(a.kvInline, b.kvInline), own: a.own + b.own, ownReal: a.ownReal + b.ownReal, members: [a, b] };
+  };
+  /** Verkauf aller Fonds der Liste zum Zeitpunkt idx mit einem Sparer-Pauschbetrag; Gewinne je Teilfreistellung. */
+  const sellFunds = (fs: readonly Fund[], idx: number) => {
+    if (fs.length === 1) { const V = fs[0].vals[idx], B = fs[0].bases[idx], tf = fs[0].tf; return V - Math.max(0, (V - B) * tf - 1000) * 0.26375; }
+    let V = 0, G = 0, X = 0, mixed = false;
+    for (const f of fs) { const g = f.vals[idx] - f.bases[idx]; V += f.vals[idx]; G += g; X += g * f.tf; if (f.tf !== 0.7) mixed = true; }
+    return V - Math.max(0, (mixed ? X : G * 0.7) - 1000) * 0.26375; // nur Aktienfonds: wie bisher G · 0,7
+  };
+  const sellNet = (d: Depot, idx: number) => sellFunds(d.members, idx);
 
   // ---------- 5) Teile wie in model() zusammensetzen (Netto vor dem gemeinsamen KV-Buch) ----------
   const parts: ComboResult['parts'] = {};
   const fundNote = 'Nach Steuer bei Verkauf. Behalten die Erben, übernehmen sie den Gewinn steuerlich.';
-  const fundPart = (k: ProductKey, f: Fund): ComboPart => ({
+  const fundPart = (k: ProductKey, f: Depot): ComboPart => ({
     key: k, vals: f.vals, net: f.net, own: f.own, ownReal: f.ownReal, capR: f.vals[n], capNet: sellNet(f, n), cost: 0,
     foerder: 0, foerderReal: 0, payEnd: p.H, lumpNet: 0, incTax: zero(), abgTax: f.abg, kv: f.kvInline, taxBase: zero(),
     heir: idx => ({ val: sellNet(f, idx), note: fundNote }),
   });
-  if (fEtf) parts.etf = fundPart('etf', fEtf);
-  if (fFond) parts.fond = fundPart('fond', fFond);
-  if (avd && fSide) {
-    const side = fSide;
+  const dEtf = fEtf && depot(fEtf), dFond = fFond && depot(fFond), dSide = fSide && depot(fSide), dIns = fIns && depot(fIns);
+  if (dEtf) parts.etf = fundPart('etf', dEtf);
+  if (dFond) parts.fond = fundPart('fond', dFond);
+  if (avd && dSide) {
+    const side = dSide;
     const aNet = zero(), aKv = side.kvInline;
     for (let t = 0; t < T; t++) {
       if (!avd.paying[t]) continue;
@@ -429,8 +480,8 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       key: 'ins' as const, own: ins.own, ownReal: ins.ownReal, capR: ins.C, capNet: ins.C - kapTax, kapNet, foerder: 0, foerderReal: 0,
       cost: 0, annual: ins.annual, lump: p.insLump, lumpNet: 0, incTax: taxIns, taxBase: xIns,
     };
-    if (p.insLump && fIns) {
-      const f = fIns, iKv = f.kvInline;
+    if (p.insLump && dIns) {
+      const f = dIns, iKv = f.kvInline;
       iKv[n] += kvLi;
       if (kapTaxFlat > 0) f.abg[n] += kapTaxFlat;
       // Fix kvLumpSpread (E8): C/10 in den Jahren n … n+9 beitragspflichtig
@@ -491,12 +542,11 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   for (let i = 1; i < list.length; i++) { const x = list[i].net; for (let t = 0; t < T; t++) net[t] += x[t]; }
   const sum = (f: (r: ComboPart) => number) => list.reduce((a, r) => a + f(r), 0);
   // Kapital nach Steuern gesamt: Fonds bei Rentenbeginn gemeinsam verkauft (ein Pauschbetrag)
-  const capFunds = [fEtf, fFond, fSide].filter((f): f is Fund => !!f);
+  const capDepots = [dEtf, dFond, dSide].filter((d): d is Depot => !!d);
   let capNet = sum(r => r.capNet);
-  if (capFunds.length > 1) {
-    let V = 0, G = 0; for (const f of capFunds) { V += f.vals[n]; G += f.vals[n] - f.bases[n]; }
-    const joint = V - Math.max(0, G * 0.7 - 1000) * 0.26375;
-    capNet += joint - capFunds.reduce((a, f) => a + sellNet(f, n), 0);
+  if (capDepots.length > 1) {
+    const joint = sellFunds(capDepots.flatMap(d => d.members), n);
+    capNet += joint - capDepots.reduce((a, d) => a + sellNet(d, n), 0);
   }
   // ---------- 8) Erbfall gemeinsam (docs/kombi-modus.md, Abschnitt „Erbfall“) ----------
   // Tod zu Beginn von Jahr idx; die Erben (eine Person, Einkommen p.incHeir) bekommen alles im selben Jahr.
@@ -543,10 +593,10 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       }
     }
     const tx = taxAdd(p.incHeir, X, idx);
-    const depots = [fEtf, fFond, fSide, idx > n ? fIns : null].filter((f): f is Fund => !!f);
-    let V = 0, G = 0, minGain = Infinity;
-    for (const f of depots) { const g = f.vals[idx] - f.bases[idx]; V += f.vals[idx]; G += g; if (g < minGain) minGain = g; }
-    const abg = Math.max(0, G * 0.7 - 1000) * 0.26375;
+    const depots = [dEtf, dFond, dSide, idx > n ? dIns : null].filter((d): d is Depot => !!d).flatMap(d => d.members);
+    let V = 0, minGain = Infinity;
+    for (const f of depots) { const g = f.vals[idx] - f.bases[idx]; V += f.vals[idx]; if (g < minGain) minGain = g; }
+    const abg = depots.length ? V - sellFunds(depots, idx) : 0;
     const e = (x: number) => eur(Rn(x, idx));
     if (avd) bits.push(married
       ? 'AVD ohne Abzug auf einen Vertrag des Ehepartners übertragbar (spätere Einkommensteuer ca. ' + e(lt) + ', grob geschätzt und abgezogen)'

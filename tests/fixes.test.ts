@@ -325,7 +325,7 @@ describe('jede Teilmenge der Fixes', () => {
       for (const p of cases) {
         const a = analyze(p, { fixes });
         for (const pr of a.active) expect(Number.isFinite(a.stats[pr.key]!.cumH)).toBe(true);
-        expect(scenarios(p, { fixes }).length).toBe(scenarioList(p).length);
+        expect(scenarios(p, { fixes }).length).toBe(scenarioList(p, null, { fixes }).length);
       }
     }
   });
@@ -333,9 +333,11 @@ describe('jede Teilmenge der Fixes', () => {
 
 describe('Szenarien', () => {
   it('stabile IDs, Reihenfolge wie im Original, Label ohne Klammerzusatz', () => {
-    expect(scenarioList(P()).map(s => s.id)).toEqual(['kv', 'avdCost', 'refund', 'g', 'incWork', 'incRetLow', 'incRetHigh', 'insMode', 'insCost']);
-    expect(scenarioList(P({ avdCost: 1, insEff: 2, incRet: 10000, reinvest: false })).map(s => s.id)).toEqual(['kv', 'g', 'incWork', 'incRetHigh', 'insMode']);
-    expect(scenarioList(P({ avdOn: false, insOn: false })).map(s => s.id)).toEqual(['kv', 'g', 'incWork', 'incRetLow', 'incRetHigh']);
+    // Reihenfolge des Originals; „shift“ (Umschichtung, nicht im Original) nur außerhalb des Originalpfads, am Ende.
+    expect(scenarioList(P(), null, NONE).map(s => s.id)).toEqual(['kv', 'avdCost', 'refund', 'g', 'incWork', 'incRetLow', 'incRetHigh', 'insMode', 'insCost']);
+    expect(scenarioList(P()).map(s => s.id)).toEqual(['kv', 'avdCost', 'refund', 'g', 'incWork', 'incRetLow', 'incRetHigh', 'insMode', 'insCost', 'shift']);
+    expect(scenarioList(P({ avdCost: 1, insEff: 2, incRet: 10000, reinvest: false })).map(s => s.id)).toEqual(['kv', 'g', 'incWork', 'incRetHigh', 'insMode', 'shift']);
+    expect(scenarioList(P({ avdOn: false, insOn: false })).map(s => s.id)).toEqual(['kv', 'g', 'incWork', 'incRetLow', 'incRetHigh', 'shift']);
     expect(scenarioList(P()).find(s => s.id === 'refund')!.label).toBe('Steuererstattung ausgegeben statt angelegt');
   });
   it('Szenarien rechnen mit denselben Fixes wie die Basis', () => {

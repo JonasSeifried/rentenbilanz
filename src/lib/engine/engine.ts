@@ -6,7 +6,7 @@
 
 import { eur } from '../format';
 import { fixesOf, type EngineOptions } from './fixes';
-import { tax, avdGrowth, AVD_MAX, AVD_SUB_MAX, ERTRAG, KV_BBG, type Params, type ProductKey, type ProductResult } from './core';
+import { tax, AVD_MAX, AVD_SUB_MAX, ERTRAG, KV_BBG, type Params, type ProductKey, type ProductResult } from './core';
 
 export * from './core';
 
@@ -162,7 +162,7 @@ export function model(p: Params, opts?: EngineOptions): ModelResult {
         // Förderberechtigung bleiben wie im Original im Nebendepot (ob dann ungefördert eingezahlt werden darf, ist offen).
         const U = F.unsub && elig ? Math.min(want, AVD_MAX) - E : 0;
         overflow[t] = (want - E - U) / 12;
-        const rm = Math.pow(1 + avdGrowth(p, t, n) - cost, 1 / 12) - 1;
+        const rm = Math.pow(1 + (accum ? p.g : p.gPay) - cost, 1 / 12) - 1;
         for (let m = 1; m <= 12; m++) {
           if (E > 0) { V += E / 12; own += E / 12; }
           if (U > 0) { Vu += U / 12; Bu += U / 12; ownU += U / 12; }

@@ -23,23 +23,30 @@ export const KV_BBG = 69750; // Beitragsbemessungsgrenze KV/PV 2026, €/Jahr
 /** AVD: geförderte Eigenbeiträge höchstens 1.800 €/Jahr; Eigenbeiträge insgesamt höchstens 6.840 €/Jahr (AVRG). */
 export const AVD_SUB_MAX = 1800, AVD_MAX = 6840;
 /**
- * Standarddepot (§ 1 Abs. 1c Nr. 5 AltZertG ab 01.01.2027): fünf Jahre vor der Auszahlungsphase höchstens 50 %, zwei Jahre
- * vorher und zu Beginn höchstens 30 % im chancenreichen Fonds (Risikoklasse 3–5), der Rest im sicheren (Risikoklasse 1–2).
- * Gerechnet wird mit diesen Höchstanteilen, gestuft zu Jahresbeginn.
+ * Umschichtung vor Rentenbeginn (Schalter `shift`, alle Produkte) mit den Anteilen des Standarddepots (§ 1 Abs. 1c Nr. 5
+ * AltZertG ab 01.01.2027): fünf Jahre vor der Auszahlungsphase höchstens 50 %, zwei Jahre vorher und zu Beginn höchstens
+ * 30 % im chancenreichen Fonds (Risikoklasse 3–5), der Rest im sicheren (Risikoklasse 1–2). Gerechnet wird mit diesen
+ * Höchstanteilen, gestuft zu Jahresbeginn.
  */
 export const AVD_STD_GLIDE: readonly { yearsBefore: number; risky: number }[] = Object.freeze([{ yearsBefore: 2, risky: 0.3 }, { yearsBefore: 5, risky: 0.5 }]);
 
-/**
- * Jahresrendite des AVD vor Kosten im Jahr t (Rentenbeginn bei t = n). Ohne Standarddepot-Umschichtung exakt p.g bzw. p.gPay
- * (bitgleich zum Original). Mit Umschichtung in den letzten fünf Jahren der Ansparphase die Mischung aus p.g und p.avdSafe.
- * In der Auszahlphase gilt wie bei allen Produkten p.gPay (die Aufteilung dort regelt das Gesetz nicht).
- */
-export function avdGrowth(p: Params, t: number, n: number): number {
-  if (t >= n) return p.gPay;
-  if (!p.avdStd) return p.g;
+/** Anteil im chancenreichen Fonds zu Beginn von Ansparjahr t < n (1 ohne Umschichtung oder vor dem Zeitfenster). */
+export function riskyShare(p: Params, t: number, n: number): number {
+  if (!p.shift || t >= n) return 1;
   const before = n - t;
   const step = AVD_STD_GLIDE.find(s => before <= s.yearsBefore);
-  return step ? step.risky * p.g + (1 - step.risky) * p.avdSafe : p.g;
+  return step ? step.risky : 1;
+}
+
+/**
+ * Jahresrendite vor Kosten in einem Vertrag, der steuerfrei umschichtet (AVD, Versicherung), im Jahr t (Rentenbeginn
+ * bei t = n). Ohne Umschichtung exakt p.g bzw. p.gPay (bitgleich zum Original). Mit Umschichtung in den letzten fünf
+ * Ansparjahren die Mischung aus p.g und p.safeRate. In der Auszahlphase gilt wie bei allen Produkten p.gPay.
+ */
+export function contractGrowth(p: Params, t: number, n: number): number {
+  if (t >= n) return p.gPay;
+  const w = riskyShare(p, t, n);
+  return w === 1 ? p.g : w * p.g + (1 - w) * p.safeRate;
 }
 
 export type ProductKey = 'etf' | 'avd' | 'ins' | 'fond';
@@ -51,8 +58,8 @@ export interface Params {
   g: number; gPay: number; infl: number; dyn: number; basis: number;
   etfM: number; etfTer: number;
   avdM: number; avdCost: number; kids: number; kidsFrom: number; kidsYears: number;
-  /** Standarddepot mit gesetzlicher Umschichtung vor Rentenbeginn; avdSafe = Rendite des sicheren Fonds. Neu, nicht im Original. */
-  avdStd: boolean; avdSafe: number;
+  /** Umschichtung vor Rentenbeginn in allen Produkten (Anteile wie Standarddepot); safeRate = Rendite der sicheren Anlage. Neu, nicht im Original. */
+  shift: boolean; safeRate: number;
   bonus: boolean; reinvest: boolean; einmal: boolean;
   insM: number; insEff: number; rf: number; gz: number; insLump: boolean;
   fondM: number; fondAA: number; fondTer: number;
@@ -77,7 +84,7 @@ export function readParams(inp: Inputs): Params {
     g: pct('g', -50, 30), gPay: pct('gPay', -50, 30), infl: pct('infl', -5, 20), dyn: pct('dyn', -10, 20), basis: pct('basis', 0, 10),
     etfM: Math.max(0, num('etfM')), etfTer: pct('etfTer', 0, 10),
     avdM: Math.max(0, num('avdM')), avdCost: pct('avdCost', 0, 10), kids: clamp(Math.round(num('kids')), 0, 10), kidsFrom: num('kidsFrom'), kidsYears: Math.max(0, num('kidsYears')),
-    avdStd: chk('avdStd'), avdSafe: pct('avdSafe', -5, 20),
+    shift: chk('shift'), safeRate: pct('safeRate', -5, 20),
     bonus: chk('bonus'), reinvest: chk('reinvest'), einmal: chk('einmal'),
     insM: Math.max(0, num('insM')), insEff: pct('insEff', 0, 10), rf: Math.max(0, num('rf')), gz: clamp(Math.round(num('gz')), 0, 40), insLump: chk('insLump'),
     fondM: Math.max(0, num('fondM')), fondAA: pct('fondAA', 0, 20), fondTer: pct('fondTer', 0, 10),

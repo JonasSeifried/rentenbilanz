@@ -136,14 +136,13 @@ export const GLOSSARY = {
   },
   avdKosten: {
     title: 'Kosten des Altersvorsorgedepots',
-    text: ['Das Standarddepot ist auf 1,0 % Effektivkosten gedeckelt (§ 2a Abs. 2 AltZertG), schichtet aber ab 5 Jahre vor Rentenbeginn in sichere Anlagen um. Das lässt sich unten einschalten („Standarddepot: Umschichtung vor Rentenbeginn“). Für andere Altersvorsorgedepots gibt es keinen Kostendeckel. Ein selbst gewähltes ETF-Depot ist meist günstiger und schichtet nicht um.'],
+    text: ['Das Standarddepot ist auf 1,0 % Effektivkosten gedeckelt (§ 2a Abs. 2 AltZertG), schichtet aber ab 5 Jahre vor Rentenbeginn in sichere Anlagen um. Die Umschichtung lässt sich unter „Markt“ einschalten, dann für alle Produkte gleich. Für andere Altersvorsorgedepots gibt es keinen Kostendeckel. Ein selbst gewähltes Altersvorsorgedepot ist meist günstiger und muss nicht umschichten.'],
   },
   standarddepot: {
     title: 'Umschichtung im Standarddepot',
     text: [
       'Das Standarddepot besteht aus zwei Fonds: einem chancenreichen (z. B. Aktien-ETF, Risikoklasse 3–5) und einem sicheren (Risikoklasse 1–2, etwa Geldmarkt oder kurz laufende Anleihen). Fünf Jahre vor der Auszahlphase dürfen höchstens 50 % im chancenreichen Fonds liegen, ab zwei Jahren vorher und zu Beginn der Auszahlphase höchstens 30 % (§ 1 Abs. 1c Nr. 5 AltZertG). Andere Anteile kann man verlangen.',
-      'Der Rechner nimmt diese Höchstanteile, stufenweise zu Jahresbeginn, und rechnet den Rest mit der Rendite der sicheren Anlage. Ab Rentenbeginn gilt wie bei allen Produkten die Rendite in der Auszahlphase. Das senkt die Rendite, schützt aber vor einem Kurssturz kurz vor der Rente. Dieser Schutz ist im Kapital nicht sichtbar.',
-      'Innerhalb des AVD ist das Umschichten steuerfrei. Im ETF-Depot wäre der Verkauf steuerpflichtig.',
+      'Mit „Vor Rentenbeginn in sichere Anlagen umschichten“ (unter „Markt“) rechnet der Rechner diese Höchstanteile, stufenweise zu Jahresbeginn, für alle Produkte. Innerhalb des AVD und der Versicherung ist das Umschichten steuerfrei. Im ETF-Depot und im aktiven Fonds ist jeder Verkauf steuerpflichtig.',
     ],
   },
   ausgabeaufschlag: {
@@ -189,6 +188,14 @@ export const GLOSSARY = {
     text: [
       'Ehepartner können das Guthaben ohne Abzug auf einen eigenen Vertrag übertragen. Die spätere Einkommensteuer darauf ist grob geschätzt abgezogen.',
       'Erben alle anderen, gilt das AVD als „schädlich verwendet“ (§ 93 EStG): Zulagen und Steuervorteil gehen zurück, die Erträge (Guthaben − eigene Beiträge − Zulagen) werden von den Erben mit ihrem eigenen Steuersatz versteuert (§ 22 Nr. 5 S. 3 EStG).',
+    ],
+  },
+  umschichtung: {
+    title: 'Umschichtung vor Rentenbeginn',
+    text: [
+      'Eingeschaltet schichten alle Produkte wie das Standarddepot um: ab 5 Jahre vor Rentenbeginn 50 %, ab 2 Jahren 30 % in Aktien, der Rest in einer sicheren Anlage mit der angegebenen Rendite (§ 1 Abs. 1c Nr. 5 AltZertG). Neue Beiträge werden ebenso aufgeteilt; zu Beginn jedes Jahres wird auf diese Anteile zurückgesetzt. Ab Rentenbeginn rechnen alle Produkte mit der Rendite in der Auszahlphase, die Aufteilung bleibt.',
+      'Altersvorsorgedepot und Versicherung schichten innerhalb des Vertrags um, ohne Steuer. ETF-Depot, aktiver Fonds und das AVD-Nebendepot verkaufen dafür Anteile: Der Gewinn wird mit Abgeltungsteuer versteuert, 30 % sind frei (Teilfreistellung für Aktienfonds), der Sparer-Pauschbetrag von 1.000 € gilt im Jahr für alle Depots zusammen. Der sichere Teil liegt in einem Anleihe- oder Geldmarkt-ETF ohne Teilfreistellung; seine Vorabpauschale und Gewinne sind voll steuerpflichtig, bei freiwillig Versicherten auch voll beitragspflichtig.',
+      'Gerechnet ist der Gewinn je Verkauf anteilig nach den Anschaffungskosten (tatsächlich gilt: zuerst gekaufte Anteile zuerst verkauft, dann ist der Gewinn oft höher). Verluste beim Umschichten werden nicht verrechnet.',
     ],
   },
   erbfallKombi: {
