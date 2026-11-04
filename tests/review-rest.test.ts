@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { combo, comboStats, emptySplit, SPLIT_KEYS, type Split } from '../src/lib/engine/combo';
-import { readParams, tax2026 } from '../src/lib/engine/core';
+import { kvGross, readParams, tax2026 } from '../src/lib/engine/core';
 import { ALL_FIXES, type FixId } from '../src/lib/engine/fixes';
 import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
 import { decodeState, encodeState } from '../src/lib/link';
@@ -89,7 +89,10 @@ describe('R4 – unabhängige Jahresbilanz eines thesaurierenden Depots', () => 
 
 describe('R5/R7 – getrennte Eingaben und ein Pauschbetrag', () => {
   it('KV-Brutto ändert keine Tarifbasis und wird niemals aus incRet geschätzt', () => {
-    expect(P({ incRet: 45000 }).kvGrossRet).toBe(45000);
+    expect(kvGross(P({ incRet: 45000 }))).toBe(45000);
+    // Szenarien ändern incRet nach readParams: die KV-Basis muss mitgehen.
+    expect(kvGross({ ...P({ incRet: 20000 }), incRet: 40000 })).toBe(40000);
+    expect(kvGross({ ...P({ incRet: 20000, kvGrossRet: 30000 }), incRet: 40000 })).toBe(30000);
     const p = P({ kvOn: true, incRet: 45000, kvGrossRet: 69750 });
     const c = combo(p, S({ avd: 500, ins: 500, etf: 500 }));
     expect(c.kv.every(x => x === 0)).toBe(true);
@@ -110,7 +113,7 @@ describe('R5/R7 – getrennte Eingaben und ein Pauschbetrag', () => {
     const inputs = { ...DEFAULTS, kvGrossRet: 54000, payResidual: true, fundingDelay: true, indexAllowance: true, avdPayCost: 1.2, etfPayTer: .5, fondPayTer: .8 };
     expect(decodeState(encodeState(inputs, 'settings')).inputs).toEqual(inputs);
     expect(sanitize(inputs)).toEqual(inputs);
-    expect(readParams(decodeState('v=1&incRet=45000').inputs!).kvGrossRet).toBe(45000);
+    expect(kvGross(readParams(decodeState('v=1&incRet=45000').inputs!))).toBe(45000);
   });
 });
 
@@ -180,7 +183,7 @@ it('R1/R3: AVD-Teilauszahlung mit marginalem Netto einschließlich Kapital-Güns
   const p = P({ incRet: 5000, kvOn: true, einmal: true });
   const s = S({ avd: 150, etf: 150 }), a = combo(p, s), b = combo(p, s, without('capitalGuenstiger'));
   const n = a.n, index = a.I(n), L = .3 * a.parts.avd!.capAVD!;
-  const kvL = p.kvRate * Math.min(L, 10 * (69750 - p.kvGrossRet) * index);
+  const kvL = p.kvRate * Math.min(L, 10 * (69750 - kvGross(p)) * index);
   const income = p.incRet * index + Object.values(a.parts).reduce((v, r) => v + r.taxBase[n], 0) - a.kv[n];
   const paid = b.abgTax[n], K = paid / .26375;
   const total = (x: number) => tax2026(x, index) + Math.min(paid, tax2026(x + K, index) - tax2026(x, index));

@@ -3,6 +3,7 @@
 // engine.ts wird auf seinen historischen E-Fixes geprüft; neue R-Fixes haben unabhängige Recht-/Bilanztests.
 import { describe, expect, it } from 'vitest';
 import { readParams, model, tax, tax2026, type HeirValue, type Params, type ProductKey } from '../src/lib/engine/engine';
+import { kvGross } from '../src/lib/engine/core';
 import { analyze } from '../src/lib/engine/analyze';
 import { ALL_FIXES, FIX_IDS, FIXES, NO_FIXES, type FixId } from '../src/lib/engine/fixes';
 import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
@@ -244,7 +245,7 @@ describe('I4 – gemeinsam gegen getrennt', () => {
         // R2: Ein gemeinsamer Pauschbetrag erzwingt andere Steuerverkäufe und damit andere KV-Basen.
         // Für die tatsächlich realisierten Basen gilt trotzdem genau eine BBG (E9-Teilauszahlung separat).
         for (let t = 0; t < c.T; t++) {
-          const room = Math.max(0, (69750 - p.kvGrossRet) * c.I(t));
+          const room = Math.max(0, (69750 - kvGross(p)) * c.I(t));
           const lumpKv = p.einmal && t === c.n ? p.kvRate * Math.min(.3 * c.parts.avd!.capAVD!, 10 * room) : 0;
           expect(c.kv[t]).toBeLessThanOrEqual(p.kvRate * room + lumpKv + 1e-6);
         }

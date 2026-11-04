@@ -4,7 +4,7 @@
 // tests/combo.test.ts: bitgleich zu model() in engine.ts, der Referenz des Originals).
 // Die Szenario-Beschriftungen sind neutral formuliert (keine Rechenrelevanz).
 import { eur } from '../format';
-import type { Params, ProductKey, ProductResult } from './core';
+import { kvGross, type Params, type ProductKey, type ProductResult } from './core';
 import { fixesOf, type EngineOptions } from './fixes';
 import { combo, comboStats, emptySplit, SPLIT_KEYS, type ComboPart, type ComboResult, type Split } from './combo';
 
@@ -151,7 +151,7 @@ export function scenarioList(p: Params, kombi?: Split | null, opts?: EngineOptio
     }
     add('allowance', p.indexAllowance ? 'Pauschbetrag nominal fest' : 'Pauschbetrag indexiert (hypothetisch)', { indexAllowance: !p.indexAllowance });
     if (p.kvOn) {
-      add('kvGross', 'Sonstige KV-Bruttoeinnahmen 10.000 € höher (zvE gleich)', { kvGrossRet: p.kvGrossRet + 10000 });
+      add('kvGross', 'Sonstige KV-Bruttoeinnahmen 10.000 € höher (zvE gleich)', { kvGrossRet: kvGross(p) + 10000 });
       add('kvRate', 'KV/PV 3 Prozentpunkte höher', { kvRate: Math.min(.4, p.kvRate + .03) });
     }
   }

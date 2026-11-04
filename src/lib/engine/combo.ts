@@ -18,7 +18,7 @@
 // also mit ALL_FIXES. Ohne kvSharedRoom wird (wie im Original) jeder KV-Strom einzeln bis zur BBG begrenzt.
 
 import { eur } from '../format';
-import { tax, tax2026, contractGrowth, riskyShare, AVD_MAX, AVD_SUB_MAX, ERTRAG, KV_BBG, numOf, type HeirValue, type Params, type ProductKey, type ProductResult } from './core';
+import { kvGross, tax, tax2026, contractGrowth, riskyShare, AVD_MAX, AVD_SUB_MAX, ERTRAG, KV_BBG, numOf, type HeirValue, type Params, type ProductKey, type ProductResult } from './core';
 import { fixesOf, type EngineOptions } from './fixes';
 import type { Inputs } from './inputs';
 
@@ -198,7 +198,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   const taxSave = (incReal: number, dedNom: number, t: number) => F.round
     ? taxNom(incReal * I(t), t) - taxNom(Math.max(0, incReal * I(t) - dedNom), t)
     : (tax(incReal) - tax(Math.max(0, incReal - dedNom / I(t)))) * I(t);
-  const kvRoom = (t: number) => Math.max(0, (KV_BBG - (F.grossKV ? p.kvGrossRet : p.incRet)) * I(t));
+  const kvRoom = (t: number) => Math.max(0, (KV_BBG - (F.grossKV ? kvGross(p) : p.incRet)) * I(t));
   const kvAdd = (addNom: number, t: number) => p.kvOn && addNom > 0 ? p.kvRate * Math.min(addNom, kvRoom(t)) : 0;
   const kvLump = (addNom: number, t: number) => p.kvOn && addNom > 0 ? p.kvRate * Math.min(addNom, 10 * kvRoom(t)) : 0;
   const allowance = (t: number) => 1000 * (p.indexAllowance ? I(t) : 1);
@@ -335,7 +335,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   // Versicherung: Steuer auf die Kapitalauszahlung (gemeinsam im Jahr n) bzw. für die Anzeige allein (Leibrente).
   let kapTax = 0, kapNet = 0, kvLi = 0;
   if (ins) {
-    kapTax = p.insLump ? (ins.halb ? taxIns[n] : kapTaxFlat) : (ins.halb ? taxAdd(p.incRet, Math.max(0, ins.gain * 0.85 * 0.5 - (F.insAllowance ? allowance(n) : 0)), n) : ins.gain * 0.85 * 0.26375);
+    kapTax = p.insLump ? (ins.halb ? taxIns[n] : kapTaxFlat) : (ins.halb ? taxAdd(p.incRet, Math.max(0, ins.gain * 0.85 * 0.5 - (F.insAllowance ? allowance(n) : 0)), n) : Math.max(0, ins.gain * 0.85 - (F.insAllowance ? allowance(n) : 0)) * 0.26375);
     // Ohne kvLumpSpread (Original): KV auf die Kapitalauszahlung sofort, eigener Topf 10 × Spielraum(n).
     if (!F.kvSpread) kvLi = kvLump(ins.C, n);
     kapNet = F.kvSpread ? ins.C - kapTax : ins.C - kapTax - kvLi;

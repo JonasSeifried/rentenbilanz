@@ -62,6 +62,7 @@ export interface Params {
   a0: number; studyEnd: number; incStudy: number; eligStudy: boolean;
   incWork: number; incRet: number; R: number; H: number;
   kvOn: boolean; kvRate: number;
+  /** −1: wie incRet (auch in Szenarien, die incRet ändern); sonst eigene KV-Bruttobasis. */
   kvGrossRet: number; payResidual: boolean; fundingDelay: boolean; indexAllowance: boolean;
   /** -1: Kosten der Ansparphase weiterverwenden, sonst separater Satz. */
   avdPayCost: number; etfPayTer: number; fondPayTer: number;
@@ -83,6 +84,9 @@ export interface Params {
 /** Wie `num(id)` im Original: Komma als Dezimaltrenner erlaubt, Unlesbares → 0. */
 export function numOf(v: unknown): number { const x = parseFloat(String(v).replace(',', '.')); return isFinite(x) ? x : 0; }
 
+/** Sonstige KV-Bruttoeinnahmen im Alter (heutiges Geld): −1 folgt incRet. */
+export const kvGross = (p: Params) => p.kvGrossRet < 0 ? p.incRet : p.kvGrossRet;
+
 export function readParams(inp: Inputs): Params {
   const num = (id: keyof Inputs) => numOf(inp[id]);
   const chk = (id: keyof Inputs) => inp[id] === true;
@@ -90,7 +94,7 @@ export function readParams(inp: Inputs): Params {
   const p: Params = {
     a0: clamp(Math.round(num('a0')), 16, 60), studyEnd: Math.round(num('studyEnd')), incStudy: Math.max(0, num('incStudy')), eligStudy: chk('eligStudy'),
     incWork: Math.max(0, num('incWork')), incRet: Math.max(0, num('incRet')), R: clamp(Math.round(num('R')), 65, 70), H: Math.round(num('H')),
-    kvGrossRet: num('kvGrossRet') < 0 ? Math.max(0, num('incRet')) : num('kvGrossRet'), payResidual: chk('payResidual'), fundingDelay: chk('fundingDelay'), indexAllowance: chk('indexAllowance'),
+    kvGrossRet: num('kvGrossRet') < 0 ? -1 : num('kvGrossRet'), payResidual: chk('payResidual'), fundingDelay: chk('fundingDelay'), indexAllowance: chk('indexAllowance'),
     avdPayCost: num('avdPayCost') < 0 ? -1 : pct('avdPayCost', 0, 10),
     etfPayTer: num('etfPayTer') < 0 ? -1 : pct('etfPayTer', 0, 10),
     fondPayTer: num('fondPayTer') < 0 ? -1 : pct('fondPayTer', 0, 10),
