@@ -115,7 +115,8 @@ KV- oder Kapitalertrags-Erstattungen erhöht.
   Förderung wird zum Empfangsjahr bewertet. Die zusätzliche Kapital-Günstigerprüfungs-Erstattung bleibt bei
   der für R3 allgemein gewählten Jahresannahme. Keine behauptete einjährige Verwaltungsfrist;
   § 89 n. F. regelt vierteljährliche Antragsübermittlung, nicht den individuellen Gutschrifttermin.
-  Offene Förderansprüche werden im Erbwert nicht gesondert als Forderung bewertet; dessen Prüfung bei
+  Offene Förderansprüche werden im Erbwert weder als Forderung bewertet noch zurückgefordert (zurück geht nur bereits
+  Gutgeschriebenes; nach Rentenbeginn die gesamte Förderung anteilig); dessen Prüfung bei
   eingeschaltetem Verzug erfordert zusätzliche rechtliche Zuordnung (H2).
 - **V3 `indexAllowance`:** Standard nominal 1.000 €. Optional wächst er mit Inflation, ausdrücklich
   **hypothetisch**, auch beim Erb-/Kapitalverkauf und der Versicherung. Keine künftige Gesetzesänderung

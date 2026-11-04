@@ -277,7 +277,9 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
         refunds[t + (p.fundingDelay ? 1 : 0)] = extra; ref += extra; refReal += extra / I(t + (p.fundingDelay ? 1 : 0));
       }
       if (p.fundingDelay) V += delayedZ[t];
-      vals.push(V); valsU.push(Vu); basesU.push(Bu); owns.push(own); zuls.push(zul); foer.push(zul + ref);
+      // Erbfall: nur bereits gutgeschriebene Förderung zurückfordern (bei Verzug fehlt die des laufenden Jahres noch).
+      const pendZ = p.fundingDelay ? delayedZ[t + 1] : 0, pendR = p.fundingDelay ? refunds[t + 1] : 0;
+      vals.push(V); valsU.push(Vu); basesU.push(Bu); owns.push(own); zuls.push(zul - pendZ); foer.push(zul + ref - pendZ - pendR);
     }
     avd = { vals, W, L, payY, paying, refunds, overflow, xW, Lu, tb, cash, kvW, valsU, basesU, ownU, ownUReal, owns, zuls, foer, own, ownReal, zul, zulReal, ref, refReal, noElig };
   }
@@ -540,7 +542,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       const V = a.vals[idx], age = p.a0 + idx, C0 = a.vals[n];
       let back: number, ownR: number, zulR: number;
       if (idx <= n) { back = a.foer[idx]; ownR = a.owns[idx]; zulR = a.zuls[idx]; }
-      else { const f = C0 > 0 ? V / C0 : 0; back = a.foer[n] * f; ownR = a.owns[n] * f; zulR = a.zuls[n] * f; }
+      else { const f = C0 > 0 ? V / C0 : 0; back = (a.zul + a.ref) * f; ownR = a.owns[n] * f; zulR = a.zul * f; }
       const halb = F.heir ? p.heirHalf && idx >= 12 : p.heirHalf && age >= 62 && idx >= 12;
       const rest = Math.max(0, V - back), gain = Math.max(0, V - ownR - zulR) * (halb ? 0.5 : 1);
       const incDeath = F.heir ? p.incHeir : idx < n ? incAt(idx) : p.incRet;
@@ -704,7 +706,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       else {
         let ownR: number, zulR: number;
         if (idx <= n) { back = a.foer[idx]; ownR = a.owns[idx]; zulR = a.zuls[idx]; }
-        else { const f = C0 > 0 ? V / C0 : 0; back = a.foer[n] * f; ownR = a.owns[n] * f; zulR = a.zuls[n] * f; }
+        else { const f = C0 > 0 ? V / C0 : 0; back = (a.zul + a.ref) * f; ownR = a.owns[n] * f; zulR = a.zul * f; }
         gross += Math.max(0, V - back) + a.valsU[idx];
         X += Math.max(0, V - ownR - zulR) * (halbAvd ? 0.5 : 1) + gU(halbAvd);
       }

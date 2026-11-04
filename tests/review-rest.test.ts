@@ -186,3 +186,17 @@ it('R1/R3: AVD-Teilauszahlung mit marginalem Netto einschließlich Kapital-Güns
   const total = (x: number) => tax2026(x, index) + Math.min(paid, tax2026(x + K, index) - tax2026(x, index));
   expect(a.lumpNet).toBeCloseTo(L - kvL - (total(income) - total(income - L + kvL)), 6);
 });
+
+describe('V2 – Erbfall bei Förderverzug', () => {
+  it('fordert nur bereits gutgeschriebene Förderung zurück', () => {
+    for (const fundingDelay of [false, true]) {
+      const p = P({ fundingDelay, g: 0, gPay: 0, avdCost: 0, etfTer: 0, infl: 0, real: false, basis: 0 });
+      const c = combo(p, S({ avd: 150 }));
+      // Nullrendite: Nicht-Ehepartner erhalten genau die eigenen Beiträge zurück, auch wenn Förderung noch aussteht.
+      for (const idx of [1, 2, 5, 20]) {
+        expect(c.parts.avd!.heir(idx).val).toBeCloseTo(1800 * idx, 6);
+        expect(c.heir(idx).val).toBeCloseTo(1800 * idx, 6);
+      }
+    }
+  });
+});
