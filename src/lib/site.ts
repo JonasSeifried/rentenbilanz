@@ -8,7 +8,7 @@ export const SITE = {
   lawState: 'Altersvorsorgereformgesetz vom 26.05.2026 (BGBl. 2026 I Nr. 156), Steuerwerte 2026',
   lawStateShort: 'Rechtsstand 26.05.2026 · Steuerwerte 2026',
   /** Datum der letzten inhaltlichen Prüfung. */
-  updated: '02.11.2026',
+  updated: '04.11.2026',
   /** Kontakt für „Fehler melden“ (steht auch im Impressum und in der Datenschutzerklärung). */
   contact: 'legal@jonasseifried.com',
   /** Öffentliche Adresse der Seite. Leer = keine canonical-/og:url-Angaben. Domain steht noch aus. */

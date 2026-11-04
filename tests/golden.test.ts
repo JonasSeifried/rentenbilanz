@@ -12,8 +12,9 @@ import { DEFAULTS, LEGACY_KEYS, type Inputs } from '../src/lib/engine/inputs';
 
 const CENT = 0.005;
 const OPTS = { fixes: NO_FIXES };
-// Einzige erlaubte neue Schlüssel (fehlen im Original): params.incHeir und stats.*.cumHReal. Alles andere muss strukturell gleich sein.
-const ALLOW_NEW = [/^(params|scen\[\d+\]\.p)\.incHeir$/, /^(scen\[\d+\]\.)?stats\.\w+\.cumHReal$/];
+// Einzige erlaubte neue Schlüssel (fehlen im Original): params.incHeir, params.avdStd/avdSafe (Standarddepot, Standard aus)
+// und stats.*.cumHReal. Alles andere muss strukturell gleich sein.
+const ALLOW_NEW = [/^(params|scen\[\d+\]\.p)\.(incHeir|avdStd|avdSafe)$/, /^(scen\[\d+\]\.)?stats\.\w+\.cumHReal$/];
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
 let legacy: { readParams: () => Any; model: (p: Any) => Any; analyze: (p: Any) => Any; scenarios: (p: Any) => Any };

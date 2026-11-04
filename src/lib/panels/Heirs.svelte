@@ -1,7 +1,7 @@
 <script lang="ts">
   import { scrollRegion } from '../attach';
   import type { Analysis } from '../engine/analyze';
-  import type { HeirValue } from '../engine/engine';
+  import type { HeirValue, ProductKey } from '../engine/engine';
   import { eur } from '../format';
   import { app, setInput } from '../state.svelte';
   import NumberField from '../components/NumberField.svelte';
@@ -18,10 +18,11 @@
   const heirRows = $derived.by<HeirRow[]>(() => {
     const out: HeirRow[] = [];
     A.active.forEach(pr => {
+      if (pr.key === 'kombi') return; // kein Erbfall für die Kombi (docs/kombi-modus.md, Grenzen)
       if (pr.key === 'avd') {
         out.push({ name: 'AVD – Ehepartner erbt', short: 'AVD verh.', color: pr.color, f: k => res.avd!.heirMarried!(k) });
         out.push({ name: 'AVD – Kinder / Partner ohne Trauschein', short: 'AVD ledig', color: pr.color, dash: true, f: k => res.avd!.heir(k) });
-      } else out.push({ name: pr.name, short: pr.short, color: pr.color, f: k => res[pr.key]!.heir(k) });
+      } else out.push({ name: pr.name, short: pr.short, color: pr.color, f: k => res[pr.key as ProductKey]!.heir(k) });
     });
     return out;
   });
@@ -51,7 +52,7 @@
     <section class="card" aria-labelledby="heir-h">
       <div class="card-head">
         <h2 id="heir-h">Was die Erben bekommen</h2>
-        <p class="hint">Bei Tod mit {p.deathAge}, {p.deathAge < p.R ? 'vor' : 'nach'} Rentenbeginn. Ohne Erbschaftsteuer.</p>
+        <p class="hint">Bei Tod mit {p.deathAge}, {p.deathAge < p.R ? 'vor' : 'nach'} Rentenbeginn. Ohne Erbschaftsteuer.{#if res.kombi} Deine Kombi ist hier nicht gerechnet; ihre Teile siehst du einzeln, wenn die Produkte oben gewählt sind.{/if}</p>
       </div>
       <div class="table-scroll" {@attach scrollRegion('Tabelle: Was die Erben bekommen')}>
         <table class="heirs" data-testid="heirs-table">

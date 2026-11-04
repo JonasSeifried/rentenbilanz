@@ -15,7 +15,7 @@
 // Die Option `fixes` gibt es nur, damit I1 auch den Originalpfad prüfen kann. Die App ruft immer ohne Optionen,
 // also mit ALL_FIXES. Ohne kvSharedRoom wird (wie im Original) jeder KV-Strom einzeln bis zur BBG begrenzt.
 
-import { tax, ERTRAG, KV_BBG, numOf, type Params, type ProductKey } from './engine';
+import { tax, avdGrowth, AVD_MAX, AVD_SUB_MAX, ERTRAG, KV_BBG, numOf, type Params, type ProductKey } from './engine';
 import { fixesOf, type EngineOptions } from './fixes';
 import type { Inputs } from './inputs';
 
@@ -37,7 +37,7 @@ export interface ComboPart {
   /** Einkommensteuerpflichtiger Betrag je Jahr (nominal), Grundlage der gemeinsamen Steuer (Fonds: 0). */
   taxBase: number[];
   // AVD
-  capAVD?: number; sideR?: number; sideOwn?: number; sideOwnReal?: number;
+  capAVD?: number; sideR?: number; sideOwn?: number; sideOwnReal?: number; unsubOwn?: number; unsubOwnReal?: number;
   zul?: number; zulReal?: number; ref?: number; refReal?: number; noElig?: number;
   // Versicherung
   kapNet?: number; annual?: number; lump?: boolean; lifelong?: boolean;
@@ -70,7 +70,7 @@ export interface ComboOptions extends EngineOptions {
 export interface ComboStats { avgMonthly: number; cumH: number; cumHReal: number; cum100: number; lump: number }
 
 export interface ComboSetup {
-  /** Monatsbudget gesamt (€). */
+  /** Monatsbudget gesamt (€) = gemeinsamer Monatsbeitrag je Produkt (setAll), damit der Vergleich fair ist. */
   budget: number;
   /** Aufteilung, nur aktive Produkte (Chips) > 0 möglich. */
   split: Split;
@@ -78,14 +78,46 @@ export interface ComboSetup {
   keys: ProductKey[];
 }
 
-const INPUT_OF: Record<ProductKey, 'cEtf' | 'cAvd' | 'cIns' | 'cFond'> = { etf: 'cEtf', avd: 'cAvd', ins: 'cIns', fond: 'cFond' };
+/** Eingabefeld der Kombi-Aufteilung je Produkt. */
+export const INPUT_OF: Readonly<Record<ProductKey, 'cEtf' | 'cAvd' | 'cIns' | 'cFond'>> = Object.freeze({ etf: 'cEtf', avd: 'cAvd', ins: 'cIns', fond: 'cFond' });
 
 /** Liest Budget und Aufteilung aus den Eingaben (nicht aus Params: der Golden-Test vergleicht Params mit dem Original). */
 export function readCombo(inp: Inputs, p: Params): ComboSetup {
   const keys = SPLIT_KEYS.filter(k => p.on[k]);
   const split = emptySplit();
   for (const k of keys) split[k] = Math.max(0, numOf(inp[INPUT_OF[k]]));
-  return { budget: Math.max(0, numOf(inp.cBudget)), split, keys };
+  return { budget: Math.max(0, numOf(inp.setAll)), split, keys };
+}
+
+/** Gespeicherte Aufteilung aller vier Produkte (unabhängig von den Chips); negatives/Unlesbares → 0. */
+export function storedSplit(inp: Inputs): Split {
+  const s = emptySplit();
+  for (const k of SPLIT_KEYS) { const v = numOf(inp[INPUT_OF[k]]); s[k] = isFinite(v) && v > 0 ? v : 0; }
+  return s;
+}
+
+/**
+ * Aufteilung proportional auf ein neues Budget bringen, auf ganze Euro gerundet; der Rundungsrest geht an den
+ * größten Teil (bei Gleichstand an den ersten in Produktreihenfolge). Leere Aufteilung oder Budget ≤ 0 → leer.
+ */
+export function scaleSplit(s: Split, budget: number): Split {
+  const out = emptySplit(), sum = splitSum(s);
+  if (!(sum > 0) || !(budget > 0)) return out;
+  if (Math.abs(sum - budget) < 0.005) return { ...s };
+  let big: ProductKey = 'etf';
+  for (const k of SPLIT_KEYS) { out[k] = Math.round(s[k] * budget / sum); if (s[k] > s[big]) big = k; }
+  out[big] = Math.round((out[big] + budget - splitSum(out)) * 100) / 100;
+  return out;
+}
+
+/**
+ * Die Kombi, die im Vergleich mitläuft: nur, wenn sie eingeschaltet ist und mindestens zwei Produkte enthält.
+ * Sie wird immer auf den gemeinsamen Monatsbeitrag (setAll) gebracht, damit gleich viel eigenes Geld hineinfließt.
+ */
+export function readKombi(inp: Inputs): Split | null {
+  if (inp.combo !== true) return null;
+  const s = scaleSplit(storedSplit(inp), Math.max(0, numOf(inp.setAll)));
+  return SPLIT_KEYS.filter(k => s[k] > 0).length >= 2 ? s : null;
 }
 
 /**
@@ -124,6 +156,7 @@ function run(p: Params, split: Split, opts: EngineOptions, zeroCost: boolean): C
     kvInv: fx.has('kvInvestBase'),    // E6
     kvShared: fx.has('kvSharedRoom'), // E7
     kvSpread: fx.has('kvLumpSpread'), // E8
+    unsub: fx.has('avdUnsubsidized'), // E10
   };
   const T = 100 - p.a0, n = p.R - p.a0, tH = p.H - p.a0;
   const I = (t: number) => Math.pow(1 + p.infl, t);
@@ -145,30 +178,48 @@ function run(p: Params, split: Split, opts: EngineOptions, zeroCost: boolean): C
   if (F.kvShared) for (const k of SPLIT_KEYS) if (on(k)) claims[k] = zero();
 
   // ---------- 1) AVD-Vertrag: run() aus model() ohne Steuer und KV (die kommen aus dem gemeinsamen Buch) ----------
+  // payY: gefördert ausgezahlt (W + L); xW/xL: steuerpflichtiger Gewinnanteil des ungeförderten Teils (E10);
+  // tb = payY + (xW + xL) einkommensteuerpflichtig; cash = payY + (Wu + Lu) ausgezahlt; kvW = W + Wu laufend beitragspflichtig.
   let avd: null | {
     vals: number[]; W: number[]; L: number[]; payY: number[]; paying: boolean[]; refunds: number[]; overflow: number[];
+    xW: number[]; Lu: number[]; tb: number[]; cash: number[]; kvW: number[];
+    valsU: number[]; ownU: number; ownUReal: number;
     own: number; ownReal: number; zul: number; zulReal: number; ref: number; refReal: number; noElig: number;
   } = null;
   if (on('avd')) {
     const cost = zeroCost ? 0 : p.avdCost, avdM = split.avd;
     let V = 0, own = 0, ownReal = 0, zul = 0, zulReal = 0, ref = 0, refReal = 0, bonusUsed = false, noElig = 0;
+    let Vu = 0, Bu = 0, ownU = 0, ownUReal = 0;
     const vals = [0], W = zero(), L = zero(), payY = zero(), paying = new Array<boolean>(T).fill(false), refunds = zero(), overflow = zero();
+    const xW = zero(), Lu = zero(), tb = zero(), cash = zero(), kvW = zero(), valsU = [0];
     for (let t = 0; t < T; t++) {
       const age = p.a0 + t, accum = t < n;
-      if (!accum && t < tEnd && V > 0) {
+      if (!accum && t < tEnd && (V > 0 || Vu > 0)) {
         let Lx = 0; if (t === n && p.einmal) { Lx = 0.3 * V; V -= Lx; }
         const w = V / (tEnd - t);
         V -= w; W[t] = w; L[t] = Lx; payY[t] = w + Lx; paying[t] = true;
-        if (claims.avd) claims.avd[t] += w;
+        let lu = 0, wu = 0, xl = 0, xw = 0;
+        if (Vu > 0) {
+          const q = Math.max(0, Vu - Bu) / Vu * (t >= 12 ? 0.5 : 1);
+          if (t === n && p.einmal) { lu = 0.3 * Vu; Bu -= lu * Bu / Vu; Vu -= lu; xl = lu * q; }
+          wu = Vu / (tEnd - t); Bu -= wu * Bu / Vu; Vu -= wu; xw = wu * q;
+        }
+        xW[t] = xw; Lu[t] = lu; tb[t] = payY[t] + (xw + xl); cash[t] = payY[t] + (wu + lu); kvW[t] = w + wu;
+        if (claims.avd) claims.avd[t] += w + wu;
       }
       const elig = accum && (age >= p.studyEnd || p.eligStudy);
       const want = accum ? avdM * 12 * dynF(t) : 0;
       if (accum && !elig && want > 0) noElig++;
-      const E = elig ? Math.min(want, 1800) : 0;
-      overflow[t] = (want - E) / 12;
-      const rm = Math.pow(1 + (accum ? p.g : p.gPay) - cost, 1 / 12) - 1;
-      for (let m = 1; m <= 12; m++) { if (E > 0) { V += E / 12; own += E / 12; } V *= 1 + rm; }
-      ownReal += E / I(t);
+      const E = elig ? Math.min(want, AVD_SUB_MAX) : 0;
+      const U = F.unsub && elig ? Math.min(want, AVD_MAX) - E : 0;
+      overflow[t] = (want - E - U) / 12;
+      const rm = Math.pow(1 + avdGrowth(p, t, n) - cost, 1 / 12) - 1;
+      for (let m = 1; m <= 12; m++) {
+        if (E > 0) { V += E / 12; own += E / 12; }
+        if (U > 0) { Vu += U / 12; Bu += U / 12; ownU += U / 12; }
+        V *= 1 + rm; Vu *= 1 + rm;
+      }
+      ownReal += E / I(t); ownUReal += U / I(t);
       if (elig && E >= 120) {
         const grund = 0.5 * Math.min(E, 360) + 0.25 * Math.max(0, Math.min(E, 1800) - 360);
         const kidActive = age >= p.kidsFrom && age < p.kidsFrom + p.kidsYears;
@@ -181,9 +232,9 @@ function run(p: Params, split: Split, opts: EngineOptions, zeroCost: boolean): C
         const extra = Math.max(0, save - zSA);
         refunds[t] = extra; ref += extra; refReal += extra / I(t);
       }
-      vals.push(V);
+      vals.push(V); valsU.push(Vu);
     }
-    avd = { vals, W, L, payY, paying, refunds, overflow, own, ownReal, zul, zulReal, ref, refReal, noElig };
+    avd = { vals, W, L, payY, paying, refunds, overflow, xW, Lu, tb, cash, kvW, valsU, ownU, ownUReal, own, ownReal, zul, zulReal, ref, refReal, noElig };
   }
 
   // ---------- 2) Versicherung, Ansparphase ----------
@@ -207,7 +258,7 @@ function run(p: Params, split: Split, opts: EngineOptions, zeroCost: boolean): C
     else for (let t = n; t < T; t++) xIns[t] = ins.annual * ins.ea;
   }
   for (let t = n; t < T; t++) {
-    const xa = avd ? avd.payY[t] : 0, xi = xIns[t];
+    const xa = avd ? avd.tb[t] : 0, xi = xIns[t];
     const X = avd && ins ? xa + xi : avd ? xa : xi;
     if (X <= 0) continue;
     const tot = taxAdd(p.incRet, X, t);
@@ -219,11 +270,11 @@ function run(p: Params, split: Split, opts: EngineOptions, zeroCost: boolean): C
   // Netto mit der Grenzsteuer auf L über allen anderen Einkünften des Jahres n.
   let lumpNet = 0, kvLa = 0;
   if (avd && avd.paying[n]) {
-    const Ln = avd.L[n];
+    const Ln = avd.L[n] + avd.Lu[n];
     kvLa = kvLump(Ln, n);
     if (Ln > 0) {
       const incO = xIns[n] > 0 ? p.incRet + xIns[n] / I(n) : p.incRet;
-      lumpNet = Ln - (taxAdd(incO, avd.payY[n], n) - taxAdd(incO, avd.W[n], n)) - kvLa;
+      lumpNet = Ln - (taxAdd(incO, avd.tb[n], n) - taxAdd(incO, avd.W[n] + avd.xW[n], n)) - kvLa;
     }
     kv[n] += kvLa;
   }
@@ -316,19 +367,21 @@ function run(p: Params, split: Split, opts: EngineOptions, zeroCost: boolean): C
     for (let t = 0; t < T; t++) {
       if (!avd.paying[t]) continue;
       const kvL = t === n ? kvLa : 0;
-      if (F.kvShared) aNet[t] = avd.payY[t] - (taxAvd[t] + kvL);
-      else { const k = kvAdd(avd.W[t], t); aNet[t] = avd.payY[t] - (taxAvd[t] + k + kvL); aKv[t] += k; kv[t] += k; }
+      if (F.kvShared) aNet[t] = avd.cash[t] - (taxAvd[t] + kvL);
+      else { const k = kvAdd(avd.kvW[t], t); aNet[t] = avd.cash[t] - (taxAvd[t] + k + kvL); aKv[t] += k; kv[t] += k; }
       aKv[t] += kvL;
     }
     const latentTax = (V: number, t: number) => { const yrs = Math.max(1, tEnd - Math.max(t, n)); return yrs * taxAdd(p.incRet, V / yrs, t); };
+    const Vu = avd.valsU[n], gU = Math.max(0, Vu - avd.ownU) * (n >= 12 ? 0.5 : 1); // Anschaffungskosten bei n = Summe der Beiträge
     parts.avd = {
-      key: 'avd', vals: avd.vals.map((v, i) => v + side.vals[i]), net: aNet.map((v, i) => v + side.net[i]),
-      own: avd.own + side.own, ownReal: avd.ownReal + side.ownReal, sideOwn: side.own, sideOwnReal: side.ownReal,
-      capR: avd.vals[n] + side.vals[n], capAVD: avd.vals[n], sideR: side.vals[n],
-      capNet: avd.vals[n] - latentTax(avd.vals[n], n) + sellNet(side, n),
+      key: 'avd', vals: avd.vals.map((v, i) => (v + avd.valsU[i]) + side.vals[i]), net: aNet.map((v, i) => v + side.net[i]),
+      own: (avd.own + avd.ownU) + side.own, ownReal: (avd.ownReal + avd.ownUReal) + side.ownReal, sideOwn: side.own, sideOwnReal: side.ownReal,
+      ...(F.unsub ? { unsubOwn: avd.ownU, unsubOwnReal: avd.ownUReal } : {}),
+      capR: (avd.vals[n] + Vu) + side.vals[n], capAVD: avd.vals[n] + Vu, sideR: side.vals[n],
+      capNet: (avd.vals[n] + Vu) - latentTax(avd.vals[n] + gU, n) + sellNet(side, n),
       zul: avd.zul, zulReal: avd.zulReal, ref: avd.ref, refReal: avd.refReal,
       foerder: avd.zul + avd.ref, foerderReal: avd.zulReal + avd.refReal, cost: 0, payEnd: p.H, noElig: avd.noElig, lumpNet,
-      incTax: taxAvd, abgTax: side.abg, kv: aKv, taxBase: avd.payY,
+      incTax: taxAvd, abgTax: side.abg, kv: aKv, taxBase: avd.tb,
     };
   }
   if (ins) {

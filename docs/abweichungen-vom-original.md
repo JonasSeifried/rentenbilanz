@@ -1,7 +1,7 @@
 # Abweichungen vom Original
 
 Die Engine (`src/lib/engine/engine.ts`, `analyze.ts`) ist ein 1:1-Port von `legacy/index.html`. Darauf liegen
-sechs Korrekturen. Jede hängt an einem eigenen Schalter (`src/lib/engine/fixes.ts`):
+sieben Korrekturen. Jede hängt an einem eigenen Schalter (`src/lib/engine/fixes.ts`):
 
 ```ts
 model(p, { fixes })    analyze(p, { fixes })    scenarios(p, { fixes })
@@ -198,7 +198,7 @@ Versicherung die Kapitalauszahlung und der Folge-ETF. Die BBG gilt aber für die
 keine Auslegungsfrage.
 
 Im Einzelvergleich rechnet jedes Produkt so, als wäre es das einzige. Die Grenze gilt deshalb je Produkt. Über
-mehrere Produkte zusammen gilt sie erst im Kombi-Modus.
+mehrere Produkte zusammen gilt sie erst in einer Kombi.
 
 **Formel.** Je Produkt führt die Engine ein Jahresbuch `book[t]` mit nominalen Beträgen. Am Ende gilt
 `net[t] −= kvRate · min(book[t], kvRoom(t))`.
@@ -269,6 +269,65 @@ der Betrag nach Steuer.
 
 ---
 
+## E10 – `avdUnsubsidized`: Beiträge über 1.800 €/Jahr bleiben ungefördert im AVD-Vertrag
+
+**Problem.** Das Original rechnet jeden AVD-Beitrag über 150 €/Monat in einem ETF-Nebendepot: ETF-Kosten,
+Abgeltungsteuer mit eigenem Sparer-Pauschbetrag, Vorabpauschale. „AVD mit 450 €“ war damit dasselbe wie
+„150 € AVD + 300 € ETF“, bis auf Cent. Nach dem AVRG darf man aber bis 6.840 € im Jahr in den Vertrag einzahlen.
+Der Teil über 1.800 € ist ungefördert und wird anders behandelt als ein ETF-Depot.
+
+**Quelle.**
+- Höchstbetrag: geförderte Eigenbeiträge bis 1.800 €/Jahr, Eigenbeiträge insgesamt bis 6.840 €/Jahr
+  (Altersvorsorgereformgesetz vom 26.05.2026, BGBl. 2026 I Nr. 156; u. a. https://www.vorsorgedepot-lotse.de/wissen/wie-viel-kann-ich-maximal-ins-altersvorsorgedepot-einzahlen).
+- Besteuerung: § 22 Nr. 5 S. 2 EStG, für Leistungen, die nicht auf geförderten Beiträgen beruhen. Buchst. c (andere
+  Leistungen als Leibrenten und Versicherungen): „der Unterschiedsbetrag zwischen der Leistung und der Summe der
+  auf sie entrichteten Beiträge“; § 20 Abs. 1 Nr. 6 S. 2 EStG gilt entsprechend, also zur Hälfte, wenn die Leistung
+  nach dem 62. Lebensjahr und nach 12 Jahren Vertragslaufzeit fließt. Das AVRG ändert in Satz 2 nur einen Verweis
+  (https://www.buzer.de/22_EStG.htm). In der Ansparphase gibt es keine Steuer (keine Vorabpauschale).
+- KV für freiwillig Versicherte: ganze Auszahlung, wie bei privaten Renten (BSG, 27.01.2010, B 12 KR 28/08 R:
+  Zahlbetrag, unabhängig davon, ob die Beiträge aus versteuertem Einkommen stammen). Für das AVD gibt es noch keine
+  Entscheidung (siehe offene Punkte).
+
+**Formel (je Jahr, nominal).**
+
+| | Original | mit Fix |
+|---|---|---|
+| Beitrag | `E = min(want, 1.800)` ins AVD, `want − E` ins Nebendepot | `E` gefördert; `U = min(want, 6.840) − E` ungefördert im Vertrag (`Vu`, Anschaffungskosten `Bu`); nur `want − E − U` ins Nebendepot |
+| Kosten | Nebendepot mit `etfTer` | `U` mit `avdCost` wie der geförderte Teil |
+| Ansparphase | Vorabpauschale und Pauschbetrag im Nebendepot | keine Steuer |
+| Auszahlung | — | gleicher Auszahlplan und gleiche 30-%-Quote: `Wu = Vu / Restlaufzeit`; Gewinnanteil `q = (Vu − Bu)/Vu · (t ≥ 12 ? ½ : 1)`; `Bu` sinkt anteilig |
+| Einkommensteuer | `taxAdd(incRet, W + L)` | `taxAdd(incRet, W + L + q·(Wu + Lu))`, ein Tarif mit dem geförderten Teil |
+| KV (kvOn) | — | `W + Wu` laufend, `L + Lu` im Topf der 30-%-Auszahlung (E9) |
+| `capNet` | `V − latentTax(V)` | `V + Vu − latentTax(V + q·(Vu − Bu))` |
+| Erbfall | — | `Vu` geht ohne Förderrückzahlung an alle Erben (§ 93 betrifft nur gefördertes Vermögen); Steuer der Erben auf `Vu − Bu`, hälftig wie beim geförderten Teil. Beim Ehepartner ebenso |
+
+Jahre ohne Förderberechtigung bleiben wie im Original im Nebendepot (offener Punkt E12). Mit dem Fix aus sind alle
+Zusatzterme `+ 0`; der Golden-Test bleibt bitgleich. Die Kombi-Engine rechnet den Fix gleich (I1 über alle
+Teilmengen der Fixes). Die Kombi-Suche probiert AVD-Beträge bis 570 €/Monat (`avdRasterMax`).
+
+**Code.** `engine.ts`, AVD-Block (`run`, `r`, `heir`, `heirMarried`); `combo.ts`, Abschnitt 1 und `parts.avd`;
+`search.ts`, `avdRasterMax`, `searchSpace`, `pureLabel`.
+
+**Wirkung (cumH real).** Bis 150 €/Monat keine Wirkung (Default, DK unverändert).
+
+| Fall | ohne Fix | mit Fix |
+|---|---|---|
+| Default mit 450 €/Monat | AVD 469.616 € | 464.970 € (−4.646 €) |
+| DK mit 450 €/Monat | AVD 391.480 € | 348.428 € (−43.053 €) |
+| High (500 €/Monat, kvOn) | AVD 325.856 €, vorne | 281.639 € (−44.217 €), ETF vorne |
+| High ohne kvOn | AVD 386.777 € | 376.393 € (−10.385 €) |
+
+Das AVD allein wird schlechter: Der ungeförderte Teil zahlt AVD-Kosten statt ETF-Kosten und nutzt keinen
+Sparer-Pauschbetrag; die hälftige Besteuerung gleicht das bei diesen Annahmen nicht aus. Mit KV zählt die ganze
+Auszahlung statt 70 % des Gewinns. Die beste Kombi bei 450 € (Default) ist 280 € AVD + 170 € ETF (470.886 €):
+ETF so weit, wie der Pauschbetrag dessen Gewinne freistellt, der Rest im Vertrag.
+
+**Tests.** `tests/avd-unsub.test.ts` (bitgleich bis 150 €, Aufteilung der Beiträge, Studium, Fairness,
+Nullrendite: ungeförderter Teil kommt exakt steuerfrei zurück, Steuer nur auf den Gewinn, Erbfall);
+`combo.test.ts` I1 und I7; Snapshots in `fixes.test.ts` und `combo-search.test.ts`.
+
+---
+
 ## Gesamtwirkung bei den Standardwerten (ALL_FIXES)
 
 cumH real, mit dem aktuellen Standardwert `kvRate` 21,1 %.
@@ -280,7 +339,10 @@ cumH real, mit dem aktuellen Standardwert `kvRate` 21,1 %.
 | DK, Original | 137.705 € | 127.377 € | 95.558 € | ETF |
 | DK, mit Fixes | 137.576 € | 128.027 € | 97.162 € | ETF |
 | High, Original | 324.245 € | 326.776 € | 239.587 € | AVD |
-| High, mit Fixes | 323.094 € | 325.856 € | 245.025 € | AVD |
+| High, mit Fixes | 323.094 € | 281.639 € | 245.025 € | ETF |
+
+Im High-Fall wirkt E10 (500 €/Monat, davon 350 € ungefördert im Vertrag, mit KV auf die ganze Auszahlung); ohne
+E10 lägen die Fixes bei AVD 325.856 € und das AVD vorne.
 
 Beim Default wirkt nur E3, aus diesen Gründen:
 - `kvOn` ist aus, deshalb wirken E6 bis E8 nicht.
@@ -298,6 +360,31 @@ Laufzeit: `analyze` und `scenarios` mit allen Fixes etwa ×1,03 gegenüber `NO_F
 - Das Label des Szenarios `refund` heißt jetzt „Steuererstattung ausgegeben statt angelegt“, ohne Klammerzusatz.
 - Der neue Standardwert `kvRate` 21,1 % statt 21,7 % (Befund E5, ermäßigter Satz nach § 243 SGB V) ist keine
   Engine-Korrektur. Er steht in `inputs.ts`. Beide Engines bekommen im Golden-Test dieselben Eingaben.
+
+## Erweiterung: Standarddepot-Umschichtung (`avdStd`, kein Fix)
+
+Neue Eingabe, kein Befund am Original; Standard **aus**, dann bitgleich (Golden-Test erlaubt nur die neuen Schlüssel
+`params.avdStd`/`avdSafe`).
+
+**Quelle.** § 1 Abs. 1c Nr. 5 AltZertG in der Fassung ab 01.01.2027 (Art. 6 AltVRefG, BGBl. 2026 I Nr. 156): Das
+Standarddepot muss ein Verfahren vorsehen, nach dem „fünf Jahre vor der Auszahlungsphase höchstens 50 Prozent des
+gebildeten Kapitals sowie zwei Jahre vor der Auszahlungsphase und am Beginn der Auszahlungsphase höchstens 30 Prozent“
+im OGAW der Risikoklasse 3–5 liegen; der Vertragspartner kann andere Prozentsätze verlangen (Buchst. b). Kostendeckel
+des Standarddepots 1,0 % (§ 2a Abs. 2 AltZertG n. F.).
+
+**Formel.** `avdGrowth(p, t, n)` in `engine.ts` (von `combo.ts` mitbenutzt): Ansparjahre mit `n − t ≤ 5` rechnen mit
+`0,5 · g + 0,5 · avdSafe`, mit `n − t ≤ 2` mit `0,3 · g + 0,7 · avdSafe`, gestuft zu Jahresbeginn; sonst `g`. Gilt für
+den geförderten und den ungeförderten Teil (ein Vertrag), nicht für das ETF-Nebendepot. Auszahlphase: `gPay` wie bei
+allen Produkten. Wirkung Standardwerte, 450 €/Monat, `avdSafe` 2 %: AVD-Kapital bei Rentenbeginn rund 10 % niedriger (150 €: Ø 634 € → 575 € im Monat, ETF 557 €).
+
+**Vereinfachungen / offen.**
+- Gerechnet werden die gesetzlichen Höchstanteile, Stufen statt eines gleitenden Verfahrens; Anbieter dürfen weniger
+  Aktien halten und die Beitragsaufteilung schon vorher anpassen (Buchst. c).
+- Die Aufteilung in der Auszahlphase regelt das Gesetz nicht. Gerechnet wird wie bei allen Produkten mit `gPay`.
+- Ein ETF-Depot, das vor der Rente ebenfalls umschichtet, ist nicht gerechnet (Verkauf mit Abgeltungsteuer). Die
+  Oberfläche nennt das unter „Was die Zahlen nicht zeigen“.
+
+**Tests.** `tests/avd-std.test.ts` (aus = bitgleich, Rendite je Jahr, nur AVD betroffen, Kombi-Engine gleich).
 
 ## Bewusst übernommene Vereinfachungen des Originals
 
@@ -328,6 +415,16 @@ Laufzeit: `analyze` und `scenarios` mit allen Fixes etwa ×1,03 gegenüber `NO_F
     1/12 wie bei einer einmaligen Einnahme.
   - Ebenfalls offen ist, ob die ganze Rate oder nur der Ertragsanteil beitragspflichtig ist.
   - Die Rechnung bleibt vorsichtig: eher zu viel KV. Die Texte weisen darauf hin.
+  - Mit E10 gilt das auch für den ungeförderten Teil: gerechnet wird die ganze Auszahlung (wie BSG B 12 KR 28/08 R
+    bei privaten Renten). Zählte nur der Gewinnanteil (wie bei ETF-Entnahmen), wäre das AVD bei kvOn deutlich
+    besser; im High-Fall geht es um gut 40.000 €. Sobald es dazu eine Aussage der Krankenkassen gibt, anpassen.
+- **E12 – Ungeförderte Beiträge ohne Förderberechtigung (Rechnung wie im Original).**
+  - Offen ist, ob man in Jahren ohne Förderberechtigung (z. B. im Studium) ungefördert ins AVD einzahlen darf.
+  - Bis das geklärt ist, gehen diese Beiträge wie im Original ins ETF-Nebendepot.
+- **E13 – Hälftige Besteuerung des ungeförderten Teils: Mindestbeitragsdauer.** Finanztip nennt neben 12 Jahren
+  Laufzeit „mind. 5 Jahre eingezahlt“ und sonst Abgeltungsteuer. Gerechnet wird nach § 22 Nr. 5 S. 2 Buchst. c i. V. m.
+  § 20 Abs. 1 Nr. 6 S. 2 EStG (12 Jahre Laufzeit, Leistung nach 62), sonst voller persönlicher Steuersatz. Betrifft nur
+  Starts nach etwa 55. Am Gesetzestext bzw. einem BMF-Schreiben zum AVD prüfen.
 - **E2 und E6 für das AVD:** Ein AVD-spezifisches BMF-Schreiben gibt es noch nicht. Übertragen sind die Aussagen
   zur Riester-Rente, weil die Normen dieselben sind. Ob Kassen die Vorabpauschale bei Rentnern tatsächlich
   erheben, ist in der Praxis uneinheitlich.

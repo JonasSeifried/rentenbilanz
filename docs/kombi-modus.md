@@ -1,12 +1,15 @@
-# Kombi-Modus „Budget aufteilen“
+# Kombi
 
-Im Kombi-Modus verteilt man ein Monatsbudget auf mehrere Produkte. Der Rechner versteuert die Teile gemeinsam, wie
-es bei einer Person auch tatsächlich geschieht. Er sucht außerdem die rechnerisch beste Aufteilung unter den
-gewählten Annahmen.
+Eine Kombi verteilt den Monatsbeitrag auf mehrere Produkte. Der Rechner versteuert die Teile gemeinsam, wie es bei
+einer Person auch tatsächlich geschieht. Die Kombi läuft im Vergleich als **eigener Teilnehmer** neben den
+Einzelprodukten mit: Kachel, Ergebnissatz, Szenarien, Diagramme und „Rente im Detail“. Zusammengestellt wird sie im
+Dialog hinter „+ Kombi“ in der Zeile „Vergleichen“. Dort zeigt der Rechner auch die rechnerisch beste Aufteilung.
 
 | Datei | Inhalt |
 |---|---|
-| `src/lib/engine/combo.ts` | Rechenkern `combo()`, Kennzahlen `comboStats()`, `readCombo()`, `shareAllowance()` |
+| `src/lib/engine/combo.ts` | Rechenkern `combo()`, Kennzahlen `comboStats()`, Eingaben `readKombi()`, `scaleSplit()`, `readCombo()`, `shareAllowance()` |
+| `src/lib/engine/analyze.ts` | `analyze(p, opts, kombi)`: die Kombi als Teilnehmer `kombi` (`kombiResult()`), Szenarien mit Kombi |
+| `src/lib/components/KombiDialog.svelte` | Dialog „Kombi zusammenstellen“ (Entwurf, beste Aufteilung, Übernehmen) |
 | `src/lib/engine/search.ts` | Suchraum, beste Aufteilung `bestSplit()`, reine Strategien, erschöpfende Suche (Tests) |
 | `src/lib/engine/comboAnalyze.ts` | `analyzeCombo()` (deine Aufteilung, reine Strategien, beste, Wechselwirkung), `robustRows()` |
 | `src/lib/comboVerdict.ts` | Ergebnissätze `comboVerdict()`, `splitText()` |
@@ -88,8 +91,9 @@ Kennzahlen (`comboStats`, wie `analyze`): `avgMonthly`, `cumH`, `cum100`, `lump`
 
 Bei jeder **vollständigen** Aufteilung (Σ = Budget) fließt gleich viel eigenes Geld hinein:
 Budget × 12 × Σ Dynamikfaktor (I2). Beim AVD zählen dazu der geförderte Teil und das Nebendepot. Einen Vergleich
-gibt es deshalb nur bei vollständiger Aufteilung. Der Hinweis „Monatsbeiträge sind nicht gleich“ (`unequal`) gilt im
-Kombi-Modus nicht.
+gibt es deshalb nur bei vollständiger Aufteilung. Im Vergleich liegt die Kombi immer auf dem gemeinsamen
+Monatsbeitrag. Der Hinweis „Monatsbeiträge sind nicht gleich“ (`unequal`) kann deshalb nur von abweichenden
+Einzelbeiträgen kommen.
 
 Wird die Steuererstattung ausgegeben (`reinvest = false`), fließt beim AVD netto weniger eigenes Geld hinein. Dann
 nennt der Rechner keine beste Aufteilung (`refundSpent`).
@@ -102,7 +106,8 @@ und unabhängig vom Anzeige-Schalter (E1). Die 30-%-Auszahlung zählt mit.
 **Suchraum** (`searchSpace`):
 
 - Σ = Budget, nur gewählte Produkte, Schritt 10 €.
-- AVD ∈ {0, 10, …, 150}. Sind Kinder angegeben, kommt 25 € dazu, denn dort ist die Kinderzulage voll.
+- AVD ∈ {0, 10, …, 570} (`avdRasterMax`: bis 6.840 €/Jahr rechnet das AVD anders als ein ETF, Fix E10; ohne E10 bis
+  150). Sind Kinder angegeben, kommt 25 € dazu, denn dort ist die Kinderzulage voll.
 - Ist kein ETF gewählt, darf das AVD bis zum ganzen Budget gehen, mit Überlauf ins Nebendepot.
 - Ein Rest, der kein Vielfaches von 10 ist, geht ans ETF, ohne ETF ans erste andere Produkt.
 
@@ -116,19 +121,49 @@ Rasters geprüft, etwa AVD 500 € bei gewähltem ETF. Sie werden nur übernomme
 **Gleichstand** (≤ 1 € bis H) wird so entschieden: weniger Produkte, dann mehr ETF, dann weniger Versicherung. Das
 ist deterministisch.
 
+**Gleichwertig für die Empfehlung** (`TIE_REL` = 0,1 % der Zielgröße, mindestens 1 €, `tieTol`): Die Suche selbst
+bleibt exakt. Danach wird geprüft, ob eine einfachere Alternative höchstens 0,1 % schlechter ist als das Maximum:
+jede reine Strategie (außer „alles ins AVD“ über 570 €, das ist nur AVD-Höchstbetrag + Nebendepot) und „150 € AVD,
+Rest bestmöglich“ (der Kurvenpunkt beim Förderhöchstbetrag). Unter diesen gilt dieselbe Gleichstandsregel (`simpler`).
+Bewusst keine beliebigen Rasterpunkte, sonst landete die Wahl irgendwo am Rand der Toleranz. Das Maximum steht dann
+in `top`, der Ergebnissatz nennt es mit Abstand („Auf den Euro gerechnet liegt …“).
+
+Grund: 0,1 % liegt weit unter der Unsicherheit jeder Annahme. Bei 300 € (Standardwerte) lag 160 € AVD + 140 € ETF
+nur 6 € über 25 Jahre vor 150 € + 150 €; genannt wird jetzt 150 € + 150 €. `userIsBest` und `flip` (Robustheit)
+nutzen dieselbe Toleranz, `fromUser` greift erst, wenn deine Aufteilung das Maximum um mehr als die Toleranz
+übertrifft.
+
 **Genauigkeit:** In 50 Zufallsszenarien ist die Suche identisch mit der erschöpfenden Suche (0,00 € Verlust). Die
 Szenarien mischen 3 und 4 Produkte, Budgets von 30 bis 600 €, KV, Leibrente, Kinder, Studium und Dynamik. Dafür
-braucht die Suche im Schnitt 66 Auswertungen, die erschöpfende 854. Auch auf dem Originalpfad und im Nominalmodus
+braucht die Suche im Schnitt 98 Auswertungen, die erschöpfende 1.075 (mit dem AVD-Raster bis 570 €). Auch auf dem Originalpfad und im Nominalmodus
 stimmt sie (S1).
 
 **Nebenprodukt:** `curve` enthält das beste Ergebnis je AVD-Betrag, mit dem Rest bestmöglich verteilt.
 
 ### AVD über 150 €
 
-AVD 500 € entspricht AVD 150 € plus 350 € im ETF: Nebendepot und ETF teilen Pauschbetrag, KV-Buch und Kosten.
-Bei Standardwerten ist der Unterschied kleiner als 1 €. Ganz linear ist die Summe zweier Depots aber nicht. Die
-Vorabpauschale ist je Depot auf den tatsächlichen Wertzuwachs gedeckelt, und Verluste werden je Depot bei 0
-abgeschnitten. Gemessen sind das höchstens 0,1 %, meist weit darunter (I7).
+Mit E10 bleibt der Teil über 150 € bis 570 €/Monat ungefördert im Vertrag (AVD-Kosten, keine Steuer in der
+Ansparphase, bei Auszahlung nur der Gewinnanteil, nach 12 Jahren zur Hälfte; `docs/abweichungen-vom-original.md`).
+AVD 450 € ist deshalb **nicht** dasselbe wie AVD 150 € + 300 € ETF. Bei Standardwerten mit 450 € liegt das Optimum bei
+280 € AVD + 170 € ETF: so viel ETF, wie der Sparer-Pauschbetrag dessen Gewinne freistellt, der Rest im Vertrag.
+
+Der Vorteil ist klein und hängt an den Annahmen (Standardwerte, Summe bis 90 in heutiger Kaufkraft):
+
+| Budget | beste Aufteilung | 150 € AVD + Rest ETF | Abstand |
+|---|---|---|---|
+| 300 € | 150 € + 150 € (160/140 nur 6 € vorne) | 325.453 € | – |
+| 450 € | 280 € AVD + 170 € ETF, 470.886 € | 469.616 € | 1.270 € (0,3 %) |
+| 1.000 € | 570 € AVD + 430 € ETF, 998.697 € | 991.076 € | 7.622 € (0,8 %) |
+
+Bei 1.000 € kippt es zu 150 € + Rest bei AVD-Kosten 0,8 % oder Basiszins 2 %, zu 30 € AVD bei KV-Pflicht auf die
+Auszahlung; bei 35.000 € Renteneinkommen sind 150 € und 220 € praktisch gleich. Finanztip kommt zum selben Schluss
+(„Bei 0,5 % ist der Vorteil nur minimal“). Deshalb nennt der Ergebnissatz bei mehr als 150 € AVD immer den Abstand zu
+„150 € AVD + Rest“ in Euro und Prozent, die angenommenen AVD-Kosten und die Bindung bis zur Rente.
+
+Erst über 570 € liegt der Rest im ETF-Nebendepot. AVD 800 € entspricht deshalb AVD 570 € plus 230 € im ETF:
+Nebendepot und ETF teilen Pauschbetrag, KV-Buch und Kosten. Ganz linear ist die Summe zweier Depots nicht, weil die
+Vorabpauschale je Depot auf den tatsächlichen Wertzuwachs gedeckelt ist und Verluste je Depot bei 0 abgeschnitten
+werden. Gemessen sind das höchstens 0,1 %, meist weit darunter (I7).
 
 ## 4. Auswertung und Ergebnissätze
 
@@ -185,31 +220,38 @@ Gemessen in Node auf einem Apple-M-Rechner. Die Tests prüfen Obergrenzen.
 |---|---|
 | eine Auswertung ohne Kosten-Lauf | ≈ 55 µs (Test: < 0,5 ms) |
 | `analyzeCombo` (deine Aufteilung mit Kosten-Lauf, reine Strategien, Wechselwirkung) | ≈ 0,4 ms (Test: < 5 ms) |
-| beste Aufteilung, 3 Produkte, 500 € | ≈ 2,6 ms (64 Auswertungen) |
-| beste Aufteilung, 4 Produkte, 500 € | ≈ 6–7 ms (139 Auswertungen; Test: < 15 ms) |
-| Robustheit je Zeile, 4 Produkte | Median ≈ 9 ms, max ≈ 16 ms (Test: Median < 30 ms) |
+| beste Aufteilung, 3 Produkte, 500 € | ≈ 9 ms (156 Auswertungen) |
+| beste Aufteilung, 4 Produkte, 500 € | ≈ 17 ms (278 Auswertungen; Test: < 30 ms) |
+| Robustheit je Zeile, 4 Produkte | Median ≈ 19 ms, max ≈ 27 ms (Test: Median < 30 ms) |
 
 Laut Prototyp-Messung (Kombi-Design §3) ist Chromium mit 4-facher CPU-Drosselung etwa 4- bis 5-mal langsamer.
 
-**Empfohlene Einbindung (WP4):**
+**Einbindung:**
 
-1. Synchron in `$derived`:
-   `setup = readCombo(app.inputs, p)` und `C = analyzeCombo(p, setup, lastBest)`, dann `comboVerdict(C, robust)`.
-2. Die beste Aufteilung **120 ms entprellt**:
-   `lastBest = bestSplit(p, setup.budget, setup.keys)`.
-   Bis dahin zeigt `C.best === 'pending'`, mit `aria-busy` und „wird berechnet …“. Die vorige beste Aufteilung darf
-   die Oberfläche aus dem letzten `ComboAnalysis` weiter anzeigen.
-3. Die Robustheit in Leerlauf-Slots: `requestIdleCallback`, ersatzweise `setTimeout(0)`. Je Slot genau ein
-   `gen.next()` von `robustRows(p, setup, lastBest.split)`. Ein Generationszähler verwirft die Zeilen, wenn sich die
-   Eingaben geändert haben. Ist der Generator fertig, kommt `robustSummary(rows)` an `comboVerdict`.
+1. **Eingaben.** `combo` schaltet die Kombi ein, `cEtf`, `cAvd`, `cIns`, `cFond` sind ihre Aufteilung in €. Das
+   Budget ist immer der gemeinsame Monatsbeitrag `setAll`. Nur so fließt in die Kombi gleich viel eigenes Geld wie in
+   jedes Einzelprodukt. `readKombi()` bringt die gespeicherte Aufteilung proportional auf `setAll` (`scaleSplit`,
+   ganze Euro, Rest beim größten Teil). Ändert sich der Monatsbeitrag, wandert die Kombi also mit. Mit weniger als
+   zwei Produkten gibt es keine Kombi.
+2. **Vergleich.** `analyze(p, undefined, kombi)` hängt die Kombi als Teilnehmer `kombi` an (`KOMBI`, Farbe `--s5`,
+   in Diagrammen gestrichelt). `res.kombi` hat das Format der Einzelprodukte: Summe der Teile, `vals` summiert. Die
+   Rangfolge, die Fairness (`fairOwn`), `refundSpent` (auch für ein AVD, das nur in der Kombi steckt) und die Szenarien
+   behandeln sie wie jedes Produkt. Ohne Kombi ist `analyze()` unverändert (Golden-Test). Gleichstand bis 1 € heißt im
+   Ergebnissatz „Gleichauf“. Ein Szenario kippt erst, wenn ein anderer Teilnehmer mehr als 1 € vorne liegt
+   (`isFlip`). Typischer Gleichstand: AVD mit mehr als 570 € gegen die Kombi aus 570 € AVD und dem Rest im ETF.
+3. **Dialog.** Gearbeitet wird an einem Entwurf. Vorbelegt ist die gespeicherte Kombi, sonst eine gleichmäßige
+   Aufteilung auf die verglichenen Produkte. Synchron laufen `bestSplit()` (gesucht unter den verglichenen Produkten
+   und denen in der Kombi) und `analyzeCombo()` mit `comboVerdict()` ohne Robustheit, denn die Szenarien stehen im
+   Überblick. „Übernehmen“ geht nur bei vollständiger Aufteilung auf mindestens zwei Produkte. Ein geänderter
+   Monatsbeitrag setzt dann auch `setAll` und alle Einzelbeiträge.
 
-Alle Ergebnisse von `bestSplit` sind serialisierbar. Falls echte Geräte ruckeln, lässt sich die Suche ohne
-API-Änderung in einen Web Worker verschieben.
+`robustRows()` und `robustSummary()` bleiben als Engine-Funktionen mit Tests erhalten. Die Oberfläche nutzt sie
+derzeit nicht.
 
 ## 6. Grenzen
 
-- **Kein Erbfall** für Aufteilungen. Ein gemeinsamer Erbwert bräuchte eine gemeinsame Steuer im Todesjahr. Die
-  Oberfläche verweist auf „Gleich viel je Produkt“.
+- **Kein Erbfall** für Aufteilungen. Ein gemeinsamer Erbwert bräuchte eine gemeinsame Steuer im Todesjahr. Im Tab
+  „Erbfall“ fehlt die Kombi; ein Hinweis sagt das.
 - **Keine Fix-Schalter in der Oberfläche.** Die Kombi-Engine rechnet immer mit allen Korrekturen.
 - Die **Zuordnung je Teil** ist eine Konvention (anteilig); nur die Summe ist eindeutig.
 - **Versicherung:** Kapitalauszahlung oder Leibrente folgt dem Schalter `insLump`. Die Suche schaltet das nicht um.

@@ -95,7 +95,8 @@ export const GLOSSARY = {
   },
   nebendepot: {
     title: 'ETF-Nebendepot',
-    text: ['Beiträge, die nicht ins Altersvorsorgedepot passen (über 150 € im Monat oder Jahre ohne Förderberechtigung), rechnet der Rechner in einem normalen ETF-Depot. So fließt in jedes Produkt gleich viel eigenes Geld. Der Wert ist beim AVD enthalten.'],
+    text: ['Ins Altersvorsorgedepot passen höchstens 6.840 € Eigenbeiträge im Jahr (570 € im Monat). Was darüber hinausgeht, und Beiträge aus Jahren ohne Förderberechtigung rechnet der Rechner in einem normalen ETF-Depot. So fließt in jedes Produkt gleich viel eigenes Geld. Der Wert ist beim AVD enthalten.',
+      'Beiträge über 150 € im Monat (1.800 € im Jahr) bis zu diesem Höchstbetrag bleiben ungefördert im Vertrag: keine Zulage, kein Steuerabzug, aber auch keine Steuer während der Ansparphase. Bei der Auszahlung ist nur der Gewinnanteil steuerpflichtig, nach 12 Jahren Laufzeit zur Hälfte (§ 22 Nr. 5 S. 2 Buchst. c EStG).'],
   },
   foerderberechtigt: {
     title: 'Förderberechtigt',
@@ -135,7 +136,15 @@ export const GLOSSARY = {
   },
   avdKosten: {
     title: 'Kosten des Altersvorsorgedepots',
-    text: ['Das Standarddepot ist auf 1,0 % Effektivkosten gedeckelt, schichtet aber ab 5 Jahre vor Rentenbeginn in sichere Anlagen um (weniger Rendite, hier nicht gerechnet). Andere Anteile für die Umschichtung kann man verlangen. Ein selbst gewähltes ETF-Depot ist meist günstiger und schichtet nicht um.'],
+    text: ['Das Standarddepot ist auf 1,0 % Effektivkosten gedeckelt (§ 2a Abs. 2 AltZertG), schichtet aber ab 5 Jahre vor Rentenbeginn in sichere Anlagen um. Das lässt sich unten einschalten („Standarddepot: Umschichtung vor Rentenbeginn“). Für andere Altersvorsorgedepots gibt es keinen Kostendeckel. Ein selbst gewähltes ETF-Depot ist meist günstiger und schichtet nicht um.'],
+  },
+  standarddepot: {
+    title: 'Umschichtung im Standarddepot',
+    text: [
+      'Das Standarddepot besteht aus zwei Fonds: einem chancenreichen (z. B. Aktien-ETF, Risikoklasse 3–5) und einem sicheren (Risikoklasse 1–2, etwa Geldmarkt oder kurz laufende Anleihen). Fünf Jahre vor der Auszahlphase dürfen höchstens 50 % im chancenreichen Fonds liegen, ab zwei Jahren vorher und zu Beginn der Auszahlphase höchstens 30 % (§ 1 Abs. 1c Nr. 5 AltZertG). Andere Anteile kann man verlangen.',
+      'Der Rechner nimmt diese Höchstanteile, stufenweise zu Jahresbeginn, und rechnet den Rest mit der Rendite der sicheren Anlage. Ab Rentenbeginn gilt wie bei allen Produkten die Rendite in der Auszahlphase. Das senkt die Rendite, schützt aber vor einem Kurssturz kurz vor der Rente. Dieser Schutz ist im Kapital nicht sichtbar.',
+      'Innerhalb des AVD ist das Umschichten steuerfrei. Im ETF-Depot wäre der Verkauf steuerpflichtig.',
+    ],
   },
   ausgabeaufschlag: {
     title: 'Ausgabeaufschlag',
@@ -173,7 +182,7 @@ export const GLOSSARY = {
   },
   dynamik: {
     title: 'Beitragsdynamik',
-    text: ['Die Beiträge steigen jedes Jahr um diesen Prozentsatz, z. B. mit dem Gehalt. Beim Altersvorsorgedepot geht der Teil über 150 € im Monat ins ETF-Nebendepot.'],
+    text: ['Die Beiträge steigen jedes Jahr um diesen Prozentsatz, z. B. mit dem Gehalt. Beim Altersvorsorgedepot ist der Teil über 1.800 € im Jahr ungefördert, über 6.840 € im Jahr geht er ins ETF-Nebendepot.'],
   },
   erbfallAvd: {
     title: 'Erbfall beim Altersvorsorgedepot',

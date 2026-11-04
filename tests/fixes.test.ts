@@ -6,7 +6,7 @@
 // 4. Jede Teilmenge der Fixes läuft; Laufzeit.
 import { describe, expect, it } from 'vitest';
 import { readParams, tax, model, type Params, type ProductKey } from '../src/lib/engine/engine';
-import { analyze, scenarios, scenarioList, type Analysis } from '../src/lib/engine/analyze';
+import { analyze, scenarios, scenarioList, PRODUCTS, type Analysis } from '../src/lib/engine/analyze';
 import { ALL_FIXES, FIX_IDS, FIXES, NO_FIXES, type FixId } from '../src/lib/engine/fixes';
 import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
 
@@ -25,7 +25,7 @@ const cumH = (a: Analysis, k: ProductKey) => a.stats[k]!.cumH;
 function effect(p: Params, f: FixId) {
   const a = analyze(p, NONE), b = analyze(p, only(f));
   const d: Partial<Record<ProductKey, number>> = {};
-  for (const pr of a.active) d[pr.key] = cumH(b, pr.key) - cumH(a, pr.key);
+  for (const pr of PRODUCTS) if (a.stats[pr.key]) d[pr.key] = cumH(b, pr.key) - cumH(a, pr.key);
   return { a, b, d };
 }
 
@@ -79,9 +79,9 @@ const forRandom = (fn: (p: Params, i: number) => void) => RANDOM.forEach((v, i) 
 });
 
 describe('Fix-Katalog', () => {
-  it('sechs Fixes, Befund-IDs eindeutig, ALL/NO vollständig', () => {
-    expect(FIX_IDS).toEqual(['rankReal', 'heirTax', 'bonusOutsideSA', 'kvInvestBase', 'kvSharedRoom', 'kvLumpSpread']);
-    expect(new Set(FIX_IDS.map(f => FIXES[f].finding)).size).toBe(6);
+  it('sieben Fixes, Befund-IDs eindeutig, ALL/NO vollständig', () => {
+    expect(FIX_IDS).toEqual(['rankReal', 'heirTax', 'bonusOutsideSA', 'kvInvestBase', 'kvSharedRoom', 'kvLumpSpread', 'avdUnsubsidized']);
+    expect(new Set(FIX_IDS.map(f => FIXES[f].finding)).size).toBe(7);
     expect([...ALL_FIXES]).toEqual(FIX_IDS);
     expect(NO_FIXES.size).toBe(0);
   });
@@ -318,7 +318,7 @@ describe('Eigenschaften über 200 Zufallsszenarien', () => {
 });
 
 describe('jede Teilmenge der Fixes', () => {
-  it('alle 64 Teilmengen laufen auf Default, DK und High (inkl. Szenarien)', () => {
+  it('alle 128 Teilmengen laufen auf Default, DK und High (inkl. Szenarien)', () => {
     const cases = [P(), P(DK), P(HIGH), P({ ...HIGH, incRet: 60000, einmal: true, real: false, deathAge: 75, heirHalf: true })];
     for (let mask = 0; mask < 1 << FIX_IDS.length; mask++) {
       const fixes = new Set(FIX_IDS.filter((_, i) => mask & (1 << i)));
@@ -362,7 +362,9 @@ describe('Snapshots mit ALL_FIXES (aktuelle Standardwerte)', () => {
   it('High (a0 30, zvE 110.000, Rente 45.000, 500 €/Monat, kvOn, kvRate 21,1)', () => {
     // Herkunft: diese Implementierung, 2026-11-03. Original mit kvRate 21,1: ETF 324.245, AVD 326.776, Vers. 239.587.
     // a0 30 ⇒ kein Bonus (E3 ohne Wirkung); E6 und E8 wirken, E7 ohne Wirkung (Rente weit unter der BBG).
-    expect(snap({ ...HIGH, kvRate: 21.1 })).toEqual({ lead: 'avd', etf: 323094, avd: 325856, ins: 245025 });
+    // E10 (2026-11-04): 350 € ungefördert im AVD-Vertrag statt im Nebendepot. Mit kvOn zählt die ganze Auszahlung
+    // für die KV (nicht nur der Gewinn wie beim ETF), daher AVD 325.856 → 281.639 und der ETF vorne.
+    expect(snap({ ...HIGH, kvRate: 21.1 })).toEqual({ lead: 'etf', etf: 323094, avd: 281639, ins: 245025 });
   });
 });
 

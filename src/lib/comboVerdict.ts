@@ -4,7 +4,7 @@
 import type { ProductKey } from './engine/engine';
 import { SPLIT_KEYS, type Split } from './engine/combo';
 import type { ComboAnalysis, RobustSummary } from './engine/comboAnalyze';
-import { TIE_EUR } from './engine/search';
+import { AVD_CAP, TIE_EUR, TIE_REL } from './engine/search';
 import { eur, eurRound } from './format';
 
 export type ComboVerdictKind = 'needTwo' | 'unallocated' | 'refundSpent' | 'ok';
@@ -65,11 +65,29 @@ export function comboVerdict(C: ComboAnalysis, robust?: RobustSummary | null): C
 
   const lines: string[] = [];
   let headline: string;
-  if (B.userIsBest) headline = 'Deine Aufteilung ist unter diesen Annahmen rechnerisch die beste: Ø ' + eur(C.user!.stats.avgMonthly) + ' netto im Monat ' + range + '.';
+  const max = B.top ? Math.max(B.top.value, B.value) : B.value;
+  const userExact = !!C.user && C.user.value >= max - TIE_EUR;
+  const rel = pct(TIE_REL);
+  if (B.userIsBest) headline = userExact
+    ? 'Deine Aufteilung ist unter diesen Annahmen rechnerisch die beste: Ø ' + eur(C.user!.stats.avgMonthly) + ' netto im Monat ' + range + '.'
+    : 'Deine Aufteilung ist unter diesen Annahmen rechnerisch gleichauf mit der besten (weniger als ' + rel + ' Unterschied): Ø ' + eur(C.user!.stats.avgMonthly) + ' netto im Monat ' + range + '.';
   else {
     headline = userLine;
     lines.push('Rechnerisch am meisten bringt hier ' + splitText(B.split) + ': Ø ' + eur(B.stats.avgMonthly) + ' im Monat. '
       + cap(bisH) + ' sind das zusammen ' + delta(B.deltaUser ?? 0) + ' mehr netto.');
+  }
+  // Genannt ist eine gleichwertige, einfachere Aufteilung statt des letzten Euros (TIE_REL).
+  if (B.top && !(B.userIsBest && userExact)) lines.push('Auf den Euro gerechnet liegt ' + splitText(B.top.split) + ' ' + bisH + ' ' + delta(B.top.value - B.value)
+    + ' vorne. Das sind weniger als ' + rel + ' und weit unter der Unsicherheit der Annahmen. Bei so kleinen Unterschieden zählt der Rechner die Aufteilung mit mehr ETF als beste, weil das Geld dort jederzeit verfügbar ist.');
+  // Ungeförderter AVD-Teil: Vorteil gegenüber „150 € AVD + Rest“ offen beziffern.
+  const cap150 = B.split.avd > AVD_CAP ? B.curve.find(x => x.avd === AVD_CAP) : undefined;
+  if (cap150) {
+    const d = B.value - cap150.value, rest = { ...cap150.split, avd: 0 };
+    const mine = B.userIsBest && SPLIT_KEYS.every(k => Math.abs(C.split[k] - B.split[k]) < 0.005);
+    lines.push((mine ? 'In deiner Aufteilung' : B.userIsBest ? 'In der Aufteilung ' + splitText(B.split) : 'Davon') + ' sind ' + eurAmount(B.split.avd - AVD_CAP)
+      + ' im Monat ungefördert im Altersvorsorgedepot (keine Zulage, aber keine Steuer bis zur Auszahlung). '
+      + 'Mit ' + eurAmount(AVD_CAP) + ' im AVD (voll gefördert) und ' + splitText(rest) + ' wären es ' + bisH + ' ' + (d > TIE_EUR ? delta(d) + ' (' + pct(d / B.value) + ') weniger' : 'praktisch gleich viel') + '. '
+      + 'Dieser Vorteil hängt an niedrigen AVD-Kosten (gerechnet: ' + pct(p.avdCost) + ' im Jahr), und das Geld ist bis zur Rente gebunden.');
   }
   // Hat Mischen einen Nachteil?
   if (C.bestPure) lines.push(B.isMix
@@ -94,3 +112,8 @@ export function comboVerdict(C: ComboAnalysis, robust?: RobustSummary | null): C
 }
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+/** 0,0081 → „0,8 %“; unter 0,1 % mit zwei Nachkommastellen. */
+function pct(x: number): string {
+  const v = x * 100;
+  return v.toLocaleString('de-DE', { maximumFractionDigits: Math.abs(v) < 0.1 ? 2 : 1 }) + ' %';
+}

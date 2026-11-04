@@ -49,14 +49,15 @@ Die Rechnung nutzt Werte, die sich jedes Jahr ändern. Nach jeder Änderung: `np
 - [ ] **Januar – Basiszins** für die Vorabpauschale (BMF-Schreiben): Standardwert `basis` in `src/lib/engine/inputs.ts`, Text in `glossary.ts` (`basiszins`) und unter „Weitere Einstellungen“.
 - [ ] **Einkommensteuertarif** (§ 32a EStG) und **Soli-Freigrenze**: `est()` / `soli()` in `src/lib/engine/engine.ts` (Steuerreform 2027 im Blick behalten).
 - [ ] **Beitragsbemessungsgrenze KV/PV** (`KV_BBG` in `engine.ts`), **Versicherungspflichtgrenze** und **Zusatzbeitrag/Pflegesatz** (Standard `kvRate`, Texte `kvFreiwillig`/`kvRate` im Glossar).
-- [ ] **Altersvorsorgedepot:** Zulagen, Höchstbeträge, Bonus, Auszahlregeln gegen das aktuelle Gesetz/BMF-Schreiben prüfen; Hinweis zum Start (`avdStart`) entfällt ab 2027 automatisch.
+- [ ] **Altersvorsorgedepot:** Zulagen, Höchstbeträge, Bonus, Auszahlregeln gegen das aktuelle Gesetz/BMF-Schreiben prüfen; Hinweis zum Start (`avdStart`) entfällt ab 2027 automatisch. Standarddepot: Umschichtungsanteile (`AVD_STD_GLIDE` in `engine.ts`, § 1 Abs. 1c Nr. 5 AltZertG) und Kostendeckel (§ 2a Abs. 2) mit Glossar (`standarddepot`, `avdKosten`) und `src/lib/prosCons.ts` abgleichen.
+- [ ] **„Was die Zahlen nicht zeigen“** (`src/lib/prosCons.ts`): Rechtsaussagen mit Fundstelle (§ 12 SGB II, § 93 EStG, AltZertG) gegen den aktuellen Stand prüfen.
 - [ ] Änderungen an der Rechnung bewusst machen: Golden-Tests vergleichen mit `legacy/index.html` (Korrekturen aus), `tests/fixes.test.ts` und `tests/combo*.test.ts` prüfen die aktuelle Rechnung. Abweichungen in `docs/abweichungen-vom-original.md` dokumentieren.
 - [ ] Standardwerte ändern sich nur in `DEFAULTS`; die Link-Basis in `link.ts` nie ändern (sonst neue `LINK_VERSION`).
 
 ## Weitere Dokumentation
 
 - `docs/abweichungen-vom-original.md`: Korrekturen an der ursprünglichen Rechnung mit Rechtsquellen und Wirkung.
-- `docs/kombi-modus.md`: Rechenmodell des Kombi-Modus (gemeinsame Besteuerung, Suche nach der besten Aufteilung).
+- `docs/kombi-modus.md`: Rechenmodell der Kombi (gemeinsame Besteuerung, Suche nach der besten Aufteilung, Einbindung in den Vergleich).
 
 ## Speichern und Teilen
 

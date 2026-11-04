@@ -24,6 +24,27 @@ export function soli(t: number): number { const fg = 20350; return t <= fg ? 0 :
 export function tax(x: number): number { const t = est(x); return t + soli(t); }
 export const ERTRAG: Record<number, number> = { 60: 22, 61: 22, 62: 21, 63: 20, 64: 19, 65: 18, 66: 18, 67: 17, 68: 16, 69: 15, 70: 15 };
 export const KV_BBG = 69750; // Beitragsbemessungsgrenze KV/PV 2026, €/Jahr
+/** AVD: geförderte Eigenbeiträge höchstens 1.800 €/Jahr; Eigenbeiträge insgesamt höchstens 6.840 €/Jahr (AVRG). */
+export const AVD_SUB_MAX = 1800, AVD_MAX = 6840;
+/**
+ * Standarddepot (§ 1 Abs. 1c Nr. 5 AltZertG ab 01.01.2027): fünf Jahre vor der Auszahlungsphase höchstens 50 %, zwei Jahre
+ * vorher und zu Beginn höchstens 30 % im chancenreichen Fonds (Risikoklasse 3–5), der Rest im sicheren (Risikoklasse 1–2).
+ * Gerechnet wird mit diesen Höchstanteilen, gestuft zu Jahresbeginn.
+ */
+export const AVD_STD_GLIDE: readonly { yearsBefore: number; risky: number }[] = Object.freeze([{ yearsBefore: 2, risky: 0.3 }, { yearsBefore: 5, risky: 0.5 }]);
+
+/**
+ * Jahresrendite des AVD vor Kosten im Jahr t (Rentenbeginn bei t = n). Ohne Standarddepot-Umschichtung exakt p.g bzw. p.gPay
+ * (bitgleich zum Original). Mit Umschichtung in den letzten fünf Jahren der Ansparphase die Mischung aus p.g und p.avdSafe.
+ * In der Auszahlphase gilt wie bei allen Produkten p.gPay (die Aufteilung dort regelt das Gesetz nicht).
+ */
+export function avdGrowth(p: Params, t: number, n: number): number {
+  if (t >= n) return p.gPay;
+  if (!p.avdStd) return p.g;
+  const before = n - t;
+  const step = AVD_STD_GLIDE.find(s => before <= s.yearsBefore);
+  return step ? step.risky * p.g + (1 - step.risky) * p.avdSafe : p.g;
+}
 
 export type ProductKey = 'etf' | 'avd' | 'ins' | 'fond';
 
@@ -34,6 +55,8 @@ export interface Params {
   g: number; gPay: number; infl: number; dyn: number; basis: number;
   etfM: number; etfTer: number;
   avdM: number; avdCost: number; kids: number; kidsFrom: number; kidsYears: number;
+  /** Standarddepot mit gesetzlicher Umschichtung vor Rentenbeginn; avdSafe = Rendite des sicheren Fonds. Neu, nicht im Original. */
+  avdStd: boolean; avdSafe: number;
   bonus: boolean; reinvest: boolean; einmal: boolean;
   insM: number; insEff: number; rf: number; gz: number; insLump: boolean;
   fondM: number; fondAA: number; fondTer: number;
@@ -58,6 +81,7 @@ export function readParams(inp: Inputs): Params {
     g: pct('g', -50, 30), gPay: pct('gPay', -50, 30), infl: pct('infl', -5, 20), dyn: pct('dyn', -10, 20), basis: pct('basis', 0, 10),
     etfM: Math.max(0, num('etfM')), etfTer: pct('etfTer', 0, 10),
     avdM: Math.max(0, num('avdM')), avdCost: pct('avdCost', 0, 10), kids: clamp(Math.round(num('kids')), 0, 10), kidsFrom: num('kidsFrom'), kidsYears: Math.max(0, num('kidsYears')),
+    avdStd: chk('avdStd'), avdSafe: pct('avdSafe', -5, 20),
     bonus: chk('bonus'), reinvest: chk('reinvest'), einmal: chk('einmal'),
     insM: Math.max(0, num('insM')), insEff: pct('insEff', 0, 10), rf: Math.max(0, num('rf')), gz: clamp(Math.round(num('gz')), 0, 40), insLump: chk('insLump'),
     fondM: Math.max(0, num('fondM')), fondAA: pct('fondAA', 0, 20), fondTer: pct('fondTer', 0, 10),
@@ -89,6 +113,8 @@ export interface ProductResult {
   // AVD
   heirMarried?: (idx: number) => HeirValue;
   sideOwn?: number; sideOwnReal?: number; capAVD?: number; sideR?: number;
+  /** Ungeförderte Eigenbeiträge im AVD-Vertrag (Fix avdUnsubsidized, E10). */
+  unsubOwn?: number; unsubOwnReal?: number;
   zul?: number; zulReal?: number; ref?: number; refReal?: number; noElig?: number; lumpNet?: number;
   // Versicherung
   kapNet?: number; annual?: number; lump?: boolean; lifelong?: boolean;
@@ -112,6 +138,7 @@ export function model(p: Params, opts?: EngineOptions): ModelResult {
     kvShared: fx.has('kvSharedRoom'), // E7
     kvSpread: fx.has('kvLumpSpread'), // E8
     heir: fx.has('heirTax'),         // E2
+    unsub: fx.has('avdUnsubsidized'), // E10
   };
   const T = 100 - p.a0, n = p.R - p.a0, tH = p.H - p.a0;
   const I = (t: number) => Math.pow(1 + p.infl, t);
@@ -204,29 +231,50 @@ export function model(p: Params, opts?: EngineOptions): ModelResult {
       let V = 0, own = 0, ownReal = 0, zul = 0, zulReal = 0, ref = 0, refReal = 0, bonusUsed = false, C0 = 0, noElig = 0, lumpNet = 0;
       const vals = [0], owns = [0], zuls = [0], foer = [0], net = new Array<number>(T).fill(0), refunds = new Array<number>(T).fill(0);
       const overflow = new Array<number>(T).fill(0); // Monatsbeitrag, der nicht ins AVD passt → ETF-Nebendepot
+      // Fix avdUnsubsidized (E10): ungeförderte Eigenbeiträge im Vertrag (Vu, Anschaffungskosten Bu). Ohne den Fix bleiben
+      // beide 0, jeder Zusatzterm ist dann + 0 und der Pfad bitgleich zum Original.
+      let Vu = 0, Bu = 0, ownU = 0, ownUReal = 0;
+      const valsU = [0], basesU = [0];
       for (let t = 0; t < T; t++) {
         const age = p.a0 + t, accum = t < n;
         if (t === n) C0 = V;
-        let payY = 0, dedY = 0;
-        if (!accum && t < tEnd && V > 0) {
+        let payY = 0, dedY = 0, cashU = 0;
+        if (!accum && t < tEnd && (V > 0 || Vu > 0)) {
           let L = 0; if (t === n && p.einmal) { L = 0.3 * V; V -= L; }
           // Auszahlplan nach § 1 Abs. 1 Nr. 4b AltZertG: Restkapital ÷ Restlaufzeit, jährlich neu; im letzten Jahr der Rest.
           const W = V / (tEnd - t);
           V -= W; payY = W + L;
-          const taxY = taxAdd(p.incRet, payY, t), kvL = kvLump(L, t);
-          if (L > 0) lumpNet = L - (taxY - taxAdd(p.incRet, W, t)) - kvL;
+          // E10: Ungeförderter Teil, gleicher Auszahlplan und gleiche 30-%-Quote. Steuerpflichtig ist nur der Gewinnanteil
+          // (Leistung − anteilige Beiträge, § 22 Nr. 5 S. 2 Buchst. c EStG), zur Hälfte, wenn der Vertrag 12 Jahre lief
+          // (§ 20 Abs. 1 Nr. 6 S. 2 EStG; die Leistung nach dem 62. Lebensjahr ist mit Rentenbeginn ≥ 65 immer erfüllt).
+          let Lu = 0, Wu = 0, xL = 0, xW = 0;
+          if (Vu > 0) {
+            const q = Math.max(0, Vu - Bu) / Vu * (t >= 12 ? 0.5 : 1);
+            if (t === n && p.einmal) { Lu = 0.3 * Vu; Bu -= Lu * Bu / Vu; Vu -= Lu; xL = Lu * q; }
+            Wu = Vu / (tEnd - t); Bu -= Wu * Bu / Vu; Vu -= Wu; xW = Wu * q;
+            cashU = Wu + Lu;
+          }
+          const taxY = taxAdd(p.incRet, payY + (xW + xL), t), kvL = kvLump(L + Lu, t);
+          if (L + Lu > 0) lumpNet = (L + Lu) - (taxY - taxAdd(p.incRet, W + xW, t)) - kvL;
           // Die 30-%-Auszahlung bleibt immer im eigenen Topf kvLump (Rechtslage offen, Befund E9).
-          if (book) { dedY = taxY + kvL; book[t] += W; }
-          else dedY = taxY + kvAdd(W, t) + kvL;
+          if (book) { dedY = taxY + kvL; book[t] += W + Wu; }
+          else dedY = taxY + kvAdd(W + Wu, t) + kvL;
         }
         const elig = accum && (age >= p.studyEnd || p.eligStudy);
         const want = accum ? p.avdM * 12 * dynF(t) : 0;
         if (accum && !elig && want > 0) noElig++;
-        const E = elig ? Math.min(want, 1800) : 0;
-        overflow[t] = (want - E) / 12;
-        const rm = Math.pow(1 + (accum ? p.g : p.gPay) - cost, 1 / 12) - 1;
-        for (let m = 1; m <= 12; m++) { if (E > 0) { V += E / 12; own += E / 12; } V *= 1 + rm; }
-        ownReal += E / I(t);
+        const E = elig ? Math.min(want, AVD_SUB_MAX) : 0;
+        // E10: Was über den Förderhöchstbetrag geht, bleibt bis zum Höchstbetrag ungefördert im Vertrag. Jahre ohne
+        // Förderberechtigung bleiben wie im Original im Nebendepot (ob dann ungefördert eingezahlt werden darf, ist offen).
+        const U = F.unsub && elig ? Math.min(want, AVD_MAX) - E : 0;
+        overflow[t] = (want - E - U) / 12;
+        const rm = Math.pow(1 + avdGrowth(p, t, n) - cost, 1 / 12) - 1;
+        for (let m = 1; m <= 12; m++) {
+          if (E > 0) { V += E / 12; own += E / 12; }
+          if (U > 0) { Vu += U / 12; Bu += U / 12; ownU += U / 12; }
+          V *= 1 + rm; Vu *= 1 + rm;
+        }
+        ownReal += E / I(t); ownUReal += U / I(t);
         if (elig && E >= 120) {
           const grund = 0.5 * Math.min(E, 360) + 0.25 * Math.max(0, Math.min(E, 1800) - 360);
           const kidActive = age >= p.kidsFrom && age < p.kidsFrom + p.kidsYears;
@@ -241,33 +289,40 @@ export function model(p: Params, opts?: EngineOptions): ModelResult {
           const extra = Math.max(0, save - zSA);
           refunds[t] = extra; ref += extra; refReal += extra / I(t);
         }
-        net[t] = payY - dedY;
-        vals.push(V); owns.push(own); zuls.push(zul); foer.push(zul + ref);
+        net[t] = (payY + cashU) - dedY;
+        vals.push(V); owns.push(own); zuls.push(zul); foer.push(zul + ref); valsU.push(Vu); basesU.push(Bu);
       }
-      return { vals, owns, zuls, foer, net, refunds, overflow, own, ownReal, zul, zulReal, ref, refReal, lumpNet, C0: C0 || vals[n], noElig };
+      return { vals, owns, zuls, foer, net, refunds, overflow, own, ownReal, zul, zulReal, ref, refReal, lumpNet, C0: C0 || vals[n], noElig, valsU, basesU, ownU, ownUReal };
     };
     const book = F.kvShared ? kvBook() : undefined; // ein Buch für Auszahlplan und Nebendepot
     const a = run(p.avdCost, book), a0 = run(0);
     // ETF-Nebendepot: nicht förderfähige Beiträge (+ optional die zusätzliche Steuererstattung)
     const side = runFund(a.overflow, p.reinvest ? a.refunds : null, p.etfTer, 0, payEnd, book);
     const side0 = runFund(a.overflow, p.reinvest ? a.refunds : null, 0, 0, payEnd);
-    // Spätere Einkommensteuer auf AVD-Kapital V, wenn es über den restlichen Auszahlplan entnommen wird (grob).
-    const latentTax = (V: number, t: number) => { const yrs = Math.max(1, tEnd - Math.max(t, n)); return yrs * taxAdd(p.incRet, V / yrs, t); };
+    // Spätere Einkommensteuer auf den steuerpflichtigen Betrag X, wenn er über den restlichen Auszahlplan entnommen wird (grob).
+    const latentTax = (X: number, t: number) => { const yrs = Math.max(1, tEnd - Math.max(t, n)); return yrs * taxAdd(p.incRet, X / yrs, t); };
+    // E10: steuerpflichtiger Gewinn des ungeförderten Teils zum Zeitpunkt idx (hälftig ab 12 Jahren Laufzeit bei der Auszahlung).
+    const gainU = (idx: number, half: boolean) => Math.max(0, a.valsU[idx] - a.basesU[idx]) * (half ? 0.5 : 1);
     const r: ProductResult = {
-      vals: a.vals.map((v, i) => v + side.vals[i]),
+      vals: a.vals.map((v, i) => (v + a.valsU[i]) + side.vals[i]),
       net: a.net.map((v, i) => v + side.net[i]), // KV aus dem gemeinsamen Buch (Fix kvSharedRoom) wird unten abgezogen
-      own: a.own + side.own, ownReal: a.ownReal + side.ownReal, sideOwn: side.own, sideOwnReal: side.ownReal,
-      capR: a.vals[n] + side.vals[n], capAVD: a.vals[n], sideR: side.vals[n],
-      capNet: a.vals[n] - latentTax(a.vals[n], n) + side.sellNet(n),
+      own: (a.own + a.ownU) + side.own, ownReal: (a.ownReal + a.ownUReal) + side.ownReal, sideOwn: side.own, sideOwnReal: side.ownReal,
+      ...(F.unsub ? { unsubOwn: a.ownU, unsubOwnReal: a.ownUReal } : {}),
+      capR: (a.vals[n] + a.valsU[n]) + side.vals[n], capAVD: a.vals[n] + a.valsU[n], sideR: side.vals[n],
+      capNet: (a.vals[n] + a.valsU[n]) - latentTax(a.vals[n] + gainU(n, n >= 12), n) + side.sellNet(n),
       zul: a.zul, zulReal: a.zulReal, ref: a.ref, refReal: a.refReal,
       foerder: a.zul + a.ref, foerderReal: a.zulReal + a.refReal,
-      cost: (a0.vals[n] + side0.vals[n]) - (a.vals[n] + side.vals[n]), payEnd, noElig: a.noElig, lumpNet: a.lumpNet,
+      cost: ((a0.vals[n] + a0.valsU[n]) + side0.vals[n]) - ((a.vals[n] + a.valsU[n]) + side.vals[n]), payEnd, noElig: a.noElig, lumpNet: a.lumpNet,
       heir: () => ({ val: 0, note: '' }),
     };
     if (book) applyKv(r.net, book);
+    // E10: Der ungeförderte Teil ist nicht schädlich verwendbar (§ 93 betrifft nur gefördertes Vermögen). Er geht an die
+    // Erben, die den Gewinn als Leistung nach § 22 Nr. 5 S. 2 Buchst. c EStG mit ihrem Steuersatz versteuern.
+    const unsubNote = (idx: number, tx: number) => a.valsU[idx] > 0 ? '; ungeförderter Teil ' + eur(Rn(a.valsU[idx], idx)) + ' ohne Förderrückzahlung, Steuer der Erben auf dessen Gewinn ca. ' + eur(Rn(tx, idx)) : '';
     r.heirMarried = idx => {
       const V = a.vals[idx], lt = latentTax(V, idx);
-      return { val: V - lt + side.sellNet(idx), note: 'Ohne Abzug auf einen eigenen AVD-Vertrag übertragbar, später aber voll steuerpflichtig (ca. ' + eur(Rn(lt, idx)) + ' Einkommensteuer, grob geschätzt und abgezogen)' };
+      const halbU = p.heirHalf && idx >= 12, txU = taxAdd(p.incHeir, gainU(idx, halbU), idx);
+      return { val: V - lt + (a.valsU[idx] - txU) + side.sellNet(idx), note: 'Ohne Abzug auf einen eigenen AVD-Vertrag übertragbar, später aber voll steuerpflichtig (ca. ' + eur(Rn(lt, idx)) + ' Einkommensteuer, grob geschätzt und abgezogen)' + unsubNote(idx, txU) };
     };
     r.heir = idx => {
       const V = a.vals[idx], age = p.a0 + idx;
@@ -280,8 +335,9 @@ export function model(p: Params, opts?: EngineOptions): ModelResult {
       const halb = F.heir ? p.heirHalf && idx >= 12 : p.heirHalf && age >= 62 && idx >= 12;
       const rest = Math.max(0, V - back), gain = Math.max(0, V - ownR - zulR) * (halb ? 0.5 : 1);
       const incDeath = F.heir ? p.incHeir : idx < n ? incAt(idx) : p.incRet;
-      const tx = taxAdd(incDeath, gain, idx);
-      return { val: rest - tx + side.sellNet(idx), note: 'Förderung ' + eur(Rn(back, idx)) + ' zurück, ' + (F.heir ? 'Steuer der Erben auf Erträge ' : 'Steuer auf Erträge ') + eur(Rn(tx, idx)) + (halb ? ' (hälftig)' : '') };
+      // E10: gemeinsam mit dem Gewinn des ungeförderten Teils versteuert (ein Tarif)
+      const tx = taxAdd(incDeath, gain + gainU(idx, halb), idx);
+      return { val: (rest + a.valsU[idx]) - tx + side.sellNet(idx), note: 'Förderung ' + eur(Rn(back, idx)) + ' zurück, ' + (F.heir ? 'Steuer der Erben auf Erträge ' : 'Steuer auf Erträge ') + eur(Rn(tx, idx)) + (halb ? ' (hälftig)' : '') + (a.valsU[idx] > 0 ? '; darin der ungeförderte Teil ' + eur(Rn(a.valsU[idx], idx)) + ' ohne Förderrückzahlung' : '') };
     };
     res.avd = r;
   }

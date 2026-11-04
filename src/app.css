@@ -11,7 +11,8 @@
 }
 
 /* Design-Tokens. Diagrammfarben (--s1…--s4) sind die validierte Kategorienpalette
-   (hell und dunkel jeweils eigene Stufen, CVD-geprüft).
+   (hell und dunkel jeweils eigene Stufen, CVD-geprüft). --s5 (Kombi) kam später dazu; die Kombi-Linie ist in
+   den Diagrammen zusätzlich gestrichelt, damit sie nicht allein an der Farbe hängt.
    Die dunklen Tokens stehen zweimal (System dunkel / manuell dunkel); tests/ui-logic.test.ts prüft,
    dass beide Blöcke identisch bleiben. Änderungen immer in beiden Blöcken machen. */
 :root {
@@ -32,7 +33,7 @@
   --accent-text: #1c5cab;
   --accent-soft: #e8f1fc;
   --on-accent: #ffffff;
-  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #8a5ad6;
   --good: #006300; --good-soft: #e6f3e6;
   --warn-bg: #fff6e0; --warn-border: #f0d28a; --warn-text: #5c4300;
   --flip-bg: #fff3d6;
@@ -50,7 +51,7 @@
     --grid: #2c2c2a; --axis: #383835;
     --border: rgba(255,255,255,0.10); --border-strong: rgba(255,255,255,0.22);
     --accent: #3987e5; --accent-text: #86b6ef; --accent-soft: #16263b; --on-accent: #0b0b0b;
-    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #9a74e8;
     --good: #0ca30c; --good-soft: #142914;
     --warn-bg: #2a2416; --warn-border: #5a4a1e; --warn-text: #f3dfa8;
     --flip-bg: #33290f;
@@ -64,7 +65,7 @@
   --grid: #2c2c2a; --axis: #383835;
   --border: rgba(255,255,255,0.10); --border-strong: rgba(255,255,255,0.22);
   --accent: #3987e5; --accent-text: #86b6ef; --accent-soft: #16263b; --on-accent: #0b0b0b;
-  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #9a74e8;
   --good: #0ca30c; --good-soft: #142914;
   --warn-bg: #2a2416; --warn-border: #5a4a1e; --warn-text: #f3dfa8;
   --flip-bg: #33290f;
@@ -172,7 +173,7 @@ td.best::after { content: ''; }
     --text: #0b0b0b; --text-2: #3d3c39; --muted: #5a5955; --axis-text: #6b6a66;
     --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.18); --border-strong: rgba(11,11,11,0.3);
     --accent: #256abf; --accent-text: #1c5cab; --accent-soft: #eef4fc;
-    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #8a5ad6;
     --good: #006300; --warn-bg: #fff6e0; --warn-border: #f0d28a; --flip-bg: #fff3d6;
     --shadow: none;
   }

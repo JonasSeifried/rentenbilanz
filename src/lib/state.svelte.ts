@@ -35,7 +35,12 @@ export const app = $state({
   mode: 'own' as 'own' | 'shared',
   storageOk: true,
   toast: null as Toast | null,
+  /** Dialog „Kombi zusammenstellen“ offen (nur Oberfläche, nicht gespeichert). */
+  kombiOpen: false,
 });
+
+export function openKombi() { app.kombiOpen = true; }
+export function closeKombi() { app.kombiOpen = false; }
 
 let saved: Inputs | null = null; // Stand des Speichers (zuletzt gelesen)
 let dirty = false; // ungespeicherte Änderungen vorhanden

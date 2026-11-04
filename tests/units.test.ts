@@ -22,7 +22,7 @@ describe('Link-Format', () => {
     expect(d.combo).toBe(false);
     expect(d.incHeir).toBe(38000);
     expect(d.kvKind).toBe(0);
-    expect(d.cBudget).toBe(450);
+    expect(d.cEtf).toBe(0);
     expect(d.kvRate).toBe(21.7); // Basiswert bleibt, wenn der Link nichts sagt
     expect(decodeState('#v=1&a0=40').inputs!.kvRate).toBe(21.7);
   });
@@ -31,7 +31,9 @@ describe('Link-Format', () => {
     for (const k of COMBO_KEYS) expect(LEGACY_KEYS).not.toContain(k);
     expect(LEGACY_KEYS).not.toContain('incHeir');
     expect(LEGACY_KEYS).not.toContain('kvKind');
-    expect(LEGACY_KEYS.length + COMBO_KEYS.length + 2).toBe(INPUT_KEYS.length);
+    expect(LEGACY_KEYS).not.toContain('avdStd');
+    expect(LEGACY_KEYS).not.toContain('avdSafe');
+    expect(LEGACY_KEYS.length + COMBO_KEYS.length + 4).toBe(INPUT_KEYS.length);
   });
   it('Jeder numerische Schlüssel hat Grenzen, die den Standardwert enthalten', () => {
     for (const k of NUMERIC_KEYS) {

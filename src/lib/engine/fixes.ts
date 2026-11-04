@@ -2,9 +2,9 @@
 // Standard überall: ALL_FIXES. Mit NO_FIXES rechnet die Engine bitgleich zum Original (tests/golden.test.ts).
 // Herleitung, Rechtsquellen und Wirkung je Korrektur: docs/abweichungen-vom-original.md.
 
-export type FixId = 'rankReal' | 'heirTax' | 'bonusOutsideSA' | 'kvInvestBase' | 'kvSharedRoom' | 'kvLumpSpread';
+export type FixId = 'rankReal' | 'heirTax' | 'bonusOutsideSA' | 'kvInvestBase' | 'kvSharedRoom' | 'kvLumpSpread' | 'avdUnsubsidized';
 
-export type FindingId = 'E1' | 'E2' | 'E3' | 'E6' | 'E7' | 'E8';
+export type FindingId = 'E1' | 'E2' | 'E3' | 'E6' | 'E7' | 'E8' | 'E10';
 
 export const FIXES: Readonly<Record<FixId, { finding: FindingId; title: string }>> = Object.freeze({
   rankReal: { finding: 'E1', title: 'Rangfolge und fairer Vergleich immer in heutiger Kaufkraft, unabhängig von der Anzeige' },
@@ -13,6 +13,7 @@ export const FIXES: Readonly<Record<FixId, { finding: FindingId; title: string }
   kvInvestBase: { finding: 'E6', title: 'KV auf Fondserträge: 70 % (Teilfreistellung) von Entnahmegewinn und Vorabpauschale' },
   kvSharedRoom: { finding: 'E7', title: 'KV: Beitragsbemessungsgrenze gilt für alle laufenden Einnahmen eines Produkts zusammen' },
   kvLumpSpread: { finding: 'E8', title: 'KV auf die Kapitalauszahlung der Versicherung über 10 Jahre aus den Entnahmen statt sofort' },
+  avdUnsubsidized: { finding: 'E10', title: 'AVD: Eigenbeiträge über 1.800 €/Jahr bleiben bis 6.840 €/Jahr ungefördert im Vertrag (AVD-Kosten, kein Steuerabzug in der Ansparphase, bei Auszahlung nur der Gewinnanteil steuerpflichtig, nach 12 Jahren zur Hälfte) statt im ETF-Nebendepot' },
 });
 
 export const FIX_IDS: readonly FixId[] = Object.freeze(Object.keys(FIXES) as FixId[]);

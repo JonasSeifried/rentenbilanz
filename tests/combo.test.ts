@@ -257,22 +257,32 @@ describe('I6 – gemeinsames Einkommensteuer-Buch', () => {
   });
 });
 
-describe('I7 – AVD über 150 € = AVD 150 € + ETF', () => {
-  // Nebendepot und ETF teilen Pauschbetrag, KV-Buch und Kosten. Exakt linear ist die Summe zweier Depots trotzdem
-  // nicht: Die Vorabpauschale ist je Depot auf den tatsächlichen Wertzuwachs gedeckelt (min(…)) und Verluste werden
-  // je Depot bei 0 abgeschnitten (max(0, …)). Das macht höchstens Promille aus (Messung: ≤ 0,09 % in 2.000 Fällen).
+describe('I7 – AVD über dem Höchstbetrag = AVD am Höchstbetrag + ETF', () => {
+  // Was nicht mehr in den Vertrag passt, liegt im ETF-Nebendepot: mit E10 über 570 €/Monat (6.840 €/Jahr), ohne E10
+  // (Original) schon über 150 €. Nebendepot und ETF teilen Pauschbetrag, KV-Buch und Kosten. Exakt linear ist die Summe
+  // zweier Depots trotzdem nicht: Die Vorabpauschale ist je Depot auf den tatsächlichen Wertzuwachs gedeckelt (min(…))
+  // und Verluste werden je Depot bei 0 abgeschnitten (max(0, …)). Das macht höchstens Promille aus.
+  const NO_UNSUB = { fixes: new Set<FixId>([...ALL_FIXES].filter(f => f !== 'avdUnsubsidized')) };
+  const pairs: [Split, Split, { fixes: ReadonlySet<FixId> } | undefined][] = [
+    [S({ avd: 800 }), S({ avd: 570, etf: 230 }), undefined],
+    [S({ avd: 500 }), S({ avd: 150, etf: 350 }), NO_UNSUB],
+  ];
+  const val = (p: Params, s: Split, o?: { fixes: ReadonlySet<FixId> }) => comboStats(p, combo(p, s, o)).cumHReal;
   it('Standard, DK, High, Dynamik, Kinder: |Δ cumHReal| < 1 €', () => {
-    for (const patch of [{}, { kvOn: true }, NAMED[29][1], { dyn: 3 }, { kids: 2, kidsFrom: 25, kidsYears: 20 }, { insLump: false, einmal: true }] as Partial<Inputs>[]) {
+    for (const patch of [{}, { kvOn: true }, NAMED[29][1], { kids: 2, kidsFrom: 25, kidsYears: 20 }, { insLump: false, einmal: true }] as Partial<Inputs>[]) {
       const p = readParams({ ...DEFAULTS, ...patch });
-      const a = comboStats(p, combo(p, S({ avd: 500 }))).cumHReal, b = comboStats(p, combo(p, S({ avd: 150, etf: 350 }))).cumHReal;
-      expect(Math.abs(a - b), JSON.stringify(patch)).toBeLessThan(1);
+      for (const [x, y, o] of pairs) expect(Math.abs(val(p, x, o) - val(p, y, o)), JSON.stringify(patch)).toBeLessThan(1);
     }
   });
-  it('alle Szenarien: höchstens 0,1 % Abweichung', () => {
+  it('mit E10 rechnet AVD 450 € anders als AVD 150 € + 300 € ETF (ungeförderter Teil im Vertrag)', () => {
+    const p = readParams({ ...DEFAULTS });
+    expect(Math.abs(val(p, S({ avd: 450 })) - val(p, S({ avd: 150, etf: 300 })))).toBeGreaterThan(1000);
+  });
+  it('alle Szenarien, ohne E10: höchstens 0,1 % Abweichung', () => {
     let worst = 0;
     for (const inp of SCENARIOS) {
       const p = readParams(inp);
-      const a = comboStats(p, combo(p, S({ avd: 500 }))).cumHReal, b = comboStats(p, combo(p, S({ avd: 150, etf: 350 }))).cumHReal;
+      const a = val(p, S({ avd: 500 }), NO_UNSUB), b = val(p, S({ avd: 150, etf: 350 }), NO_UNSUB);
       const rel = Math.abs(a - b) / Math.max(1, Math.abs(b));
       worst = Math.max(worst, rel);
       expect(rel, JSON.stringify(inp)).toBeLessThan(1e-3);
@@ -294,18 +304,18 @@ describe('I8 – Teile mit 0 €', () => {
 
 describe('readCombo', () => {
   it('liest Budget und Aufteilung aus den Eingaben, nur aktive Produkte, negatives/Unlesbares → 0', () => {
-    const inp: Inputs = { ...DEFAULTS, combo: true, cBudget: 500, cEtf: 200, cAvd: 150, cIns: 150, cFond: 80 };
+    const inp: Inputs = { ...DEFAULTS, combo: true, setAll: 500, cEtf: 200, cAvd: 150, cIns: 150, cFond: 80 };
     const r = readCombo(inp, readParams(inp));
     expect(r).toEqual({ budget: 500, split: { etf: 200, avd: 150, ins: 150, fond: 0 }, keys: ['etf', 'avd', 'ins'] });
-    const bad = { ...inp, fondOn: true, cEtf: -5, cFond: 'x' as unknown as number, cBudget: NaN };
+    const bad = { ...inp, fondOn: true, cEtf: -5, cFond: 'x' as unknown as number, setAll: NaN };
     const r2 = readCombo(bad, readParams(bad));
     expect(r2.split).toEqual({ etf: 0, avd: 150, ins: 150, fond: 0 });
     expect(r2.budget).toBe(0);
     expect(r2.keys).toEqual(['etf', 'avd', 'ins', 'fond']);
   });
-  it('Standardwerte: 450 € = 150/150/150 (die Einzelwerte)', () => {
+  it('Standardwerte: Budget = Monatsbeitrag je Produkt (150 €), noch nichts aufgeteilt', () => {
     const r = readCombo({ ...DEFAULTS }, readParams({ ...DEFAULTS }));
-    expect(r.budget).toBe(450);
-    expect(r.split).toEqual({ etf: 150, avd: 150, ins: 150, fond: 0 });
+    expect(r.budget).toBe(150);
+    expect(r.split).toEqual({ etf: 0, avd: 0, ins: 0, fond: 0 });
   });
 });

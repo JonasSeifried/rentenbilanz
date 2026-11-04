@@ -3,6 +3,7 @@
   import type { Analysis, Product } from '../engine/analyze';
   import { ERTRAG } from '../engine/engine';
   import { eur } from '../format';
+  import { splitText } from '../comboVerdict';
   import { app, setInput } from '../state.svelte';
   import NumberField from '../components/NumberField.svelte';
   import Switch from '../components/Switch.svelte';
@@ -17,7 +18,7 @@
   type Row = { label: string; f: (pr: Product) => number; dir: 'min' | 'max' | null; info?: 'guenstiger' };
   const rows = $derived.by<Row[]>(() => [
     { label: 'Eigene Einzahlungen', f: A.ownOf, dir: null },
-    ...(A.refundSpent ? [{ label: 'Netto-Eigenaufwand (Einzahlungen − ausgegebene Steuererstattung)', f: (pr: Product) => A.ownOf(pr) - (pr.key === 'avd' ? (p.real ? res.avd!.refReal! : res.avd!.ref!) : 0), dir: null } as Row] : []),
+    ...(A.refundSpent ? [{ label: 'Netto-Eigenaufwand (Einzahlungen − ausgegebene Steuererstattung)', f: (pr: Product) => A.ownOf(pr) - (pr.key === 'avd' || pr.key === 'kombi' ? ((p.real ? res[pr.key]!.refReal : res[pr.key]!.ref) ?? 0) : 0), dir: null } as Row] : []),
     { label: 'Staatliche Förderung (Zulagen + Steuervorteil)', f: pr => p.real ? res[pr.key]!.foerderReal : res[pr.key]!.foerder, dir: null, info: 'guenstiger' },
     { label: 'Kosten bis Rentenbeginn (entgangener Ertrag)', f: pr => A.R(res[pr.key]!.cost, A.n), dir: 'min' },
     { label: 'Kapital bei Rentenbeginn (vor Steuern)', f: pr => A.R(res[pr.key]!.capR, A.n), dir: null },
@@ -36,15 +37,16 @@
 
   const notes = $derived.by(() => {
     const out: string[] = ['„Nach Einkommensteuer“: ETF/Fonds bei komplettem Verkauf, AVD bei Entnahme über den Auszahlplan (grob), Versicherung bei Kapitalauszahlung. Ohne Krankenversicherung.'];
-    if (res.avd) out.push('AVD: Zulagen ' + eur(p.real ? res.avd.zulReal! : res.avd.zul!) + ', zusätzliche Steuererstattungen ' + eur(p.real ? res.avd.refReal! : res.avd.ref!) + (p.reinvest ? ' (im ETF-Nebendepot angelegt)' : ' (ausgegeben)') + '. Die Erstattungen sind zum Teil nur Steuerstundung, weil die Auszahlungen später voll steuerpflichtig sind. Kapital bei Rentenbeginn: AVD-Vertrag ' + eur(A.R(res.avd.capAVD!, A.n)) + ', ETF-Nebendepot ' + eur(A.R(res.avd.sideR!, A.n)) + '.');
+    if (res.avd) out.push('AVD: Zulagen ' + eur(p.real ? res.avd.zulReal! : res.avd.zul!) + ', zusätzliche Steuererstattungen ' + eur(p.real ? res.avd.refReal! : res.avd.ref!) + (p.reinvest ? ' (im ETF-Nebendepot angelegt)' : ' (ausgegeben)') + '. Die Erstattungen sind zum Teil nur Steuerstundung, weil die Auszahlungen später voll steuerpflichtig sind. Kapital bei Rentenbeginn: AVD-Vertrag ' + eur(A.R(res.avd.capAVD!, A.n)) + ((res.avd.unsubOwn ?? 0) > 0 ? ' (darin ungeförderte Beiträge ' + eur((p.real ? res.avd.unsubOwnReal : res.avd.unsubOwn) ?? 0) + ' mit ihren Erträgen)' : '') + ', ETF-Nebendepot ' + eur(A.R(res.avd.sideR!, A.n)) + '.');
     if (res.ins) out.push(res.ins.lump
       ? 'Versicherung: Kapitalauszahlung ' + eur(A.R(res.ins.kapNet!, A.n)) + ' nach Steuern' + (p.kvOn ? ' (die Krankenversicherungsbeiträge darauf fallen über 10 Jahre verteilt an und sind hier noch nicht abgezogen)' : '') + ', angelegt im ETF und bis ' + p.H + ' entnommen. Alternativ lebenslange Rente: ' + eur(A.R(res.ins.annual! / 12, A.n)) + ' brutto im Monat (Ertragsanteil ' + ERTRAG[p.R] + ' %).'
       : 'Versicherung: Bruttorente ' + eur(A.R(res.ins.annual! / 12, A.n)) + ' im Monat, besteuert mit Ertragsanteil ' + ERTRAG[p.R] + ' %. Alternativ Kapitalauszahlung: ' + eur(A.R(res.ins.kapNet!, A.n)) + ' nach Steuern.');
+    if (res.kombi) out.push('Kombi (' + splitText(res.kombi.split, 'short') + '): alle Teile gemeinsam gerechnet, mit einem Steuertarif, einem Sparer-Pauschbetrag für alle Depots und einer gemeinsamen Beitragsbemessungsgrenze der Krankenversicherung. „Nach Einkommensteuer“: alle Depots mit einem Pauschbetrag verkauft.');
     return out;
   });
 
   const wealth = $derived<Series[]>(A.active.map(pr => ({
-    name: pr.name, short: pr.short, color: pr.color,
+    name: pr.name, short: pr.short, color: pr.color, dash: pr.key === 'kombi',
     values: res[pr.key]!.vals.map((v, t) => v == null ? null : A.R(v, t)),
   })));
   const wealthHint = $derived(!res.ins ? '' : res.ins.lump
@@ -65,7 +67,7 @@
     <Switch checked={i.einmal} onchange={v => setInput('einmal', v)} label="30 % Einmalauszahlung bei Rentenbeginn" info="einmal" />
 
     <h3><span class="key" style:background="var(--s3)"></span>Rentenversicherung</h3>
-    <Switch checked={i.insLump} onchange={v => setInput('insLump', v)} label="Kapitalauszahlung statt lebenslanger Rente" info="kapitalauszahlung" testid="insLump"
+    <Switch id="f-insLump" checked={i.insLump} onchange={v => setInput('insLump', v)} label="Kapitalauszahlung statt lebenslanger Rente" info="kapitalauszahlung" testid="insLump"
       hint={i.insLump ? 'Guthaben wird bei Rentenbeginn ausgezahlt, versteuert und bis zum Ende des Auszahlplans aus einem ETF entnommen.' : 'Lebenslange Rente nach Rentenfaktor, versteuert mit Ertragsanteil.'} />
     <NumberField layout="row" label="Rentenfaktor je 10.000 €" value={i.rf} onchange={v => setInput('rf', v)} min={0} unit="€/Mon." info="rentenfaktor" />
     <NumberField layout="row" label="Rentengarantiezeit" value={i.gz} onchange={v => setInput('gz', v)} min={0} max={30} unit="J." info="garantiezeit" />

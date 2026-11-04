@@ -22,9 +22,11 @@ const BASES: Record<string, Inputs> = {
     insM: 150, insEff: 0.9,
     fondM: 150, fondAA: 5, fondTer: 1.6,
     real: true,
-    // Später angehängt (Wave 2); Basiswerte = bisheriges Verhalten (kein Kombi-Modus, Erben wie bisher).
+    // Später angehängt (Wave 2); Basiswerte = bisheriges Verhalten (keine Kombi, Erben wie bisher).
     incHeir: 38000, kvKind: 0,
-    combo: false, cBudget: 450, cEtf: 150, cAvd: 150, cIns: 150, cFond: 0,
+    combo: false, cEtf: 0, cAvd: 0, cIns: 0, cFond: 0,
+    // Später angehängt: Standarddepot-Umschichtung aus (bisheriges Verhalten).
+    avdStd: false, avdSafe: 2,
   },
 };
 /** Die eingefrorene Basis von Version 1 (Tests und Speicher-Migration). */

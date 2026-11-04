@@ -4,11 +4,14 @@
   import { DEFAULTS, INPUT_KEYS, type Inputs } from '../engine/inputs';
   import { eur, eurRound } from '../format';
   import { SITE } from '../site';
-  import { legendName, robustText, tileName, tileSub, verdict } from '../verdict';
-  import { app, focusField, setInputs, setTab, shareUrl, showToast } from '../state.svelte';
+  import { isFlip, legendName, robustText, tileName, tileSub, verdict } from '../verdict';
+  import { app, focusField, openKombi, setInputs, setTab, shareUrl, showToast } from '../state.svelte';
   import Icon from '../components/Icon.svelte';
   import Info from '../components/Info.svelte';
   import AssumptionCheck from '../components/AssumptionCheck.svelte';
+  import NotInNumbers from '../components/NotInNumbers.svelte';
+  import { SPLIT_KEYS } from '../engine/combo';
+  import type { ProductKey } from '../engine/engine';
   import LineChart, { type Series } from '../components/LineChart.svelte';
 
   let { A, scen }: { A: Analysis; scen: Scenario[] } = $props();
@@ -21,21 +24,25 @@
   const isExample = $derived(INPUT_KEYS.every(k => k === 'real' || i[k] === DEFAULTS[k]));
   const avdSoon = new Date() < new Date(SITE.avdStartISO + 'T00:00:00');
   const anyLifelong = $derived(A.active.some(pr => res[pr.key]!.lifelong));
+  /** Produkte für „Was die Zahlen nicht zeigen“: alle im Vergleich, auch die Teile der Kombi. */
+  const ninKeys = $derived(SPLIT_KEYS.filter(k => !!res[k] || (res.kombi?.split[k] ?? 0) > 0) as ProductKey[]);
 
   // Hinweise wie im Original, neutral formuliert
   const notes = $derived.by(() => {
     const out: string[] = [];
     if (i.R < 65) out.push('Rentenbeginn auf 65 angehoben: Das Altersvorsorgedepot zahlt frühestens mit 65 aus.');
-    if (A.refundSpent) out.push('Ohne Wiederanlage werden ' + eur(p.real ? res.avd!.refReal! : res.avd!.ref!) + ' Steuererstattung ausgegeben. Beim AVD fließt netto also weniger eigenes Geld hinein als bei den anderen Produkten (siehe „Netto-Eigenaufwand“ unter „Rente im Detail“).');
+    const refOf = res.avd ?? res.kombi;
+    if (A.refundSpent && refOf) out.push('Ohne Wiederanlage werden ' + eur((p.real ? refOf.refReal : refOf.ref) ?? 0) + ' Steuererstattung ausgegeben. Beim AVD fließt netto also weniger eigenes Geld hinein als bei den anderen Produkten (siehe „Netto-Eigenaufwand“ unter „Rente im Detail“).');
     if (res.avd && res.avd.noElig! > 0) out.push('Altersvorsorgedepot: In ' + res.avd.noElig + (res.avd.noElig === 1 ? ' Jahr' : ' Jahren') + ' ohne Förderberechtigung fließt der Beitrag ins ETF-Nebendepot statt ins AVD.');
-    if (res.avd && res.avd.sideOwn! > 0) out.push('Altersvorsorgedepot: ' + eur(p.real ? res.avd.sideOwnReal! : res.avd.sideOwn!) + ' der Beiträge sind nicht förderfähig (über 150 € im Monat oder ohne Förderberechtigung) und gehen ins ETF-Nebendepot. Sie sind im AVD-Wert enthalten.');
+    if (res.avd && (res.avd.unsubOwn ?? 0) > 0) out.push('Altersvorsorgedepot: ' + eur((p.real ? res.avd.unsubOwnReal : res.avd.unsubOwn) ?? 0) + ' der Beiträge liegen über dem Förderhöchstbetrag von 1.800 € im Jahr. Sie bleiben ungefördert im Vertrag: keine Zulage und keine Steuer in der Ansparphase, bei der Auszahlung ist nur der Gewinnanteil steuerpflichtig, nach 12 Jahren Laufzeit zur Hälfte.' + (p.kvOn ? ' Für die Krankenversicherung zählt die ganze Auszahlung.' : ''));
+    if (res.avd && res.avd.sideOwn! > 0) out.push('Altersvorsorgedepot: ' + eur(p.real ? res.avd.sideOwnReal! : res.avd.sideOwn!) + ' der Beiträge liegen über dem Höchstbetrag von 6.840 € im Jahr oder fallen in Jahre ohne Förderberechtigung und gehen ins ETF-Nebendepot. Sie sind im AVD-Wert enthalten.');
     return out;
   });
 
   const cumSeries = $derived<Series[]>(A.active.map(pr => {
     const r = res[pr.key]!; let c = 0; const vals: number[] = [];
     for (let t = A.n; t <= A.T; t++) { vals.push(c); if (t < A.T) c += A.R(r.net[t], t); }
-    return { name: legendName(A, pr), short: pr.short, color: pr.color, values: vals };
+    return { name: legendName(A, pr), short: pr.short, color: pr.color, dash: pr.key === 'kombi', values: vals };
   }));
 
   const breakEven = $derived.by(() => {
@@ -55,11 +62,12 @@
     setInputs({ etfM: i.setAll, avdM: i.setAll, insM: i.setAll, fondM: i.setAll });
   }
   const inactive = $derived(PRODUCTS.filter(pr => !i[(pr.key + 'On') as 'etfOn']));
-  const contribOf = (pr: Product) => i[(pr.key + 'M') as 'etfM'];
+  const contribOf = (pr: Product) => pr.key === 'kombi' ? i.setAll : i[(pr.key + 'M') as 'etfM'];
+  const avdLead = $derived(A.lead?.key === 'avd' || (A.lead?.key === 'kombi' && (res.kombi?.split.avd ?? 0) > 0));
 
   // --- Szenarien ---
   const ADJUST: Partial<Record<ScenarioId, string>> = { avdCost: 'f-avdCost', insCost: 'f-insEff' };
-  const SHORT: Record<string, string> = { etf: 'ETF', avd: 'AVD', ins: 'Vers.', fond: 'Fonds' };
+  const SHORT: Record<string, string> = { etf: 'ETF', avd: 'AVD', ins: 'Vers.', fond: 'Fonds', kombi: 'Kombi' };
   interface Row { id: ScenarioId | 'base'; label: string; a: Analysis; base: boolean; can: boolean; flip: boolean; unfair: boolean }
   const scenRows = $derived.by<Row[]>(() => {
     const base: Row = { id: 'base', label: 'Eingaben wie oben', a: A, base: true, can: A.canRank, flip: false, unfair: false };
@@ -67,7 +75,7 @@
       const can = A.canRank && s.a.canRank;
       return {
         id: s.id, label: s.label, a: s.a, base: false, can,
-        flip: can && !!s.a.lead && !!A.lead && s.a.lead.key !== A.lead.key,
+        flip: can && !!A.lead && isFlip(A.lead.key, s.a),
         unfair: !s.a.canRank && s.a.refundSpent,
       };
     })];
@@ -122,9 +130,10 @@
       {#each inactive as pr (pr.key)}
         <button class="btn small" type="button" onclick={() => setInputs({ [pr.key + 'On']: true } as Partial<Inputs>)}><Icon name="plus" />{pr.name}</button>
       {/each}
+      {#if !res.kombi}<button class="btn small" type="button" onclick={openKombi} aria-haspopup="dialog"><Icon name="plus" />Kombi</button>{/if}
     </div>
   {/if}
-  {#if avdSoon && V.kind === 'ok' && A.lead?.key === 'avd'}
+  {#if avdSoon && V.kind === 'ok' && avdLead}
     <p class="fine">Das Altersvorsorgedepot startet am {SITE.avdStart}; gerechnet wird vereinfacht ab heute.</p>
   {/if}
   <p class="fine">{p.real ? 'Beträge in heutiger Kaufkraft.' : 'Nominale Beträge (Euro der Zukunft).'} Modellrechnung mit konstanter Rendite, keine Anlageberatung.</p>
@@ -154,7 +163,8 @@
       {#if s.lump > 0}<div class="unit">zzgl. ca. {eurRound(s.lump)} Einmalauszahlung netto</div>{:else}<div></div>{/if}
       <div class="contrib" class:warn={m !== i.setAll} data-testid="contrib-{pr.key}">aus {eur(m)} im Monat{#if m !== i.setAll}<span class="sr-only"> (weicht vom gemeinsamen Beitrag ab)</span>{/if}</div>
       <div class="small">Kapital bei Rentenbeginn ca. {eurRound(A.R(r.capR, A.n))}<br />nach Steuern ca. {eurRound(A.R(r.capNet, A.n))}</div>
-      {#if pr.key === 'avd' && avdSoon}<div class="start">Abschluss voraussichtlich ab {SITE.avdStart} <Info k="avd" /></div>{:else}<div></div>{/if}
+      {#if pr.key === 'kombi'}<div class="start noprint"><button type="button" class="linkish" onclick={openKombi} aria-haspopup="dialog" data-testid="kombi-edit">Kombi bearbeiten</button></div>
+      {:else if pr.key === 'avd' && avdSoon}<div class="start">Abschluss voraussichtlich ab {SITE.avdStart} <Info k="avd" /></div>{:else}<div></div>{/if}
     </article>
   {/each}
 </div>
@@ -226,6 +236,8 @@
     {/if}
   </section>
 {/if}
+
+{#if ninKeys.length}<NotInNumbers {p} keys={ninKeys} />{/if}
 
 <section class="card" aria-labelledby="cum-h">
   <div class="card-head"><h2 id="cum-h">Summe aller Netto-Auszahlungen ab Rentenbeginn</h2></div>

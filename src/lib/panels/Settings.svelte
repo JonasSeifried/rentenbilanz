@@ -119,6 +119,11 @@
       <NumberField layout="row" label="Beitrag (max. 150 gefördert)" value={i.avdM} onchange={v => setInput('avdM', v)} step={10} min={0} unit="€/Monat" info="nebendepot" limits={LIMITS.avdM} />
       <NumberField id="f-avdCost" layout="row" label="Kosten" value={i.avdCost} onchange={v => setInput('avdCost', v)} step={0.1} min={0} unit="% p. a." info="avdKosten" testid="avdCost"
         limits={LIMITS.avdCost} effective={pc(p.avdCost)} />
+      <Switch checked={i.avdStd} onchange={v => setInput('avdStd', v)} label="Standarddepot: Umschichtung vor Rentenbeginn" info="standarddepot" testid="avdStd" id="f-avdStd" />
+      {#if i.avdStd}
+        <NumberField id="f-avdSafe" layout="row" label="Rendite sichere Anlage" value={i.avdSafe} onchange={v => setInput('avdSafe', v)} step={0.5} unit="% p. a." info="standarddepot" testid="avdSafe"
+          limits={LIMITS.avdSafe} effective={pc(p.avdSafe)} />
+      {/if}
       <Switch checked={i.reinvest} onchange={v => setInput('reinvest', v)} label="Zusätzliche Steuererstattung in ETF anlegen" info="reinvest" testid="reinvest" />
       <p class="hint">Kinder und Berufseinsteigerbonus: oben unter „Deine Situation“.</p>
     </section>
@@ -136,7 +141,7 @@
       <h3 id="s-fond"><span class="key" style:background="var(--s4)"></span>Aktiver Fonds</h3>
       {@render offNote('fondOn')}
       <NumberField layout="row" label="Beitrag" value={i.fondM} onchange={v => setInput('fondM', v)} step={10} min={0} unit="€/Monat" limits={LIMITS.fondM} />
-      <NumberField layout="row" label="Ausgabeaufschlag" value={i.fondAA} onchange={v => setInput('fondAA', v)} step={0.5} min={0} unit="%" info="ausgabeaufschlag" limits={LIMITS.fondAA} effective={pc(p.fondAA)} />
+      <NumberField id="f-fondAA" layout="row" label="Ausgabeaufschlag" value={i.fondAA} onchange={v => setInput('fondAA', v)} step={0.5} min={0} unit="%" info="ausgabeaufschlag" limits={LIMITS.fondAA} effective={pc(p.fondAA)} />
       <NumberField layout="row" label="Laufende Kosten" value={i.fondTer} onchange={v => setInput('fondTer', v)} step={0.1} min={0} unit="% p. a." info="ter" limits={LIMITS.fondTer} effective={pc(p.fondTer)} />
     </section>
   </div>
@@ -177,8 +182,8 @@
   </details>
   <details>
     <summary>Altersvorsorgedepot</summary>
-    <p>Gesetz vom 26.05.2026 (BGBl. 2026 I Nr. 156), gilt ab 2027: 50 % Zulage auf die ersten 360 €, 25 % bis 1.800 € (max. 540 €), min. 120 € Eigenbeitrag; Kinderzulage 1:1 bis 300 € je Kind; Berufseinsteigerbonus 200 € unter 25 (zählt nicht in der Günstigerprüfung); Sonderausgabenabzug (Beitrag + Zulagen) mit Günstigerprüfung; Auszahlung voll steuerpflichtig, ohne Fünftelregelung; Auszahlplan bis mind. 85, gerechnet als jährlich Restkapital ÷ Restlaufzeit (gesetzlich reicht es, mindestens 80 % davon zu zahlen und die Rate spätestens alle 3 Jahre neu festzulegen); Rentenbeginn 65–70 (früher nur zusammen mit einer früheren gesetzlichen Altersrente, nicht gerechnet).</p>
-    <p>Beiträge über 150 € im Monat und Beiträge ohne Förderberechtigung gehen in ein ETF-Nebendepot (gleiche TER wie das ETF-Depot). Ins AVD dürften bis 6.840 € im Jahr ungefördert fließen; diese Variante ist nicht gerechnet. Vereinfacht wird ab heute statt ab 01.01.2027 gerechnet, und Zulagen werden sofort zum Jahresende gutgeschrieben (in echt 1–2 Jahre später).</p>
+    <p>Gesetz vom 26.05.2026 (BGBl. 2026 I Nr. 156), gilt ab 2027: 50 % Zulage auf die ersten 360 €, 25 % bis 1.800 € (max. 540 €), min. 120 € Eigenbeitrag; Kinderzulage 1:1 bis 300 € je Kind; Berufseinsteigerbonus 200 € unter 25 (zählt nicht in der Günstigerprüfung); Sonderausgabenabzug (Beitrag + Zulagen) mit Günstigerprüfung; Auszahlung aus dem geförderten Teil voll steuerpflichtig, ohne Fünftelregelung; Auszahlplan bis mind. 85, gerechnet als jährlich Restkapital ÷ Restlaufzeit (gesetzlich reicht es, mindestens 80 % davon zu zahlen und die Rate spätestens alle 3 Jahre neu festzulegen); Rentenbeginn 65–70 (früher nur zusammen mit einer früheren gesetzlichen Altersrente, nicht gerechnet).</p>
+    <p>Beiträge über 1.800 € im Jahr bleiben bis zum Höchstbetrag von 6.840 € im Jahr ungefördert im AVD (AVD-Kosten, keine Steuer in der Ansparphase; bei Auszahlung ist nur der Gewinnanteil steuerpflichtig, nach 12 Jahren Laufzeit zur Hälfte). Für freiwillig gesetzlich Versicherte zählt die ganze Auszahlung zur Krankenversicherung (wie bei privaten Renten, BSG B 12 KR 28/08 R; für das AVD noch nicht entschieden). Was über 6.840 € hinausgeht, und Beiträge aus Jahren ohne Förderberechtigung (ob sie ungefördert ins AVD dürfen, ist offen) liegen in einem ETF-Nebendepot (gleiche TER wie das ETF-Depot). Vereinfacht wird ab heute statt ab 01.01.2027 gerechnet, und Zulagen werden sofort zum Jahresende gutgeschrieben (in echt 1–2 Jahre später).</p>
   </details>
   <details>
     <summary>Heutige Kaufkraft</summary>
@@ -186,7 +191,7 @@
   </details>
   <details>
     <summary>Erbfall</summary>
-    <p>Altersvorsorgedepot: Ehepartner können das Guthaben förderunschädlich auf einen eigenen Vertrag übertragen; die spätere Einkommensteuer darauf ist grob abgezogen. Alle anderen Erben: Zulagen und Steuervorteile werden zurückgefordert (§ 93 EStG). Die Erträge versteuern die Erben mit ihrem eigenen Steuersatz (§ 22 Nr. 5 S. 3 EStG; BMF-Schreiben vom 05.10.2023, Rn. 229 f.), nur zur Hälfte, wenn der Erbe mindestens 62 ist und der Vertrag mindestens 12 Jahre lief. Nach Rentenbeginn anteilig zum Restguthaben. Restrenten aus der Garantiezeit der Versicherung versteuern die Erben ebenfalls selbst.</p>
+    <p>Altersvorsorgedepot: Ehepartner können das Guthaben förderunschädlich auf einen eigenen Vertrag übertragen; die spätere Einkommensteuer darauf ist grob abgezogen. Alle anderen Erben: Zulagen und Steuervorteile werden zurückgefordert (§ 93 EStG). Die Erträge versteuern die Erben mit ihrem eigenen Steuersatz (§ 22 Nr. 5 S. 3 EStG; BMF-Schreiben vom 05.10.2023, Rn. 229 f.), nur zur Hälfte, wenn der Erbe mindestens 62 ist und der Vertrag mindestens 12 Jahre lief. Nach Rentenbeginn anteilig zum Restguthaben. Der ungeförderte Teil (Beiträge über 1.800 € im Jahr) geht ohne Rückforderung an alle Erben; sie versteuern nur dessen Gewinn (§ 22 Nr. 5 S. 2 Buchst. c EStG), beim Ehepartner ebenso. Restrenten aus der Garantiezeit der Versicherung versteuern die Erben ebenfalls selbst.</p>
   </details>
   <details>
     <summary>Versicherung</summary>

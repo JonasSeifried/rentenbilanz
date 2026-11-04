@@ -13,7 +13,7 @@ import { scenarioList, type ScenarioId } from './analyze';
 import type { EngineOptions } from './fixes';
 import { combo, comboStats, emptySplit, partStats, splitSum, SPLIT_KEYS, type ComboResult, type ComboSetup, type ComboStats, type Split } from './combo';
 import {
-  bestSplit, better, comboSig, evaluate, objective, pureStrategies, TIE_EUR,
+  bestSplit, better, comboSig, evaluate, objective, pureStrategies, TIE_EUR, tieTol,
   type BestSplitResult, type Cand, type CurvePoint, type PureStrategy,
 } from './search';
 
@@ -32,8 +32,10 @@ export interface BestView {
   split: Split; stats: ComboStats; value: number; curve: CurvePoint[];
   /** Deine (nicht auf dem 10-€-Raster liegende) Aufteilung ist besser als das Raster-Optimum und wird als beste gezeigt. */
   fromUser: boolean;
-  /** Deine Aufteilung ist vollständig und höchstens TIE_EUR schlechter als die beste. */
+  /** Deine Aufteilung ist vollständig und höchstens tieTol schlechter als die beste (gleichwertig). */
   userIsBest: boolean;
+  /** Rechnerisches Maximum, wenn die genannte Aufteilung eine gleichwertige einfachere ist (siehe BestSplitResult.top). */
+  top: { split: Split; stats: ComboStats; value: number } | null;
   /** Abstand beste − deine (Summe bis H, heutige Kaufkraft, ≥ 0); null ohne vollständige Aufteilung. */
   deltaUser: number | null;
   /** Abstand im Monatsdurchschnitt (Anzeige-Einheit); null ohne vollständige Aufteilung. */
@@ -113,12 +115,16 @@ export function analyzeCombo(p: Params, setup: ComboSetup, best?: BestSplitResul
     if (!best || best.sig !== sig) bestView = 'pending';
     else {
       let b: Cand & { curve: CurvePoint[] } = { split: best.split, stats: best.stats, value: best.value, curve: best.curve };
+      let top: BestView['top'] = best.top ? { split: best.top.split, stats: best.top.stats, value: best.top.value } : null;
+      const max = top?.value ?? b.value;
       let fromUser = false;
-      if (user && complete && user.value > b.value + TIE_EUR) { b = { split: { ...split }, stats: user.stats, value: user.value, curve: best.curve }; fromUser = true; }
-      const userIsBest = !!user && complete && user.value >= b.value - TIE_EUR;
+      // Deine Aufteilung (nicht auf dem 10-€-Raster) übertrifft selbst das rechnerische Maximum um mehr als die Toleranz.
+      if (user && complete && user.value > max + tieTol(max)) { b = { split: { ...split }, stats: user.stats, value: user.value, curve: best.curve }; fromUser = true; top = null; }
+      const ref = top ? Math.max(b.value, top.value) : b.value;
+      const userIsBest = !!user && complete && user.value >= ref - tieTol(ref);
       const mixGain = bestPure ? Math.max(0, b.value - bestPure.value) : 0;
       bestView = {
-        ...b, fromUser, userIsBest,
+        ...b, fromUser, userIsBest, top,
         deltaUser: user && complete ? Math.max(0, b.value - user.value) : null,
         deltaUserMonthly: user && complete ? b.stats.avgMonthly - user.stats.avgMonthly : null,
         mixGain, isMix: mixGain > TIE_EUR,
@@ -143,7 +149,7 @@ export interface RobustRow {
   bestPure: PureStrategy | null;
   /** Die beste Aufteilung der Ausgangslage, in diesem Szenario gerechnet. */
   baseInScenario: { split: Split; stats: ComboStats; value: number } | null;
-  /** In diesem Szenario ist eine andere Aufteilung um mehr als TIE_EUR besser als die beste der Ausgangslage. */
+  /** In diesem Szenario ist eine andere Aufteilung um mehr als tieTol besser als die beste der Ausgangslage. */
   flip: boolean;
 }
 
@@ -169,7 +175,7 @@ export function* robustRows(p: Params, setup: ComboSetup, baseBest?: Split | nul
     const user = splitSum(split) > 0 ? evaluate(s.p, split, opts).stats : null;
     const baseIn = base ? evaluate(s.p, base, opts) : null;
     const same = !!base && SPLIT_KEYS.every(k => Math.abs(base[k] - b.split[k]) < SPLIT_EPS);
-    const flip = !!baseIn && !same && b.value > baseIn.value + TIE_EUR;
+    const flip = !!baseIn && !same && b.value > baseIn.value + tieTol(b.value);
     yield {
       id: s.id, label: s.label, p: s.p, user,
       best: { split: b.split, stats: b.stats, value: b.value }, bestPure,
