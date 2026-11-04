@@ -63,6 +63,12 @@ export interface ComboResult {
   incTax: number[]; abgTax: number[]; kv: number[];
   /** Die BBG hat in mindestens einem Jahr mehrere Produkte gemeinsam gedeckelt (nur mit kvSharedRoom). */
   kvClipped: boolean;
+  /**
+   * Erbwert aller Teile zusammen (nominal), gemeinsam versteuert: eine Einkommensteuer der Erben im Todesjahr, ein
+   * Sparer-Pauschbetrag für alle Depots. heirMarried nur mit AVD-Teil (Ehepartner übernimmt das geförderte Vermögen).
+   */
+  heir: (idx: number) => HeirValue;
+  heirMarried?: (idx: number) => HeirValue;
   T: number; n: number; tH: number;
   I: (t: number) => number;
 }
@@ -492,10 +498,72 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     const joint = V - Math.max(0, G * 0.7 - 1000) * 0.26375;
     capNet += joint - capFunds.reduce((a, f) => a + sellNet(f, n), 0);
   }
+  // ---------- 8) Erbfall gemeinsam (docs/kombi-modus.md, Abschnitt „Erbfall“) ----------
+  // Tod zu Beginn von Jahr idx; die Erben (eine Person, Einkommen p.incHeir) bekommen alles im selben Jahr.
+  //  - Einkommensteuer der Erben im Jahr idx in EINEM Tarif: AVD-Erträge bei schädlicher Verwendung (§ 22 Nr. 5 S. 3,
+  //    § 93 Abs. 1 S. 2 EStG; BMF 05.10.2023 Rn. 229 f.), Gewinn des ungeförderten AVD-Teils (§ 22 Nr. 5 S. 2 c) und der
+  //    Ertragsanteil der ersten Restrente der Versicherung (§ 22 Nr. 1 S. 3 a bb). Spätere Restrenten wie im Einzelfall.
+  //  - Depots (ETF, aktiver Fonds, AVD-Nebendepot, ETF aus der Kapitalauszahlung): Die Erben übernehmen die
+  //    Anschaffungskosten (§ 20 Abs. 4 S. 6 EStG, § 19 Abs. 1 InvStG); gerechnet als gemeinsamer Verkauf im Jahr idx mit
+  //    EINEM Sparer-Pauschbetrag (§ 20 Abs. 9 EStG), Gewinne und Verluste verrechnet.
+  //  - Versicherung vor Rentenbeginn: Todesfallleistung einkommensteuerfrei (§ 20 Abs. 1 Nr. 6 erfasst nur Erlebensfall
+  //    und Rückkauf).
+  // Ehepartner: gefördertes AVD-Vermögen ohne Rückzahlung auf dessen Vertrag (§ 93 Abs. 1 S. 4 c), spätere Steuer grob
+  // geschätzt (latentTax wie im Einzelfall), der Rest wie oben.
+  // Ohne Fix heirTax (Original: Steuer mit dem Einkommen der verstorbenen Person) gibt es keine gemeinsame Steuer der
+  // Erben; dann ist der Erbwert die Summe der Teile, jeder für sich versteuert.
+  const latentTaxO = (V: number, t: number) => { const yrs = Math.max(1, tEnd - Math.max(t, n)); return yrs * taxAdd(p.incRet, V / yrs, t); };
+  const heirJoint = (idx: number, married: boolean): HeirValue => {
+    if (!F.heir) {
+      let v = 0; for (const r of list) v += (married && r.heirMarried ? r.heirMarried : r.heir)(idx).val;
+      return { val: v, note: 'Teile einzeln versteuert' };
+    }
+    let gross = 0, X = 0, back = 0, lt = 0, halbAvd = false, rentYears = 0, insFree = 0;
+    const bits: string[] = [];
+    if (avd) {
+      const a = avd, V = a.vals[idx], C0 = a.vals[n];
+      const gU = (half: boolean) => Math.max(0, a.valsU[idx] - a.basesU[idx]) * (half ? 0.5 : 1);
+      halbAvd = p.heirHalf && idx >= 12;
+      if (married) { lt = latentTaxO(V, idx); gross += V - lt + a.valsU[idx]; X += gU(halbAvd); }
+      else {
+        let ownR: number, zulR: number;
+        if (idx <= n) { back = a.foer[idx]; ownR = a.owns[idx]; zulR = a.zuls[idx]; }
+        else { const f = C0 > 0 ? V / C0 : 0; back = a.foer[n] * f; ownR = a.owns[n] * f; zulR = a.zuls[n] * f; }
+        gross += Math.max(0, V - back) + a.valsU[idx];
+        X += Math.max(0, V - ownR - zulR) * (halbAvd ? 0.5 : 1) + gU(halbAvd);
+      }
+    }
+    if (ins) {
+      if (idx <= n) { insFree = ins.vals[idx] as number; gross += insFree; }
+      else if (!p.insLump) {
+        rentYears = Math.max(0, p.R + p.gz - (p.a0 + idx));
+        const { annual, ea } = ins;
+        if (rentYears > 0) { gross += annual; X += annual * ea; }
+        for (let k = 1; k < rentYears; k++) gross += (annual - taxAdd(p.incHeir, annual * ea, idx + k)) * (p.real ? I(idx) / I(idx + k) : 1);
+      }
+    }
+    const tx = taxAdd(p.incHeir, X, idx);
+    const depots = [fEtf, fFond, fSide, idx > n ? fIns : null].filter((f): f is Fund => !!f);
+    let V = 0, G = 0, minGain = Infinity;
+    for (const f of depots) { const g = f.vals[idx] - f.bases[idx]; V += f.vals[idx]; G += g; if (g < minGain) minGain = g; }
+    const abg = Math.max(0, G * 0.7 - 1000) * 0.26375;
+    const e = (x: number) => eur(Rn(x, idx));
+    if (avd) bits.push(married
+      ? 'AVD ohne Abzug auf einen Vertrag des Ehepartners übertragbar (spätere Einkommensteuer ca. ' + e(lt) + ', grob geschätzt und abgezogen)'
+      : 'AVD-Förderung ' + e(back) + ' zurück');
+    if (tx > 0 || X > 0) bits.push('Einkommensteuer der Erben ' + e(tx) + ' in einem Tarif (' + [avd ? 'AVD-Erträge' + (halbAvd ? ' hälftig' : '') : '', rentYears > 0 ? 'Ertragsanteil der Restrente' : ''].filter(Boolean).join(' und ') + ')');
+    if (depots.length) bits.push('Depots nach Abgeltungsteuer bei Verkauf ' + e(abg) + ' (ein Sparer-Pauschbetrag)');
+    if (ins && idx <= n) bits.push('Versicherung einkommensteuerfrei');
+    if (rentYears > 0) bits.push('Restrente noch ' + rentYears + ' Jahre');
+    return { val: gross - tx + (V - abg), note: 'Gemeinsam versteuert: ' + bits.join('; '), detail: { incomeTax: tx, abgTax: abg, minDepotGain: minGain } };
+  };
+
   return {
     parts, net, own: sum(r => r.own), ownReal: sum(r => r.ownReal), capR: sum(r => r.capR), capNet, cost: 0,
     foerder: sum(r => r.foerder), foerderReal: sum(r => r.foerderReal), lumpNet,
     incTax, abgTax, kv, kvClipped, T, n, tH, I,
+    heir: idx => heirJoint(idx, false),
+    ...(avd ? { heirMarried: (idx: number) => heirJoint(idx, true) } : {}),
   };
 }
 

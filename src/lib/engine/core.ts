@@ -92,7 +92,11 @@ export function readParams(inp: Inputs): Params {
   return p;
 }
 
-export interface HeirValue { val: number; note: string }
+export interface HeirValue {
+  val: number; note: string;
+  /** Nur gemeinsamer Erbwert der Kombi: Einkommensteuer der Erben im Todesjahr, Abgeltungsteuer der Depots, kleinster Depotgewinn. */
+  detail?: { incomeTax: number; abgTax: number; minDepotGain: number };
+}
 
 /** Ergebnis je Produkt. Nicht jedes Produkt hat jedes Feld (wie im Original). */
 export interface ProductResult {

@@ -253,10 +253,50 @@ Laut Prototyp-Messung (Kombi-Design §3) ist Chromium mit 4-facher CPU-Drosselun
 `robustRows()` und `robustSummary()` bleiben als Engine-Funktionen mit Tests erhalten. Die Oberfläche nutzt sie
 derzeit nicht.
 
-## 6. Grenzen
+## 6. Erbfall
 
-- **Kein Erbfall** für Aufteilungen. Ein gemeinsamer Erbwert bräuchte eine gemeinsame Steuer im Todesjahr. Im Tab
-  „Erbfall“ fehlt die Kombi; ein Hinweis sagt das.
+`combo()` liefert `heir(idx)` und, mit AVD-Teil, `heirMarried(idx)` für alle Teile zusammen (Tod zu Beginn von Jahr
+idx, nominal). Der Tab „Erbfall“ zeigt die Kombi wie das AVD in zwei Zeilen („Ehepartner erbt“, „Kinder / Partner
+ohne Trauschein“), ohne AVD-Teil in einer.
+
+| Bestandteil | Behandlung | Quelle |
+|---|---|---|
+| AVD, gefördert (Erben ≠ Ehepartner) | Zulagen und Steuervorteil zurück; Erträge = Guthaben − Beiträge − Zulagen, bei den Erben einkommensteuerpflichtig, hälftig mit `heirHalf` und 12 Jahren Laufzeit | § 93 Abs. 1 S. 1–2, § 22 Nr. 5 S. 3 EStG; BMF 05.10.2023 Rn. 148, 229 f. |
+| AVD, gefördert (Ehepartner) | ohne Rückzahlung auf dessen Vertrag; spätere Steuer grob geschätzt (`latentTax`) | § 93 Abs. 1 S. 4 Buchst. c EStG |
+| AVD, ungefördert (E10) | ohne Rückzahlung; Gewinn bei den Erben einkommensteuerpflichtig | § 22 Nr. 5 S. 2 Buchst. c EStG |
+| Versicherung vor Rentenbeginn | Fondsguthaben einkommensteuerfrei | § 20 Abs. 1 Nr. 6 S. 1 EStG (nur Erlebensfall, Rückkauf) |
+| Versicherung, Leibrente | Restrenten der Garantiezeit, Ertragsanteil bei den Erben | § 22 Nr. 1 S. 3 Buchst. a bb EStG |
+| Depots (ETF, aktiver Fonds, Nebendepot, ETF aus der Kapitalauszahlung) | Erben übernehmen Anschaffungskosten und Vorabpauschalen; Verkauf im Todesjahr | § 20 Abs. 4 S. 6 EStG, § 19 Abs. 1 InvStG |
+
+**Gemeinsam** heißt:
+
+- **Ein Tarif im Todesjahr.** AVD-Erträge (gefördert und ungefördert) und der Ertragsanteil der ersten Restrente
+  zählen zusammen: `taxAdd(incHeir, ΣX, idx)`. Spätere Restrenten werden wie im Einzelfall Jahr für Jahr versteuert.
+- **Ein Sparer-Pauschbetrag** (1.000 €, § 20 Abs. 9 EStG) für den Verkauf aller Depots; Gewinne und Verluste der
+  Depots werden verrechnet (wie `capNet` der Summe).
+- Ohne Fix `heirTax` (Originalpfad, Steuer mit dem Einkommen der verstorbenen Person) gibt es keine gemeinsame Steuer
+  der Erben; dann ist der Erbwert die Summe der Teile.
+
+Der Hinweistext nennt Förderrückzahlung, Einkommensteuer der Erben, Abgeltungsteuer der Depots und die restlichen
+Rentenjahre. `detail` liefert die Steuern als Zahlen. Tests I9 in `tests/combo.test.ts`: Ein Teil ergibt den
+Einzelwert; mehrere Teile ergeben nie mehr als die Teile einzeln, solange kein Depot im Verlust ist (Progression, ein
+Pauschbetrag); ohne `heirTax` die Summe.
+
+Beispiele (Standardwerte, in heutiger Kaufkraft):
+
+| Fall | gemeinsam | Teile einzeln | Ehepartner erbt |
+|---|---|---|---|
+| Tod mit 50, 150 € ETF + 150 € AVD | 127.756 € | 127.908 € | 136.950 € |
+| Tod mit 80, 150 € ETF + 150 € AVD | 115.721 € | 115.805 € | 128.117 € |
+| Tod mit 70, 150 € AVD + 150 € Versicherung (Leibrente, 20 Jahre Garantie) | 168.464 € | 168.560 € | 191.717 € |
+
+Der Unterschied ist klein: ETF und Nebendepot teilen sich einen Pauschbetrag, und Restrente und AVD-Erträge stehen
+im Todesjahr in einem Tarif.
+
+## 7. Grenzen
+
+- **Erbfall:** eine Person als Erbe, Verkauf aller Depots im Todesjahr, keine Fünftelregelung (Abschnitt
+  „Erbfall“, offene Punkte in `docs/abweichungen-vom-original.md`).
 - **Keine Fix-Schalter in der Oberfläche.** Die Kombi-Engine rechnet immer mit allen Korrekturen.
 - Die **Zuordnung je Teil** ist eine Konvention (anteilig); nur die Summe ist eindeutig.
 - **Versicherung:** Kapitalauszahlung oder Leibrente folgt dem Schalter `insLump`. Die Suche schaltet das nicht um.

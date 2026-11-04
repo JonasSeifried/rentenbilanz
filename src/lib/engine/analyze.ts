@@ -51,7 +51,7 @@ export interface Analysis {
 
 /**
  * Kombi als ProductResult: Werte der Teile summiert (vals: null erst, wenn kein Teil mehr einen Wert hat).
- * Kein Erbfall (docs/kombi-modus.md, Grenzen): `heir` liefert nur einen Hinweis, die Oberfläche zeigt die Kombi dort nicht.
+ * Erbfall gemeinsam versteuert (combo.ts, Abschnitt 8): `heir`, mit AVD-Teil auch `heirMarried`.
  */
 export function kombiResult(p: Params, split: Split, opts?: EngineOptions): KombiResult {
   const c = combo(p, split, { ...opts, cost: true });
@@ -66,7 +66,7 @@ export function kombiResult(p: Params, split: Split, opts?: EngineOptions): Komb
   return {
     vals, net: c.net, own: c.own, ownReal: c.ownReal, capR: c.capR, capNet: c.capNet, cost: c.cost,
     foerder: c.foerder, foerderReal: c.foerderReal, payEnd: Math.max(...parts.map(r => r.payEnd)),
-    heir: () => ({ val: 0, note: 'Für die Kombi nicht gerechnet.' }),
+    heir: c.heir, ...(c.heirMarried ? { heirMarried: c.heirMarried } : {}),
     lumpNet: c.lumpNet, ref: avd?.ref, refReal: avd?.refReal,
     lump: c.parts.ins?.lump, lifelong: !!c.parts.ins?.lifelong,
     combo: c, split: { ...split },

@@ -62,7 +62,9 @@ test('Kombi: über „+ Kombi“ zusammenstellen, im Vergleich sehen, bearbeiten
   await page.getByRole('tab', { name: /Rente/ }).click();
   await expect(page.getByTestId('detail-table')).toContainText('Kombi');
   await page.getByRole('tab', { name: /Erbfall/ }).click();
-  await expect(page.getByTestId('heirs-table')).not.toContainText('Kombi');
+  await expect(page.getByTestId('heirs-table')).toContainText('Kombi – Ehepartner erbt');
+  await expect(page.getByTestId('heirs-table')).toContainText('Kombi – Kinder / Partner ohne Trauschein');
+  await expect(page.getByTestId('heirs-table')).toContainText('Gemeinsam versteuert');
   await page.getByRole('tab', { name: /Überblick/ }).click();
 
   await page.reload();

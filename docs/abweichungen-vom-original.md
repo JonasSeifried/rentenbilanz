@@ -429,6 +429,19 @@ allen Produkten. Wirkung Standardwerte, 450 €/Monat, `avdSafe` 2 %: AVD-Kapita
   Laufzeit „mind. 5 Jahre eingezahlt“ und sonst Abgeltungsteuer. Gerechnet wird nach § 22 Nr. 5 S. 2 Buchst. c i. V. m.
   § 20 Abs. 1 Nr. 6 S. 2 EStG (12 Jahre Laufzeit, Leistung nach 62), sonst voller persönlicher Steuersatz. Betrifft nur
   Starts nach etwa 55. Am Gesetzestext bzw. einem BMF-Schreiben zum AVD prüfen.
+- **Erbfall der Kombi (gemeinsam versteuert, `docs/kombi-modus.md` Abschnitt 6).** Gerechnet nach § 93 Abs. 1,
+  § 22 Nr. 5 S. 2 und 3, § 20 Abs. 1 Nr. 6, Abs. 4 S. 6, Abs. 9 EStG und § 19 Abs. 1 InvStG (geprüft am 04.11.2026,
+  gesetze-im-internet.de). Offen bzw. vereinfacht:
+  - **Fünftelregelung (§ 34 EStG)** für die AVD-Auszahlung an die Erben: nicht gerechnet. § 22 Nr. 5 EStG ordnet
+    § 34 Abs. 1 ausdrücklich nur für die Abfindung einer Kleinbetragsrente an (§ 93 Abs. 3); eine Aussage für die
+    schädliche Verwendung im Todesfall habe ich nicht gefunden. Gilt auch für das AVD allein.
+  - **Eine Person als Erbe.** Mehrere Erben hätten je einen Tarif und einen Sparer-Pauschbetrag; das senkt die
+    Steuer. Ebenso nicht gerechnet: eigene Kapitalerträge der Erben, die den Pauschbetrag schon nutzen.
+  - **Ehepartner:** Im Todesjahr ist meist noch Zusammenveranlagung möglich (Pauschbetrag 2.000 €, § 20 Abs. 9 S. 2
+    EStG, Splittingtarif). Gerechnet sind 1.000 € und `incHeir` im Grundtarif, wie im Einzelfall.
+  - **Verkauf im Todesjahr.** Behalten die Erben die Depots, zahlen sie die Steuer erst später; der Erbwert ist dann
+    eher zu niedrig. Die Auszahlung des AVD wird im Todesjahr angenommen.
+  - **Letzte Steuererklärung der verstorbenen Person** (Einkünfte bis zum Tod) ist nicht gerechnet, wie im Einzelfall.
 - **E2 und E6 für das AVD:** Ein AVD-spezifisches BMF-Schreiben gibt es noch nicht. Übertragen sind die Aussagen
   zur Riester-Rente, weil die Normen dieselben sind. Ob Kassen die Vorabpauschale bei Rentnern tatsächlich
   erheben, ist in der Praxis uneinheitlich.

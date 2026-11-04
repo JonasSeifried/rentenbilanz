@@ -18,8 +18,14 @@
   const heirRows = $derived.by<HeirRow[]>(() => {
     const out: HeirRow[] = [];
     A.active.forEach(pr => {
-      if (pr.key === 'kombi') return; // kein Erbfall für die Kombi (docs/kombi-modus.md, Grenzen)
-      if (pr.key === 'avd') {
+      if (pr.key === 'kombi') {
+        // Alle Teile gemeinsam versteuert (combo.ts, Abschnitt 8); mit AVD-Teil wie beim AVD zwei Zeilen.
+        const k = res.kombi!;
+        if (k.heirMarried) {
+          out.push({ name: 'Kombi – Ehepartner erbt', short: 'Kombi verh.', color: pr.color, f: x => k.heirMarried!(x) });
+          out.push({ name: 'Kombi – Kinder / Partner ohne Trauschein', short: 'Kombi ledig', color: pr.color, dash: true, f: x => k.heir(x) });
+        } else out.push({ name: pr.name, short: pr.short, color: pr.color, dash: true, f: x => k.heir(x) });
+      } else if (pr.key === 'avd') {
         out.push({ name: 'AVD – Ehepartner erbt', short: 'AVD verh.', color: pr.color, f: k => res.avd!.heirMarried!(k) });
         out.push({ name: 'AVD – Kinder / Partner ohne Trauschein', short: 'AVD ledig', color: pr.color, dash: true, f: k => res.avd!.heir(k) });
       } else out.push({ name: pr.name, short: pr.short, color: pr.color, f: k => res[pr.key as ProductKey]!.heir(k) });
@@ -52,7 +58,7 @@
     <section class="card" aria-labelledby="heir-h">
       <div class="card-head">
         <h2 id="heir-h">Was die Erben bekommen</h2>
-        <p class="hint">Bei Tod mit {p.deathAge}, {p.deathAge < p.R ? 'vor' : 'nach'} Rentenbeginn. Ohne Erbschaftsteuer.{#if res.kombi} Deine Kombi ist hier nicht gerechnet; ihre Teile siehst du einzeln, wenn die Produkte oben gewählt sind.{/if}</p>
+        <p class="hint">Bei Tod mit {p.deathAge}, {p.deathAge < p.R ? 'vor' : 'nach'} Rentenbeginn. Ohne Erbschaftsteuer.{#if res.kombi} Deine Kombi ist gemeinsam versteuert: <Info k="erbfallKombi">Erbfall bei einer Kombi</Info>.{/if}</p>
       </div>
       <div class="table-scroll" {@attach scrollRegion('Tabelle: Was die Erben bekommen')}>
         <table class="heirs" data-testid="heirs-table">

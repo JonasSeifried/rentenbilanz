@@ -191,6 +191,14 @@ export const GLOSSARY = {
       'Erben alle anderen, gilt das AVD als „schädlich verwendet“ (§ 93 EStG): Zulagen und Steuervorteil gehen zurück, die Erträge (Guthaben − eigene Beiträge − Zulagen) werden von den Erben mit ihrem eigenen Steuersatz versteuert (§ 22 Nr. 5 S. 3 EStG).',
     ],
   },
+  erbfallKombi: {
+    title: 'Erbfall bei einer Kombi',
+    text: [
+      'Die Erben bekommen alle Teile zusammen und versteuern sie gemeinsam: AVD-Erträge, der Gewinn des ungeförderten AVD-Teils und die erste Restrente der Versicherung zählen im Todesjahr in einem Steuertarif. Das kann mehr Steuer kosten als bei jedem Teil für sich.',
+      'Die Depots (ETF, aktiver Fonds, AVD-Nebendepot) übernehmen die Erben mit den ursprünglichen Anschaffungskosten (§ 20 Abs. 4 S. 6 EStG, § 19 Abs. 1 InvStG). Gerechnet ist ein Verkauf im Todesjahr mit einem Sparer-Pauschbetrag von 1.000 € für alle Depots zusammen. Gerechnet ist eine Person als Erbe; mehrere Erben hätten jeder einen eigenen Tarif und Pauschbetrag.',
+      'Die Versicherung zahlt vor Rentenbeginn das Fondsguthaben aus, ohne Einkommensteuer (§ 20 Abs. 1 Nr. 6 EStG erfasst nur den Erlebensfall und den Rückkauf).',
+    ],
+  },
   heirHalf: {
     title: 'Erbe mindestens 62',
     text: ['Die Erben versteuern die Erträge aus dem AVD selbst, mit ihrem eigenen Steuersatz. Nur zur Hälfte, wenn der Erbe bei der Auszahlung mindestens 62 Jahre alt ist und der Vertrag mindestens 12 Jahre lief (BMF-Schreiben vom 05.10.2023, Rn. 148 und 229 f., zur Riester-Rente; für das AVD gilt dieselbe Vorschrift).'],

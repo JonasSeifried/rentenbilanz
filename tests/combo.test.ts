@@ -347,3 +347,78 @@ describe('readCombo', () => {
     expect(r.split).toEqual({ etf: 0, avd: 0, ins: 0, fond: 0 });
   });
 });
+
+describe('I9 – Erbfall gemeinsam versteuert', () => {
+  const sepSum = (c: ComboResult, idx: number, married: boolean) =>
+    SPLIT_KEYS.filter(k => c.parts[k]).reduce((a, k) => { const r = c.parts[k]!; return a + (married && r.heirMarried ? r.heirMarried : r.heir)(idx).val; }, 0);
+
+  it('ein Teil: gemeinsamer Erbwert = Erbwert des Teils (jedes Todesjahr, auch Ehepartner)', () => {
+    let n = 0;
+    for (const inp of SCENARIOS.slice(0, NAMED.length + 100)) {
+      const p0 = readParams(inp);
+      for (const k of SPLIT_KEYS) {
+        const p = { ...p0, on: only(k) }, amount = p[M[k]] as number;
+        if (!(amount > 0)) continue;
+        const c = combo(p, S({ [k]: amount }));
+        expect(!!c.heirMarried, k).toBe(k === 'avd');
+        for (let i = 0; i <= c.T; i++) {
+          const a = c.heir(i).val, b = c.parts[k]!.heir(i).val;
+          if (!relClose(a, b, 1e-9, 1e-6)) expect.fail(`${JSON.stringify(inp)} ${k} heir(${i}): gemeinsam ${a}, Teil ${b}`);
+          if (c.heirMarried) expect(relClose(c.heirMarried(i).val, c.parts.avd!.heirMarried!(i).val, 1e-9, 1e-6)).toBe(true);
+          n++;
+        }
+      }
+    }
+    expect(n).toBeGreaterThan(10000);
+  });
+
+  it('mehrere Teile: gemeinsam nie mehr als einzeln, solange kein Depot im Verlust ist (Progression, ein Pauschbetrag)', () => {
+    // Verluste (Kosten über der Rendite, Ausgabeaufschlag des aktiven Fonds) darf die gemeinsame Rechnung mit Gewinnen
+    // anderer Depots verrechnen; deshalb nur Szenarien mit positiver Rendite nach Kosten und ohne aktiven Fonds.
+    const SPLIT3 = S({ etf: 120, avd: 90, ins: 60 });
+    let hits = 0, less = 0;
+    for (const inp of SCENARIOS) {
+      const p = { ...readParams(inp), on: ALL_ON };
+      if (!(p.g - p.etfTer > 0.001 && p.gPay - p.etfTer > 0.001)) continue;
+      const c = combo(p, SPLIT3);
+      for (let i = 1; i <= c.T; i += 3) {
+        const joint = c.heir(i).val, sep = sepSum(c, i, false), jm = c.heirMarried!(i).val, sm = sepSum(c, i, true);
+        hits++;
+        // Depots im Verlust darf die gemeinsame Rechnung mit Gewinnen verrechnen. Kleine Verluste entstehen auch ohne
+        // Kosten: Die Steuer auf die Vorabpauschale senkt Wert und Anschaffungskosten anteilig, danach steigen diese um die
+        // volle Vorabpauschale. Solche Jahre auslassen.
+        if (c.heir(i).detail!.minDepotGain < 0) continue;
+        const tol = 1e-6;
+        if (joint > sep + tol || jm > sm + tol) expect.fail(`${JSON.stringify(inp)} idx ${i}: gemeinsam ${joint}/${jm} > einzeln ${sep}/${sm}`);
+        if (joint < sep - 1) less++;
+      }
+    }
+    expect(hits).toBeGreaterThan(2000);
+    expect(less).toBeGreaterThan(500);
+  });
+
+  it('ohne heirTax (Originalpfad): Summe der Teile', () => {
+    const p = { ...readParams({ ...DEFAULTS, deathAge: 75 }), on: ALL_ON }, c = combo(p, MIX, { fixes: NO_FIXES });
+    for (let i = 0; i <= c.T; i++) expect(c.heir(i).val).toBe(sepSum(c, i, false));
+  });
+
+  it('Standardwerte, 150 € ETF + 150 € AVD, Tod mit 50: ein Pauschbetrag, Hinweis nennt die Bestandteile', () => {
+    const p = { ...readParams({ ...DEFAULTS, deathAge: 50 }), on: ALL_ON }, idx = 50 - p.a0;
+    const c = combo(p, S({ etf: 150, avd: 150 }));
+    const joint = c.heir(idx), sep = sepSum(c, idx, false);
+    expect(joint.val).toBeLessThan(sep); // ETF und Nebendepot teilen sich einen Pauschbetrag
+    expect(joint.note).toMatch(/^Gemeinsam versteuert: AVD-Förderung .* zurück; Einkommensteuer der Erben .* in einem Tarif \(AVD-Erträge\); Depots nach Abgeltungsteuer bei Verkauf .* \(ein Sparer-Pauschbetrag\)$/);
+    expect(c.heirMarried!(idx).note).toMatch(/^Gemeinsam versteuert: AVD ohne Abzug auf einen Vertrag des Ehepartners übertragbar/);
+  });
+
+  it('Leibrente und AVD nach Rentenbeginn: AVD-Erträge und erste Restrente in einem Tarif', () => {
+    const p = { ...readParams({ ...DEFAULTS, insLump: false, gz: 20, deathAge: 70, incHeir: 30000 }), on: ALL_ON }, idx = 70 - p.a0;
+    const c = combo(p, S({ avd: 150, ins: 150 }));
+    const joint = c.heir(idx), sep = sepSum(c, idx, false);
+    expect(joint.note).toContain('(AVD-Erträge und Ertragsanteil der Restrente)');
+    expect(joint.note).toContain('Restrente noch 17 Jahre');
+    expect(joint.val).toBeLessThan(sep); // Progression
+    expect(sep - joint.val).toBeLessThan(0.05 * sep);
+  });
+});
+
