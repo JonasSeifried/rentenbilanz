@@ -11,7 +11,7 @@
 // Spiegel der Einzelrechnung: Jede Formel ist aus engine.ts übernommen (Stand mit den Korrekturen aus fixes.ts),
 // in derselben Reihenfolge der Gleitkomma-Operationen. Mit nur einem Produkt fällt jede Aufteilung auf den
 // ursprünglichen Ausdruck zurück (x·(c/c) = x, max(0, x − f·(x/x)) = max(0, x − f)), deshalb gilt
-// combo(p, {k: Betrag}) === model(p).res[k] bitgenau (tests/combo.test.ts, I1) – für jede Teilmenge der Fixes.
+// combo(p, {k: Betrag}) === model(p).res[k] bitgenau (tests/combo.test.ts, I1) – ohne neue R-Fixes.
 // engine.ts ist nur noch Referenz des Originals. Neue Rechnung nur hier, abschaltbar; abgeschaltet bitgleich (I1).
 //
 // Die Option `fixes` gibt es nur, damit I1 auch den Originalpfad prüfen kann. Die App ruft immer ohne Optionen,
@@ -182,6 +182,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     kvDeduct: fx.has('kvDeductible'), // R1
     small: fx.has('avdSmallContribution'), // R6
     round: fx.has('taxRounding'),    // R8
+    vpSale: fx.has('vpTaxSale'),     // R2
   };
   const T = 100 - p.a0, n = p.R - p.a0, tH = p.H - p.a0;
   const I = (t: number) => Math.pow(1 + p.infl, t);
@@ -400,8 +401,20 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       const f = funds[i];
       if (f.vp >= 0) {
         const tx = s2.taxed[i] * 0.26375;
-        if (tx > 0) { f.B *= (f.V - tx) / f.V; f.V -= tx; f.abg[t] += tx; }
-        f.B += f.vp;
+        if (F.vpSale) {
+          // Die angesetzte VP mindert auch den Gewinn der zur Steuerzahlung verkauften Anteile (§ 19 InvStG).
+          f.B += f.vp;
+          if (tx > 0) {
+            const q = Math.max(0, (f.V - f.B) / f.V);
+            // S − Steuer(S) = VP-Steuer; bei positiver VP-Steuer ist der Pauschbetrag ausgeschöpft.
+            const sale = tx / (1 - q * f.tf * 0.26375);
+            f.B *= (f.V - sale) / f.V; f.V -= sale; f.abg[t] += sale;
+            if (!accum && t < f.tEnd) f.kvBase += q * sale * (F.kvInv ? f.tf : 1);
+          }
+        } else {
+          if (tx > 0) { f.B *= (f.V - tx) / f.V; f.V -= tx; f.abg[t] += tx; }
+          f.B += f.vp;
+        }
         if (F.kvInv && !accum && t < f.tEnd) f.kvBase += f.tf * f.vp; // Vorabpauschale in der Rentenphase (E6)
       }
       if (f.kvBase > 0) {

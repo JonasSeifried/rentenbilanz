@@ -38,7 +38,7 @@ Für die Browser-Tests einmalig: `npx playwright install chromium webkit`.
 
 ## Wichtig beim Ändern
 
-- **Engine:** Gerechnet wird nur in `combo.ts`. `tests/golden.test.ts` vergleicht `analyze()` (also `combo.ts` ohne Korrekturen) und die Referenz `engine.ts` mit `legacy/index.html` (29 benannte und 300 Zufallsszenarien); `tests/combo.test.ts` (I1) prüft `combo.ts` mit einem Teil und den historischen E-Fixes bitgenau gegen `engine.ts`. Neue R-Fixes haben gezielte Tests in `tests/review-fixes.test.ts`. Neue Rechnung (z. B. Umschichtung) nur in `combo.ts`, abschaltbar, damit beide Tests im Standard bitgleich bleiben. Rechtliche Änderungen bewusst machen und dokumentieren.
+- **Engine:** Gerechnet wird nur in `combo.ts`. `tests/golden.test.ts` vergleicht `analyze()` (also `combo.ts` ohne Korrekturen) und die Referenz `engine.ts` mit `legacy/index.html` (29 benannte und 300 Zufallsszenarien); `tests/combo.test.ts` (I1) prüft `combo.ts` mit einem Teil und den historischen E-Fixes bitgenau gegen `engine.ts`. Neue R-Fixes haben gezielte Tests in `tests/review-fixes.test.ts`. Neue Rechnung (z. B. Umschichtung) nur in `combo.ts`, abschaltbar, damit der historische Referenzpfad bitgleich bleibt. Rechtliche Änderungen bewusst machen und dokumentieren.
 - **Standardwerte** (`DEFAULTS` in `inputs.ts`) dürfen sich ändern; geteilte Links bleiben gültig, weil sie gegen eine eingefrorene Basis kodiert sind (`link.ts`, `LINK_VERSION`).
 - **Rechtsstand und Prüfdatum** stehen in `src/lib/site.ts` und werden im Kopf, im Druck und in der Fußzeile angezeigt.
 

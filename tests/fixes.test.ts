@@ -356,13 +356,13 @@ describe('Snapshots mit ALL_FIXES (aktuelle Standardwerte)', () => {
     return { lead: a.lead?.key, ...Object.fromEntries(a.active.map(pr => [pr.key, Math.round(a.stats[pr.key]!.cumH)])) };
   };
   it('Default mit nominaler Tarifrundung (R8)', () => {
-    expect(snap({})).toEqual({ lead: 'avd', etf: 153730, avd: 174868, ins: 127324 });
+    expect(snap({})).toEqual({ lead: 'avd', etf: 152506, avd: 174850, ins: 127222 });
   });
   it('DK mit KV-Sonderausgabenabzug (R1)', () => {
-    expect(snap({ kvOn: true })).toEqual({ lead: 'etf', etf: 141550, avd: 140953, ins: 104873 });
+    expect(snap({ kvOn: true })).toEqual({ lead: 'avd', etf: 140049, avd: 140926, ins: 104712 });
   });
   it('High mit KV-Sonderausgabenabzug (R1)', () => {
-    expect(snap({ ...HIGH, kvRate: 21.1 })).toEqual({ lead: 'etf', etf: 334909, avd: 316366, ins: 264856 });
+    expect(snap({ ...HIGH, kvRate: 21.1 })).toEqual({ lead: 'etf', etf: 331567, avd: 316189, ins: 264532 });
   });
 });
 

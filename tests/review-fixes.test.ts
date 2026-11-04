@@ -104,6 +104,50 @@ describe('R1 – gemeinsamer KV/PV-Sonderausgabenabzug', () => {
   });
 });
 
+describe('R2 – Vorabpauschale aus einem Anteilsverkauf finanzieren', () => {
+  it('erster Sparjahrgang: Verkaufserlös deckt VP-Steuer und eigene Gewinnsteuer exakt', () => {
+    const p = P({ etfTer: 0, g: 10, basis: 10 });
+    const c = combo(p, S({ etf: 10000 })), f = c.parts.etf!;
+    // Unabhängige Monats-Cashflows des ersten Jahres, vor jeglicher Steuer.
+    let gross = 0;
+    for (let month = 1; month <= 12; month++) gross += 10000 * Math.pow(1.1, (13 - month) / 12);
+    const own = 120000, vp = Math.min(65000 * .1 * .7, gross - own);
+    const vpTax = Math.max(0, vp * .7 - 1000) * .26375;
+    const q = (gross - own - vp) / gross;
+    const sale = gross - f.vals[1]!;
+    expect(sale).toBeGreaterThan(vpTax);
+    expect(sale - sale * q * .7 * .26375).toBeCloseTo(vpTax, 7);
+    expect(f.abgTax[0]).toBeCloseTo(sale, 7);
+    // Bei Tod nach dem ersten Sparjahr bleibt die nach dem Steuerverkauf verbliebene Basis bestehen.
+    const basis = (own + vp) * (1 - sale / gross);
+    const heir = f.vals[1]! - Math.max(0, (f.vals[1]! - basis) * .7 - 1000) * .26375;
+    expect(f.heir(1).val).toBeCloseTo(heir, 7);
+    expect(f.own).toBeCloseTo(10000 * 12 * c.n, 5);
+  });
+
+  it('kein Basiszins: unveränderte Ergebnisse; durch Pauschbetrag gedeckte erste VP ohne Verkauf', () => {
+    const p = P({ basis: 0 }), split = S({ etf: 150, avd: 150, ins: 150 });
+    const a = combo(p, split), b = combo(p, split, without('vpTaxSale'));
+    expect(a.net).toEqual(b.net); expect(a.abgTax).toEqual(b.abgTax);
+    const small = combo(P(), S({ etf: 150 })).parts.etf!;
+    expect(small.abgTax[0]).toBe(0);
+  });
+
+  it('Steuerverkäufe zählen nach Teilfreistellung ins gemeinsame KV-Buch, auch beim sicheren Teil', () => {
+    for (const shift of [false, true]) {
+      const p = P({ kvOn: true, shift, incRet: 60000 });
+      const split = S({ etf: 300, avd: 150, ins: 150, fond: 300 });
+      const c = combo(p, split), before = combo(p, split, without('vpTaxSale'));
+      expect(comboStats(p, c).cumHReal).toBeLessThan(comboStats(p, before).cumHReal);
+      for (let t = c.n; t < c.T; t++) {
+        expect(c.kv[t]).toBeLessThanOrEqual(p.kvRate * (69750 - p.incRet) * c.I(t) + 1e-6);
+        const X = Object.values(c.parts).reduce((s, r) => s + r.taxBase[t], 0), base = p.incRet * c.I(t);
+        expect(c.incTax[t]).toBeCloseTo(tax2026(Math.max(0, base + X - c.kv[t]), c.I(t)) - tax2026(base, c.I(t)), 7);
+      }
+    }
+  });
+});
+
 it('aktuelle Engine: Einzelprodukt und analyze identisch, real/nominal gleiche Rangfolge', () => {
   for (const patch of [{}, { kvOn: true }, { shift: true, kvOn: true }, { avdM: 9 }, { a0: 58, insLump: false }]) {
     const p = P({ ...patch, fondOn: true }), a = analyze(p);

@@ -216,7 +216,7 @@ describe('I3 – Zulagen und Erstattungen hängen nur am AVD-Teil', () => {
 });
 
 describe('I4 – gemeinsam gegen getrennt', () => {
-  it('ohne KV: gemeinsam nie mehr netto als getrennt (progressiver Tarif, ein Pauschbetrag); mit KV: nie mehr KV als getrennt', () => {
+  it('gemeinsamer Tarif/Pauschbetrag ohne KV; mit KV gilt eine BBG trotz veränderter Steuerverkäufe', () => {
     let maxKvSaving = 0;
     for (const inp of SCENARIOS) {
       const p = readParams(inp);
@@ -235,7 +235,18 @@ describe('I4 – gemeinsam gegen getrennt', () => {
       else {
         let kvJ = 0, kvS = 0;
         for (let t = 0; t < c.T; t++) { kvJ += c.kv[t] / c.I(t); for (const x of sep) kvS += x.kv[t] / x.I(t); }
-        expect(kvJ, JSON.stringify(inp)).toBeLessThanOrEqual(kvS + 1e-6 + kvS * 1e-9);
+        // R2: Ein gemeinsamer Pauschbetrag erzwingt andere Steuerverkäufe und damit andere KV-Basen.
+        // Für die tatsächlich realisierten Basen gilt trotzdem genau eine BBG (E9-Teilauszahlung separat).
+        for (let t = 0; t < c.T; t++) {
+          const room = Math.max(0, (69750 - p.incRet) * c.I(t));
+          const lumpKv = p.einmal && t === c.n ? p.kvRate * Math.min(.3 * c.parts.avd!.capAVD!, 10 * room) : 0;
+          expect(c.kv[t]).toBeLessThanOrEqual(p.kvRate * room + lumpKv + 1e-6);
+        }
+        const opts = { fixes: new Set([...ALL_FIXES].filter(f => f !== 'vpTaxSale')) };
+        const oldJoint = combo(p, MIX, opts), oldSep = SPLIT_KEYS.map(k => combo(p, S({ [k]: MIX[k] }), opts));
+        const oldKvJ = oldJoint.kv.reduce((s, v, t) => s + v / c.I(t), 0);
+        const oldKvS = oldSep.reduce((s, r) => s + r.kv.reduce((a, v, t) => a + v / c.I(t), 0), 0);
+        expect(oldKvJ).toBeLessThanOrEqual(oldKvS + 1e-6 + oldKvS * 1e-9);
         maxKvSaving = Math.max(maxKvSaving, kvS - kvJ);
       }
     }

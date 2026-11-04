@@ -1,5 +1,7 @@
 # Kombi
 
+**Aktueller Stand:** R1/R2/R6/R8 sind umgesetzt. Frühere Zahlenbeispiele unten sind historische Stände; aktuelle Vergleichswerte und Aufteilungen stehen in [Abweichungen, Review-Korrekturen](abweichungen-vom-original.md#korrekturen-aus-dem-review-november-2026).
+
 Eine Kombi verteilt den Monatsbeitrag auf mehrere Produkte. Der Rechner versteuert die Teile gemeinsam, wie es bei
 einer Person auch tatsächlich geschieht. Die Kombi läuft im Vergleich als **eigener Teilnehmer** neben den
 Einzelprodukten mit: Kachel, Ergebnissatz, Szenarien, Diagramme und „Rente im Detail“. Zusammengestellt wird sie im
@@ -42,8 +44,7 @@ der Fassung **mit allen Korrekturen** (`docs/abweichungen-vom-original.md`). Gem
    Depots (70 % des Gewinns plus 70 % der Vorabpauschale in der Rentenphase, E6). Die AVD-30-%-Auszahlung bleibt
    wie im Original in einem eigenen Topf `10 · Spielraum(n)` (Befund E9 offen).
 
-Die Reihenfolge hat keine Zyklen. Die Einkommensteuer hängt nicht an den Fonds, weil Fondserträge der
-Abgeltungsteuer unterliegen. Deshalb laufen erst der AVD-Vertrag und die Ansparphase der Versicherung, dann das
+Die Reihenfolge hat keine Zyklen. Das vorläufige Steuerbuch hängt noch nicht an den Fonds. Die abschließende KV/PV-Steuerentlastung berücksichtigt dagegen auch deren Beiträge. Deshalb laufen erst der AVD-Vertrag und die Ansparphase der Versicherung, dann das
 vorläufige Steuerbuch, dann alle Depots im Gleichschritt, das KV-Buch und abschließend die KV/PV-Steuerentlastung. Diese wird als Zahlung desselben Jahres gezählt und nicht wiederangelegt.
 
 Unverändert aus der Einzelrechnung übernommen sind die Günstigerprüfung und die Zulagen. Sie hängen nur am AVD-Teil
@@ -68,7 +69,7 @@ Darauf beruht I1.
 
 `combo(p, {k: Betrag})` ergibt **bitgenau** (`Object.is`) dasselbe wie `model(p).res[k]` und `analyze(p).stats[k]`.
 Geprüft werden alle Skalare, `net[]`, `vals[]`, die Summen und die Kennzahlen, über 32 benannte und 300
-Zufallsszenarien mal 4 Produkte (1.302 Fälle, ~194.000 Zahlen). Der Test läuft mit `ALL_FIXES`, mit `NO_FIXES`, mit
+Zufallsszenarien mal 4 Produkte. Der historische Vergleich mit `engine.ts` läuft mit E1–E10, `NO_FIXES`, mit
 jedem Fix allein und mit allen Fixes außer einem. Die Option `fixes` von `combo()` gibt es nur dafür. Die App ruft
 `combo()` immer ohne Optionen auf, also mit allen Fixes.
 
@@ -185,7 +186,7 @@ werden. Gemessen sind das höchstens 0,1 %, meist weit darunter (I7).
   gezeigt (`fromUser`). `best` ist `'pending'`, solange kein passendes Suchergebnis vorliegt; die Signatur
   `comboSig` muss zu Params, Budget, Produkten und Fixes passen. `best` ist `null` bei weniger als zwei Produkten.
 - `separate` und `interaction`: Die **Wechselwirkung** ist das Ergebnis gemeinsam minus jeder Teil allein, in
-  heutiger Kaufkraft. Ohne KV ist sie nie positiv (I4), wegen des progressiven Tarifs und des einen Pauschbetrags.
+  heutiger Kaufkraft. Ohne KV ist sie bis auf kleine gesetzliche Rundungseffekte nicht positiv (I4), wegen des progressiven Tarifs und des einen Pauschbetrags.
   Mit KV kann sie positiv sein, weil eine BBG die Summe deckelt.
 - `gap`, `complete`, `restTarget` (ETF, sonst das erste Nicht-AVD-Produkt, sonst AVD), `refundSpent`, `canRank`.
 
@@ -198,7 +199,7 @@ vornherein unfair. Je Zeile liefert er:
 - das beste Einzelprodukt,
 - die beste Aufteilung der Ausgangslage, im Szenario gerechnet.
 
-`flip` heißt: Eine andere Aufteilung ist im Szenario mehr als 1 € besser. `robustSummary` bildet die Stufen wie
+`flip` heißt: Eine andere Aufteilung ist im Szenario mehr als `tieTol` (0,1 %, mindestens 1 €) besser. `robustSummary` bildet die Stufen wie
 im Einzelvergleich (U5): keine Abweichung, weniger als ein Drittel, ab einem Drittel.
 
 **Ergebnissätze** (`comboVerdict`), Fälle:

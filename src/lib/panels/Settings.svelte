@@ -179,7 +179,7 @@
   </details>
   <details>
     <summary>ETF und Fonds</summary>
-    <p>Abgeltungsteuer 26,375 %, 30 % Teilfreistellung (Aktienfonds), Sparerpauschbetrag 1.000 € pro Jahr (je Produkt gerechnet), Vorabpauschale jährlich. Entnahmen jährlich am Jahresanfang (für ETF/AVD leicht konservativ).</p>
+    <p>Abgeltungsteuer 26,375 %, 30 % Teilfreistellung (Aktienfonds), Sparerpauschbetrag 1.000 € pro Jahr (je Produkt gerechnet), Vorabpauschale jährlich. Die Steuer wird aus dem Depot bezahlt; die beim dafür nötigen Anteilsverkauf entstehende Steuer ist mitgerechnet. Entnahmen jährlich am Jahresanfang (für ETF/AVD leicht konservativ).</p>
   </details>
   <details>
     <summary>Altersvorsorgedepot</summary>

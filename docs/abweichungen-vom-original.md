@@ -551,3 +551,46 @@ Tarifs um wenige nominale Euro verletzen; die Invariantentests berücksichtigen 
 Gezielte Tests: nominale Rundung und Indexierung, Beiträge 0/108/120 €, verspäteter Bonus nach Dynamik,
 gemeinsamer KV-Abzug mit ETF/AVD/Versicherung, BBG, kein Einkommen und Teilauszahlung; außerdem Golden-Test
 und historischer I1-Abgleich ohne neue R-Fixes. Die Suche gegen erschöpfende Suche bleibt geprüft.
+
+
+### R2 – `vpTaxSale`: Vorabpauschalensteuer durch vollständigen Steuerverkauf finanzieren
+
+Die VP-Steuer wird weiterhin im Entstehungsjahr bezahlt (R4 bleibt offen). Dazu werden Anteile verkauft;
+der Verkauf realisiert selbst Gewinn und Steuer (§ 19 Abs. 1 InvStG, § 20 Abs. 4 EStG):
+https://www.gesetze-im-internet.de/invstg_2018/__19.html.
+Nach Anrechnung der vollen angesetzten VP auf die Steuerbasis gilt im Durchschnittsmodell
+`q = max(0, (V−B)/V)`, Bruttoverkauf `S = VP-Steuer / (1−q×tf×0,26375)`.
+`S` deckt beide Steuerzahlungen, mindert das Vermögen und anteilig die Basis. Die gesamten Steuern stehen im
+Abgeltungsteuerbuch; der Verkaufsgewinn zählt im Alter nach Teilfreistellung ins gemeinsame KV-Buch.
+Durch R1 mindert auch diese zusätzliche KV die Einkommensteuer. Bei nicht ausgeschöpftem Pauschbetrag ist keine
+VP-Steuer fällig und kein Steuerverkauf nötig. FIFO und Verlustverrechnung bleiben die dokumentierten Näherungen.
+
+**Alle vier umgesetzten R-Fixes, cumH heutige Kaufkraft, KV/PV 21,1 %:**
+
+| Fall | ETF | AVD | Versicherung | vorne |
+|---|---:|---:|---:|---|
+| Default | 152.506 € | 174.850 € | 127.222 € | AVD |
+| DK | 140.049 € | 140.926 € | 104.712 € | **AVD, rund 877 € Vorsprung** |
+| High | 331.567 € | 316.189 € | 264.532 € | ETF |
+
+R2 allein zusätzlich zum ersten Paket verändert E / A / V um:
+Default −1.224 / −18 / −103 €, DK −1.501 / −26 / −161 €, High −3.342 / −177 / −324 €.
+Der Nettoeffekt bei KV weicht von der isolierten Review-Probe ab, weil R1 jetzt bereits mitgerechnet wird.
+Bei 21,7 % liegt DK ebenfalls knapp beim AVD (139.957 gegen 139.695 €).
+Die weiterhin fehlende Kapitalertrags-Günstigerprüfung R3, der VP-Jahreswechsel R4, Förderverzug und E9 können
+knappe Rangfolgen verändern. Das ist keine robuste Produktüberlegenheit.
+
+Die beste Kombi bei 450 € ohne KV ist nun 120 € ETF + 330 € AVD, cumH 469.572 €.
+Bei 300 € wird weiterhin 150/150 als gleichwertig genannt; das Maximum 110 € ETF + 190 € AVD liegt nur 285 € vorne.
+Bei 1.000 € bleibt 430 € ETF + 570 € AVD mit 994.159 €; Abstand zu 850 € ETF + 150 € AVD jetzt 12.412 € (1,2 %).
+Frühere Beispielzahlen im Dokument sind historische Stände.
+
+**Invarianten:** Der gemeinsame Pauschbetrag kann zusätzliche Steuerverkäufe auslösen und somit die realisierten
+KV-Basen verändern. „KV gemeinsam nie größer als Summe der Einzelrechnungen“ gilt deshalb nicht allgemein;
+unverändert gilt genau eine laufende BBG (AVD-Teilauszahlung E9 separat). Der alte Vergleich bleibt ohne R2 getestet.
+Gezielte R2-Tests prüfen die vollständige Finanzierung an unabhängigen Monats-Cashflows, Restbasis/Erbwert,
+ausbleibenden Verkauf ohne Steuer, beide Teilfreistellungen sowie gemeinsame KV-/Steuerbilanz.
+
+**Validierung:** `npx vitest run`: 12 Dateien, **236 Tests grün**, einschließlich Golden-Tests,
+Referenzpfad und Suche gegen erschöpfende Suche. `npm run check`: **0 Fehler, 0 Warnungen**.
+Keine e2e-Läufe oder Screenshots.
