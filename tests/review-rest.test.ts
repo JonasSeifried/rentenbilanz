@@ -10,12 +10,12 @@ const P = (patch: Partial<Inputs> = {}) => readParams({ ...DEFAULTS, ...patch })
 const S = (patch: Partial<Split>) => ({ ...emptySplit(), ...patch });
 const without = (...ids: FixId[]) => ({ fixes: new Set([...ALL_FIXES].filter(f => !ids.includes(f))) });
 
-describe('R3 – gemeinsamer Jahresantrag', () => {
+describe('R3 – gemeinsamer Jahresantrag (historische SA-Formel ohne E4)', () => {
   for (const incRet of [0, 5000, 20000, 90000]) for (const shift of [false, true]) {
     it(`alle Erträge, nach KV, Einkommen ${incRet}, Umschichtung ${shift}`, () => {
       const p = P({ incRet, incWork: 9000, studyEnd: 30, incStudy: 6000, kvOn: true, shift, einmal: true });
       const split = S({ etf: 400, fond: 500, avd: 800, ins: 300 });
-      const a = combo(p, split), b = combo(p, split, without('capitalGuenstiger'));
+      const a = combo(p, split, without('soliOnZulage')), b = combo(p, split, without('capitalGuenstiger', 'soliOnZulage'));
       for (let t = 0; t < a.T; t++) {
         expect(a.kv[t]).toBe(b.kv[t]); // Quellenabzug/Finanzierungsverkäufe bleiben identisch
         for (const k of SPLIT_KEYS) expect(a.parts[k]!.vals[t]).toBe(b.parts[k]!.vals[t]);

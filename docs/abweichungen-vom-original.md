@@ -465,14 +465,11 @@ Erbfall, Szenario-Zeile, Migration der alten Schlüssel); e2e „Umschichtung vo
 
 ## Offene Punkte (nicht umgesetzt)
 
-- **E4 – Soli auf die hinzugerechnete Zulage (zurückgestellt).**
-  - § 3 Abs. 2 SolZG weicht nur bei den Kinderfreibeträgen von § 2 Abs. 6 EStG ab. Nach dem Wortlaut gehört die
-    Hinzurechnung der Zulage deshalb zur Soli-Basis.
-  - Eine ausdrückliche Verwaltungs- oder Gerichtsaussage fehlt.
-  - Wirkung nur bei hohem zvE. Die alte Siegerwechsel-Angabe galt vor E10/R-Fixes; keine aktuelle Rangfolgenaussage.
-  - Die Formel liegt einsatzbereit vor:
-    `save = (tax(x) − est(xd) − soli(est(xd) + zSA/I)) · I`, mit `xd = x − (E + zSA)/I`.
-  - Sie kann als weiterer FixId (`soliOnZulage`) ergänzt werden, sobald die Rechtslage geklärt ist.
+E4 ist inzwischen als `soliOnZulage` umgesetzt: gesetzliche SA-Entscheidung nach ESt,
+reguläre Zulage auch in der Soli-Basis, gemeinsame Veranlagung mit R3. Herleitung, Grenzen der persönlichen
+Kinderfreibetragsrechnung, nominale Rundung und Wirkung stehen im
+[Nachtrag E4/D1](zulagen-veranlagung-2026-11.md). Die folgenden Punkte bleiben offen.
+
 - **E9 – KV auf AVD-Auszahlungen bei freiwillig Versicherten (Rechnung unverändert).**
   - Offen ist, ob für die 30-%-Auszahlung 1/120 gilt (§ 5 Abs. 4 BVSz nennt nur Versicherungsunternehmen) oder
     1/12 wie bei einer einmaligen Einnahme.
@@ -611,3 +608,17 @@ Wählbar sind Restprofil für offene Depots, einjähriger Förderverzug als Sens
 Pauschbetragsindexierung und getrennte Auszahlkosten. Standardpauschbetrag bleibt nominal fest.
 H1 und H2 im geförderten Vertragsteil bleiben ausdrücklich ungenaue Erbwertmodelle; keine neue gesetzliche
 Förderkonto-Zuordnung behauptet. Im ungeförderten Vertragsteil bleibt die getrennte Restbasis erhalten.
+
+### E4 und D1 nach Freigabe von c2b6672
+
+`soliOnZulage` berücksichtigt die reguläre Zulage in der festzusetzenden ESt und deren Soli-Basis.
+Die Entscheidung über den Sonderausgabenabzug nutzt die tarifliche ESt-Differenz; R3 prüft dieselbe
+Veranlagung erneut mit sämtlichen Kapitalerträgen. Bonusausnahme, Wiederanlage und zusätzliche Cash-Erstattung
+bleiben getrennt bilanziert. Die neue Rechnung steht nur in `combo.ts`, historische Referenzen sind unverändert.
+
+Die bisherige Zurückstellung von E4 wird durch die gesetzliche Herleitung einschließlich BFH X R 11/21
+ersetzt, nicht durch eine behauptete neue AVD-Verwaltungsanweisung. Persönliche Kinderfreibeträge und weitere
+Steuerermäßigungen fehlen weiterhin im Eingabemodell. Default/DK unverändert, High-AVD jetzt **312.445 €**
+statt 316.109 € real; ETF/Versicherung unverändert. DK bleibt mit 190 € Abstand nicht robust.
+D1 ist durch präzisierte I4-Dokumentation und den gezielten +13,201749-€-Gegenfall behoben.
+Alle Belege und die abschließende Validierung stehen im [Nachtrag](zulagen-veranlagung-2026-11.md).

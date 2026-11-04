@@ -18,7 +18,7 @@
 // also mit ALL_FIXES. Ohne kvSharedRoom wird (wie im Original) jeder KV-Strom einzeln bis zur BBG begrenzt.
 
 import { eur } from '../format';
-import { tax, tax2026, contractGrowth, riskyShare, AVD_MAX, AVD_SUB_MAX, ERTRAG, KV_BBG, numOf, type HeirValue, type Params, type ProductKey, type ProductResult } from './core';
+import { est, soli, tax, tax2026, contractGrowth, riskyShare, AVD_MAX, AVD_SUB_MAX, ERTRAG, KV_BBG, numOf, type HeirValue, type Params, type ProductKey, type ProductResult } from './core';
 import { fixesOf, type EngineOptions } from './fixes';
 import type { Inputs } from './inputs';
 
@@ -175,6 +175,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   const fx = fixesOf(opts);
   const F = {
     bonus: fx.has('bonusOutsideSA'),  // E3
+    soliZ: fx.has('soliOnZulage'),    // E4
     kvInv: fx.has('kvInvestBase'),    // E6
     kvShared: fx.has('kvSharedRoom'), // E7
     kvSpread: fx.has('kvLumpSpread'), // E8
@@ -203,6 +204,30 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   const kvLump = (addNom: number, t: number) => p.kvOn && addNom > 0 ? p.kvRate * Math.min(addNom, 10 * kvRoom(t)) : 0;
   const allowance = (t: number) => 1000 * (p.indexAllowance ? I(t) : 1);
   const saDed = new Array<number>(T).fill(0), saZ = new Array<number>(T).fill(0);
+  // E4: § 10a prüft die tarifliche ESt, danach § 2 Abs. 6 EStG / § 3 Abs. 2 SolZG.
+  // Nominale ESt separat benötigt; core.ts und seine historische Rechnung bleiben unverändert.
+  // Dieselben Tarifkoeffizienten wie tax2026, ohne zusätzliche Abrundung in heutigen Euro.
+  const incomeTaxNom = (incomeNom: number, t: number) => {
+    const index = I(t);
+    if (!F.round) return est(incomeNom / index) * index;
+    const x = Math.floor(Math.max(0, incomeNom)) / index;
+    let e = 0;
+    if (x > 277825) e = .45 * x - 19470.38;
+    else if (x > 69878) e = .42 * x - 11135.63;
+    else if (x > 17799) { const z = (x - 17799) / 1e4; e = (173.10 * z + 2397) * z + 1034.87; }
+    else if (x > 12348) { const y = (x - 12348) / 1e4; e = (914.51 * y + 1400) * y; }
+    return Math.floor(Math.max(0, e) * index);
+  };
+  const avdLiability = (incomeNom: number, ded: number, z: number, t: number) => {
+    const base = taxNom(Math.max(0, incomeNom), t);
+    if (!(ded > 0)) return base;
+    if (!F.soliZ) return Math.min(base, taxNom(Math.max(0, incomeNom - ded), t) + z);
+    const before = incomeTaxNom(incomeNom, t), after = incomeTaxNom(Math.max(0, incomeNom - ded), t);
+    // Kein SA-Abzug und keine Hinzurechnung bei Gleichstand oder höherer Zulagenförderung.
+    if (before - after <= z) return base;
+    const assessed = after + z;
+    return assessed + soli(assessed / I(t)) * I(t);
+  };
   const dynF = (t: number) => Math.pow(1 + p.dyn, t);
   const annuityDue = (V: number, rr: number, rem: number) => rem <= 1 ? V : (Math.abs(rr) < 1e-9 ? V / rem : V * rr / ((1 + rr) * (1 - Math.pow(1 + rr, -rem))));
   const zero = () => new Array<number>(T).fill(0);
@@ -272,8 +297,9 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
         if (p.fundingDelay) delayedZ[t + 1] = z; else V += z;
         zul += z; zulReal += z / I(t + (p.fundingDelay ? 1 : 0));
         saDed[t] = E + zSA; saZ[t] = zSA;
-        const save = taxSave(incAt(t), E + zSA, t);
-        const extra = Math.max(0, save - zSA);
+        const extra = F.soliZ
+          ? taxNom(incAt(t) * I(t), t) - avdLiability(incAt(t) * I(t), E + zSA, zSA, t)
+          : Math.max(0, taxSave(incAt(t), E + zSA, t) - zSA);
         refunds[t + (p.fundingDelay ? 1 : 0)] = extra; ref += extra; refReal += extra / I(t + (p.fundingDelay ? 1 : 0));
       }
       if (p.fundingDelay) V += delayedZ[t];
@@ -661,7 +687,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     const X = list.reduce((s, r) => s + r.taxBase[t], 0);
     const income = base + X - (F.kvDeduct && t >= n ? kv[t] : 0);
     const liability = (x: number) => t < n
-      ? Math.min(taxNom(Math.max(0, x), t), taxNom(Math.max(0, x - saDed[t]), t) + saZ[t])
+      ? avdLiability(x, saDed[t], saZ[t], t)
       : taxNom(Math.max(0, x), t);
     const refund = Math.max(0, paid - (liability(income + K) - liability(income)));
     for (const r of list) {

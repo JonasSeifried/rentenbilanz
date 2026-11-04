@@ -1,6 +1,6 @@
 # Kombi
 
-**Aktueller Stand:** R1–R8 sind umgesetzt, V1–V3/Auszahlkosten sind wählbar; siehe [Umsetzungsbericht](engine-rest-2026-11.md). Frühere Zahlenbeispiele unten sind historische Stände; aktuelle Vergleichswerte und Aufteilungen stehen in [Abweichungen, Review-Korrekturen](abweichungen-vom-original.md#korrekturen-aus-dem-review-november-2026).
+**Aktueller Stand:** R1–R8 und E4 sind umgesetzt ([E4/D1-Nachtrag](zulagen-veranlagung-2026-11.md)), V1–V3/Auszahlkosten sind wählbar; siehe [Umsetzungsbericht](engine-rest-2026-11.md). Frühere Zahlenbeispiele unten sind historische Stände; aktuelle Vergleichswerte und Aufteilungen stehen in [Abweichungen, Review-Korrekturen](abweichungen-vom-original.md#korrekturen-aus-dem-review-november-2026).
 
 Eine Kombi verteilt den Monatsbeitrag auf mehrere Produkte. Der Rechner versteuert die Teile gemeinsam, wie es bei
 einer Person auch tatsächlich geschieht. Die Kombi läuft im Vergleich als **eigener Teilnehmer** neben den
@@ -26,8 +26,8 @@ Dialog hinter „+ Kombi“ in der Zeile „Vergleichen“. Dort zeigt der Rechn
 `combo(p, split)` rechnet alle Teile Jahr für Jahr. `split` enthält die Monatsbeiträge je Produkt in € (heutiges
 Geld). Sie wachsen mit der Beitragsdynamik wie im Einzelvergleich. `combo.ts` ist die **einzige** Rechen-Engine der
 App: Auch jedes Einzelprodukt im Vergleich ist eine Kombi mit nur diesem Teil (`single()` in `analyze.ts`, mit
-`parts: [k]` auch bei 0 €). Die Formeln stammen aus `engine.ts` (Port des Originals, jetzt nur Referenz), und zwar in
-der Fassung **mit allen Korrekturen** (`docs/abweichungen-vom-original.md`). Gemeinsam gerechnet werden drei Dinge:
+`parts: [k]` auch bei 0 €). Die Formeln stammen aus `engine.ts` (Port des Originals, jetzt nur Referenz), ergänzt um die ausschließlich hier
+umgesetzten neuen Fixes, in der Fassung **mit allen Korrekturen** (`docs/abweichungen-vom-original.md`). Gemeinsam gerechnet werden drei Dinge:
 
 1. **Einkommensteuer im Alter.** Steuerpflichtig sind der AVD-Auszahlplan einschließlich der 30-%-Auszahlung, der
    Ertragsanteil der Leibrente und die hälftig steuerpflichtige Kapitalauszahlung der Versicherung (nach 12 Jahren).
@@ -46,7 +46,7 @@ der Fassung **mit allen Korrekturen** (`docs/abweichungen-vom-original.md`). Gem
 Die Reihenfolge hat keine Zyklen. Das vorläufige Steuerbuch hängt noch nicht an den Fonds. Die abschließende KV/PV-Steuerentlastung berücksichtigt dagegen auch deren Beiträge. Deshalb laufen erst der AVD-Vertrag und die Ansparphase der Versicherung, dann das
 vorläufige Steuerbuch, dann alle Depots im Gleichschritt, das KV-Buch und abschließend die KV/PV-Steuerentlastung. Diese wird als Zahlung desselben Jahres gezählt und nicht wiederangelegt.
 
-Zulagen und bisherige AVD-Erstattung hängen am AVD-Teil (I3). Die zusätzliche Kapitalertrags-Günstigerprüfung nach R3 wird anschließend gemeinsam nach KV/AVD-Sonderausgaben durchgeführt, auch beim Ansparen und im Erbfall. Der Vorteil zählt als gleichjähriges Cash ohne Wiederanlage. Der Sparer-Pauschbetrag bleibt im Standard nominal fest; hypothetische Indexierung ist wählbar. `latentTax` bleibt eine grobe Schätzung. Die sonstige KV-Bruttobasis (`kvGrossRet`) ist unabhängig vom zvE (`incRet`).
+Zulagen und bisherige AVD-Erstattung hängen am AVD-Teil (I3). E4 entscheidet den SA-Abzug nach der ESt-Differenz und rechnet die reguläre Zulage auch zur Soli-Basis; dieselbe Veranlagung gilt für R3. Die zusätzliche Kapitalertrags-Günstigerprüfung nach R3 wird anschließend gemeinsam nach KV/AVD-Sonderausgaben durchgeführt, auch beim Ansparen und im Erbfall. Der Vorteil zählt als gleichjähriges Cash ohne Wiederanlage. Der Sparer-Pauschbetrag bleibt im Standard nominal fest; hypothetische Indexierung ist wählbar. `latentTax` bleibt eine grobe Schätzung. Die sonstige KV-Bruttobasis (`kvGrossRet`) ist unabhängig vom zvE (`incRet`).
 
 ### Aufteilung gemeinsamer Abzüge (Konvention)
 
@@ -68,7 +68,7 @@ Darauf beruht I1.
 `combo(p, {k: Betrag})` ergibt **bitgenau** (`Object.is`) dasselbe wie `model(p).res[k]` und `analyze(p).stats[k]`.
 Geprüft werden alle Skalare, `net[]`, `vals[]`, die Summen und die Kennzahlen, über 32 benannte und 300
 Zufallsszenarien mal 4 Produkte. Der historische Vergleich mit `engine.ts` läuft mit E1–E10, `NO_FIXES`, mit
-jedem Fix allein und mit allen Fixes außer einem. Die Option `fixes` von `combo()` gibt es nur dafür. Die App ruft
+jedem Fix allein und mit allen Fixes außer einem. E4 gehört wie die neuen R-Fixes ausschließlich zum neuen Pfad und nicht zur historischen E-Referenz. Die Option `fixes` von `combo()` gibt es nur dafür. Die App ruft
 `combo()` immer ohne Optionen auf, also mit allen Fixes.
 
 I1 vergleicht außerdem `heir(idx)` und `heirMarried(idx)` für jedes Todesjahr (Wert bitgenau, Hinweistext gleich)
@@ -184,8 +184,13 @@ werden. Gemessen sind das höchstens 0,1 %, meist weit darunter (I7).
   gezeigt (`fromUser`). `best` ist `'pending'`, solange kein passendes Suchergebnis vorliegt; die Signatur
   `comboSig` muss zu Params, Budget, Produkten und Fixes passen. `best` ist `null` bei weniger als zwei Produkten.
 - `separate` und `interaction`: Die **Wechselwirkung** ist das Ergebnis gemeinsam minus jeder Teil allein, in
-  heutiger Kaufkraft. Ohne KV ist sie bis auf kleine gesetzliche Rundungseffekte nicht positiv (I4), wegen des progressiven Tarifs und des einen Pauschbetrags.
-  Mit KV kann sie positiv sein, weil eine BBG die Summe deckelt.
+  heutiger Kaufkraft. Die historische I4-Prüfung auf nicht positive Wechselwirkung ohne KV gilt nur ohne
+  Kapitalertrags-Günstigerprüfung (R3), mit gesonderter Berücksichtigung der nominalen R8-Rundung.
+  Mit R3 erlaubt der Wechsel zwischen Tarif und Abgeltungsteuer auch ohne KV positive Werte; der gezielte
+  Gegenfall in `tests/combo.test.ts` ergibt ohne R8 rund +13,20 € real. Auch dann bleibt die historische
+  Einkommensabrundung aktiv; das ist kein vollständig rundungsfreier analytischer Nachweis.
+  Mit KV kann zusätzlich eine gemeinsame BBG die Summe deckeln. Die aktuelle Rechnung wird durch
+  Jahresbilanzen und Gegenprüfungen der Suche geprüft, nicht durch eine großzügigere I4-Toleranz.
 - `gap`, `complete`, `restTarget` (ETF, sonst das erste Nicht-AVD-Produkt, sonst AVD), `refundSpent`, `canRank`.
 
 **Robustheit:** `robustRows(p, setup, bestSplit)` ist ein Generator mit **einer Zeile je `next()`**. Er geht die

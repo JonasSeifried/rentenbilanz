@@ -325,9 +325,9 @@ describe('jede Teilmenge der Fixes', () => {
     const cases = [P(), P(DK), P(HIGH), P({ ...HIGH, incRet: 60000, einmal: true, real: false, deathAge: 75, heirHalf: true })];
     // Historische E-Kombinationen vollständig; R-Schalter zusätzlich einzeln, ausgehend
     // von ALL, und sämtliche Teilmengen des neuen Pakets auf dem geprüften R1/R2/R6/R8-Stand.
-    const historical = FIX_IDS.filter(f => FIXES[f].finding.startsWith('E'));
+    const historical = FIX_IDS.filter(f => FIXES[f].finding.startsWith('E') && f !== 'soliOnZulage');
     const newIds: FixId[] = ['capitalGuenstiger', 'vpNextYear', 'kvGrossIncome', 'insuranceAllowance'];
-    const previous = FIX_IDS.filter(f => !newIds.includes(f));
+    const previous = FIX_IDS.filter(f => !newIds.includes(f) && f !== 'soliOnZulage');
     const sets = [NO_FIXES, ALL_FIXES, ...FIX_IDS.map(f => new Set([f])), ...FIX_IDS.map(f => new Set(FIX_IDS.filter(x => x !== f)))];
     for (let mask = 0; mask < 1 << historical.length; mask++) sets.push(new Set(historical.filter((_, i) => mask & (1 << i))));
     for (let mask = 0; mask < 1 << newIds.length; mask++) sets.push(new Set([...previous, ...newIds.filter((_, i) => mask & (1 << i))]));
@@ -368,7 +368,7 @@ describe('Snapshots mit ALL_FIXES (aktuelle Standardwerte)', () => {
   it('DK mit KV-Sonderausgabenabzug (R1)', () => {
     expect(snap({ kvOn: true })).toEqual({ lead: 'avd', etf: 140713, avd: 140903, ins: 105292 });
   });
-  it('High mit KV-Sonderausgabenabzug (R1)', () => {
-    expect(snap({ ...HIGH, kvRate: 21.1 })).toEqual({ lead: 'etf', etf: 330961, avd: 316109, ins: 254574 });
+  it('High mit KV-Sonderausgabenabzug (R1) und Zulage in der Soli-Basis (E4)', () => {
+    expect(snap({ ...HIGH, kvRate: 21.1 })).toEqual({ lead: 'etf', etf: 330961, avd: 312445, ins: 254574 });
   });
 });

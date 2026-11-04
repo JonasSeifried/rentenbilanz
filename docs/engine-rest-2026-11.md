@@ -1,5 +1,9 @@
 # Umsetzung der restlichen Review-Punkte, 04.11.2026
 
+**Folgestand:** E4 und D1 sind nach der unabhängigen Freigabe von c2b6672 umgesetzt;
+[Herleitung, aktuelle High-Werte und Prüfung](zulagen-veranlagung-2026-11.md).
+Die folgenden Messungen und die ursprüngliche E4-Zurückstellung beschreiben den Stand vor E4.
+
 Ausgangspunkt: tatsächlich geprüfter HEAD `8168de3abc98d472fff15928d73518a5aef2e047`.
 R1/R2/R6/R8 waren bereits enthalten. Alle neuen Steuerkorrekturen stehen ausschließlich in `combo.ts`,
 einzeln abschaltbar in `fixes.ts`. `engine.ts` und `legacy/index.html` bleiben unverändert.
@@ -29,7 +33,7 @@ Die AVD-Teilauszahlung hat auch nach dieser Prüfung einen marginalen Nettowert;
 
 **Ansparphase:** Die Prüfung verwendet Ausbildungs-/Arbeitseinkommen und die AVD-Sonderausgaben desselben
 Beitragsjahres. Für eine nominale Basis `x` gilt mit förderfähigem Abzug `d` und gegenzurechnender Zulage `z`:
-`L(x) = min(T(x), T(max(0,x−d)) + z)`; verglichen werden `L(x)+Quellensteuer` und `L(x+Kapitalerträge)`.
+`L(x) = min(T(x), T(max(0,x−d)) + z)` (historische Formel vor E4; aktuelle Veranlagung im Nachtrag); verglichen werden `L(x)+Quellensteuer` und `L(x+Kapitalerträge)`.
 Damit wird die AVD-Günstigerprüfung nicht mit § 32d verwechselt oder ein Abzug zweimal genutzt.
 Der Berufseinsteigerbonus bleibt gemäß E3 außerhalb von `d/z`. Die bisher berechnete AVD-Erstattung und deren
 Wiederanlage bleiben erhalten; ein zusätzlicher Vorteil durch das Zusammenwirken mit Kapitalerträgen ist in der
