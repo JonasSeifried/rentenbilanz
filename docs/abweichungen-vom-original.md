@@ -28,7 +28,7 @@ model(p, { fixes })    analyze(p, { fixes })    scenarios(p, { fixes })
   - In den Wirkungstests wird mit `kvRate` 21,7 gerechnet, dem Standard zur Zeit der Prüfung. „cumH“ ist die
     Summe der Netto-Auszahlungen bis zum Alter H, in heutiger Kaufkraft.
 
-**Wichtig:** Neue Rechnung nur noch in `combo.ts`. Ist sie abgeschaltet (Standard), muss `combo.ts` bitgleich zu
+**Wichtig:** Neue Rechnung nur noch in `combo.ts`. Ist sie abgeschaltet (Referenzpfad), muss `combo.ts` bitgleich zu
 `model()` bleiben (I1, Golden-Test über `analyze()`).
 
 ---
@@ -453,10 +453,9 @@ Erbfall, Szenario-Zeile, Migration der alten Schlüssel); e2e „Umschichtung vo
 
 ## Bewusst übernommene Vereinfachungen des Originals
 
-- **Sparer-Pauschbetrag:** 1.000 € je Produkt und Jahr, nominal fest. Der Betrag wird nicht über alle Depots
-  geteilt und nicht an die Inflation angepasst. Das ist offengelegt.
+- **Sparer-Pauschbetrag:** nominal 1.000 € je Person/Jahr, innerhalb einer Kombi gemeinsam einschließlich Versicherung (R7). Hypothetische Indexierung ist jetzt eine wählbare Sensitivität.
 - **Kapitalauszahlung der Versicherung bei weniger als 12 Jahren Laufzeit** (nur bei a0 ≥ R − 11):
-  Abgeltungsteuer ohne Sparer-Pauschbetrag. Höchstens etwa 264 € zu viel Steuer (E11, abgelehnt).
+  Historisch ohne Sparer-Pauschbetrag (E11). Mit R7 inzwischen ebenfalls gemeinsamer Pauschbetrag, mit R3 Günstigerprüfung.
 - **AVD-30-%-Auszahlung:** KV mit dem eigenen Topf `kvLump(L, n)` (`10 · room(n)`, entspricht 120 Monaten),
   außerhalb des Jahresbuchs aus E7 (siehe E9).
 - **`latentTax`:** Die spätere Einkommensteuer auf AVD-Kapital ist grob geschätzt, gleichmäßig über den
@@ -470,8 +469,7 @@ Erbfall, Szenario-Zeile, Migration der alten Schlüssel); e2e „Umschichtung vo
   - § 3 Abs. 2 SolZG weicht nur bei den Kinderfreibeträgen von § 2 Abs. 6 EStG ab. Nach dem Wortlaut gehört die
     Hinzurechnung der Zulage deshalb zur Soli-Basis.
   - Eine ausdrückliche Verwaltungs- oder Gerichtsaussage fehlt.
-  - Wirkung nur bei zvE über etwa 75.000 €. Im High-Fall verliert das AVD bis zu 3.274 € cumH, und der Sieger
-    wechselt zum ETF.
+  - Wirkung nur bei hohem zvE. Die alte Siegerwechsel-Angabe galt vor E10/R-Fixes; keine aktuelle Rangfolgenaussage.
   - Die Formel liegt einsatzbereit vor:
     `save = (tax(x) − est(xd) − soli(est(xd) + zSA/I)) · I`, mit `xd = x − (E + zSA)/I`.
   - Sie kann als weiterer FixId (`soliOnZulage`) ergänzt werden, sobald die Rechtslage geklärt ist.
@@ -479,7 +477,7 @@ Erbfall, Szenario-Zeile, Migration der alten Schlüssel); e2e „Umschichtung vo
   - Offen ist, ob für die 30-%-Auszahlung 1/120 gilt (§ 5 Abs. 4 BVSz nennt nur Versicherungsunternehmen) oder
     1/12 wie bei einer einmaligen Einnahme.
   - Ebenfalls offen ist, ob die ganze Rate oder nur der Ertragsanteil beitragspflichtig ist.
-  - Die Rechnung bleibt vorsichtig: eher zu viel KV. Die Texte weisen darauf hin.
+  - Die Rechnung ist eine offene Annahme; der separate Topf kann zu viel Beitrag verlangen. Keine pauschale konservative Richtung gegenüber jeder offenen Auslegung.
   - Mit E10 gilt das auch für den ungeförderten Teil: gerechnet wird die ganze Auszahlung (wie BSG B 12 KR 28/08 R
     bei privaten Renten). Zählte nur der Gewinnanteil (wie bei ETF-Entnahmen), wäre das AVD bei kvOn deutlich
     besser; im High-Fall geht es um gut 40.000 €. Sobald es dazu eine Aussage der Krankenkassen gibt, anpassen.
@@ -555,7 +553,7 @@ und historischer I1-Abgleich ohne neue R-Fixes. Die Suche gegen erschöpfende Su
 
 ### R2 – `vpTaxSale`: Vorabpauschalensteuer durch vollständigen Steuerverkauf finanzieren
 
-Die VP-Steuer wird weiterhin im Entstehungsjahr bezahlt (R4 bleibt offen). Dazu werden Anteile verkauft;
+Stand dieses ersten R2-Pakets: VP-Steuer noch im Entstehungsjahr. Inzwischen korrigiert R4 den Jahreswechsel (siehe Folgebericht). Dazu werden Anteile verkauft;
 der Verkauf realisiert selbst Gewinn und Steuer (§ 19 Abs. 1 InvStG, § 20 Abs. 4 EStG):
 https://www.gesetze-im-internet.de/invstg_2018/__19.html.
 Nach Anrechnung der vollen angesetzten VP auf die Steuerbasis gilt im Durchschnittsmodell
@@ -594,3 +592,22 @@ ausbleibenden Verkauf ohne Steuer, beide Teilfreistellungen sowie gemeinsame KV-
 **Validierung:** `npx vitest run`: 12 Dateien, **236 Tests grün**, einschließlich Golden-Tests,
 Referenzpfad und Suche gegen erschöpfende Suche. `npm run check`: **0 Fehler, 0 Warnungen**.
 Keine e2e-Läufe oder Screenshots.
+
+
+### Abschluss R3/R4/R5/R7 und Annahmen V1–V3
+
+Auch die restlichen vier R-Befunde sind jetzt schaltbar umgesetzt. Vollständige Herleitung, Primärquellen,
+Bilanzprüfungen, Default/DK/High-Messungen und Prüfung der offenen H1/H2/E4/E9/E12/E13 stehen im
+[Umsetzungsbericht](engine-rest-2026-11.md). Dieser Bericht ersetzt die früheren Zahlen nicht rückwirkend.
+
+Aktuell cumH in heutiger Kaufkraft, 21,1 % KV/PV: Default **153.289 / 174.856 / 127.694 €**,
+DK **140.713 / 140.903 / 105.292 €** (ETF / AVD / Versicherung). DK ist mit 190 € Abstand kein robuster Sieger.
+High aus DEFAULTS mit unverändertem neuen KV-Bruttostandard 20.000 €: **330.961 / 316.109 / 254.574 €**;
+mit ausdrücklich 45.000 € KV-Brutto wie der früheren belegten BBG: Versicherung **264.449 €**, ETF/AVD gleich.
+`incRet` wird nicht mehr als Bruttobasis verwendet oder automatisch umgerechnet; alte Links ohne neues Feld
+erhalten den unabhängigen Standardwert, alle früheren Eingabewerte bleiben lesbar.
+
+Wählbar sind Restprofil für offene Depots, einjähriger Förderverzug als Sensitivität, hypothetische
+Pauschbetragsindexierung und getrennte Auszahlkosten. Standardpauschbetrag bleibt nominal fest.
+H1 und H2 im geförderten Vertragsteil bleiben ausdrücklich ungenaue Erbwertmodelle; keine neue gesetzliche
+Förderkonto-Zuordnung behauptet. Im ungeförderten Vertragsteil bleibt die getrennte Restbasis erhalten.

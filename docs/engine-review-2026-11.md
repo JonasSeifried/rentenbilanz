@@ -3,7 +3,7 @@
 Geprüft am 04.11.2026, Rechnung von `main` nach `a05faf3`. Der beim Prüfstart vorhandene Folgecommit
 `8cc847c` enthielt nur die Vorfassung dieses Berichts. Keine Änderung der Rechnung.
 
-**Umsetzungsstand:** R1, R2, R6 und R8 sind inzwischen umgesetzt; siehe [Abweichungen](abweichungen-vom-original.md#korrekturen-aus-dem-review-november-2026). Die folgenden Messungen beschreiben weiterhin den geprüften Stand vor diesen Änderungen.
+**Umsetzungsstand:** R1–R8 sind inzwischen umgesetzt; V1–V3 und Auszahlkosten sind als Optionen/Sensitivitäten ergänzt. H1/H2 und offene AVD-Zuordnungen bleiben ausdrücklich begrenzt; siehe [Folgebericht](engine-rest-2026-11.md). Siehe [Abweichungen](abweichungen-vom-original.md#korrekturen-aus-dem-review-november-2026). Die folgenden Messungen beschreiben weiterhin den geprüften Stand vor diesen Änderungen.
 
 ## Befunde nach Schweregrad
 

@@ -38,7 +38,7 @@ Für die Browser-Tests einmalig: `npx playwright install chromium webkit`.
 
 ## Wichtig beim Ändern
 
-- **Engine:** Gerechnet wird nur in `combo.ts`. `tests/golden.test.ts` vergleicht `analyze()` (also `combo.ts` ohne Korrekturen) und die Referenz `engine.ts` mit `legacy/index.html` (29 benannte und 300 Zufallsszenarien); `tests/combo.test.ts` (I1) prüft `combo.ts` mit einem Teil und den historischen E-Fixes bitgenau gegen `engine.ts`. Neue R-Fixes haben gezielte Tests in `tests/review-fixes.test.ts`. Neue Rechnung (z. B. Umschichtung) nur in `combo.ts`, abschaltbar, damit der historische Referenzpfad bitgleich bleibt. Rechtliche Änderungen bewusst machen und dokumentieren.
+- **Engine:** Gerechnet wird nur in `combo.ts`. `tests/golden.test.ts` vergleicht `analyze()` (also `combo.ts` ohne Korrekturen) und die Referenz `engine.ts` mit `legacy/index.html` (29 benannte und 300 Zufallsszenarien); `tests/combo.test.ts` (I1) prüft `combo.ts` mit einem Teil und den historischen E-Fixes bitgenau gegen `engine.ts`. Neue R-Fixes haben gezielte Tests in `tests/review-fixes.test.ts` und `tests/review-rest.test.ts`. Neue Rechnung (z. B. Umschichtung) nur in `combo.ts`, abschaltbar, damit der historische Referenzpfad bitgleich bleibt. Rechtliche Änderungen bewusst machen und dokumentieren.
 - **Standardwerte** (`DEFAULTS` in `inputs.ts`) dürfen sich ändern; geteilte Links bleiben gültig, weil sie gegen eine eingefrorene Basis kodiert sind (`link.ts`, `LINK_VERSION`).
 - **Rechtsstand und Prüfdatum** stehen in `src/lib/site.ts` und werden im Kopf, im Druck und in der Fußzeile angezeigt.
 
@@ -57,6 +57,7 @@ Die Rechnung nutzt Werte, die sich jedes Jahr ändern. Nach jeder Änderung: `np
 ## Weitere Dokumentation
 
 - `docs/abweichungen-vom-original.md`: Korrekturen an der ursprünglichen Rechnung mit Rechtsquellen und Wirkung.
+- `docs/engine-rest-2026-11.md`: Umsetzung R3/R4/R5/R7, wählbare Annahmen, offene Erbfallgrenzen und aktuelle Vergleichsmessungen.
 - `docs/kombi-modus.md`: Rechenmodell der Kombi (gemeinsame Besteuerung, Suche nach der besten Aufteilung, Einbindung in den Vergleich).
 
 ## Speichern und Teilen

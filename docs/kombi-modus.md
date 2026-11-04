@@ -1,6 +1,6 @@
 # Kombi
 
-**Aktueller Stand:** R1/R2/R6/R8 sind umgesetzt. Frühere Zahlenbeispiele unten sind historische Stände; aktuelle Vergleichswerte und Aufteilungen stehen in [Abweichungen, Review-Korrekturen](abweichungen-vom-original.md#korrekturen-aus-dem-review-november-2026).
+**Aktueller Stand:** R1–R8 sind umgesetzt, V1–V3/Auszahlkosten sind wählbar; siehe [Umsetzungsbericht](engine-rest-2026-11.md). Frühere Zahlenbeispiele unten sind historische Stände; aktuelle Vergleichswerte und Aufteilungen stehen in [Abweichungen, Review-Korrekturen](abweichungen-vom-original.md#korrekturen-aus-dem-review-november-2026).
 
 Eine Kombi verteilt den Monatsbeitrag auf mehrere Produkte. Der Rechner versteuert die Teile gemeinsam, wie es bei
 einer Person auch tatsächlich geschieht. Die Kombi läuft im Vergleich als **eigener Teilnehmer** neben den
@@ -32,12 +32,10 @@ der Fassung **mit allen Korrekturen** (`docs/abweichungen-vom-original.md`). Gem
    Ertragsanteil der Leibrente und die hälftig steuerpflichtige Kapitalauszahlung der Versicherung (nach 12 Jahren).
    Pro Jahr gibt es **eine** Tarifsteuer auf die Summe. Nach dem KV-Buch werden die zusätzlichen selbst gezahlten KV/PV-Beiträge als Sonderausgaben abgezogen (R1).
    - Die 30-%-Auszahlung des AVD bekommt netto die Grenzsteuer über allen anderen Einkünften des Jahres.
-   - Die Kapitalauszahlung vor 12 Jahren bleibt pauschal mit Abgeltungsteuer und ohne Pauschbetrag belastet
-     (Vereinfachung des Originals).
+   - Vor zwölf Jahren: voller Versicherungsgewinn nach 15-%-Freistellung im gemeinsamen Pauschbetrag und in der Kapital-Günstigerprüfung.
 2. **Ein Sparer-Pauschbetrag** von 1.000 € im Jahr gilt für alle Depots zusammen: ETF, aktiver Fonds,
-   AVD-Nebendepot und das ETF aus der Kapitalauszahlung. Zuerst deckt er die Entnahmegewinne aller Depots, der Rest
-   dann die Vorabpauschalen. Mit der Umschichtung vor Rentenbeginn (`shift`) zählen die Gewinne der Umschichtungs-Verkäufe
-   wie Entnahmegewinne zuerst; jedes Fondsdepot hat dann ein sicheres Teil-Depot ohne Teilfreistellung
+   AVD-Nebendepot, Folge-ETF und Versicherungsleistung. Zuerst Versicherung, dann im Folgejahr zugeflossene Vorabpauschalen, danach Entnahme-/Umschichtungsgewinne. Mit der Umschichtung vor Rentenbeginn (`shift`) zählen die Gewinne der Umschichtungs-Verkäufe
+   wie Entnahmegewinne; jedes Fondsdepot hat dann ein sicheres Teil-Depot ohne Teilfreistellung
    (`docs/abweichungen-vom-original.md`, „Erweiterung: Umschichtung vor Rentenbeginn“).
 3. **Ein KV/PV-Jahresbuch** bis zur Beitragsbemessungsgrenze, gemeinsam für alle Produkte (Fix E7). Darin stehen
    der AVD-Auszahlplan, die Leibrente, die Kapitalauszahlung als C/10 über 10 Jahre (E8) und die Fondsbasis aller
@@ -47,8 +45,7 @@ der Fassung **mit allen Korrekturen** (`docs/abweichungen-vom-original.md`). Gem
 Die Reihenfolge hat keine Zyklen. Das vorläufige Steuerbuch hängt noch nicht an den Fonds. Die abschließende KV/PV-Steuerentlastung berücksichtigt dagegen auch deren Beiträge. Deshalb laufen erst der AVD-Vertrag und die Ansparphase der Versicherung, dann das
 vorläufige Steuerbuch, dann alle Depots im Gleichschritt, das KV-Buch und abschließend die KV/PV-Steuerentlastung. Diese wird als Zahlung desselben Jahres gezählt und nicht wiederangelegt.
 
-Unverändert aus der Einzelrechnung übernommen sind die Günstigerprüfung und die Zulagen. Sie hängen nur am AVD-Teil
-(I3). Auch der Sparer-Pauschbetrag bleibt nominal fest, und `latentTax` bleibt eine grobe Schätzung.
+Zulagen und bisherige AVD-Erstattung hängen am AVD-Teil (I3). Die zusätzliche Kapitalertrags-Günstigerprüfung nach R3 wird anschließend gemeinsam nach KV/AVD-Sonderausgaben durchgeführt, auch beim Ansparen und im Erbfall. Der Vorteil zählt als gleichjähriges Cash ohne Wiederanlage. Der Sparer-Pauschbetrag bleibt im Standard nominal fest; hypothetische Indexierung ist wählbar. `latentTax` bleibt eine grobe Schätzung. Die sonstige KV-Bruttobasis (`kvGrossRet`) ist unabhängig vom zvE (`incRet`).
 
 ### Aufteilung gemeinsamer Abzüge (Konvention)
 
@@ -307,8 +304,7 @@ im Todesjahr in einem Tarif.
 - **Raster 10 €.** Eine Aufteilung abseits des Rasters kann wenige Euro besser sein. Sie wird dann selbst als beste
   gezeigt.
 - Übernommene **Vereinfachungen des Originals**:
-  - Kapitalauszahlung vor 12 Jahren ohne Pauschbetrag
-  - Pauschbetrag nominal fest
+  - Pauschbetrag im Standard nominal fest
   - AVD-30-%-Auszahlung mit eigenem KV-Topf
-  - `latentTax` grob
+  - `latentTax` grob; kein eigener Hinterbliebenen-Auszahlplan, geförderte Restbasis/Förderkonto nach Teilentnahmen ungeklärt (H1/H2)
   - Tarif 2026 fortgeschrieben
