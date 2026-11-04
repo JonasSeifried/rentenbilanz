@@ -1,183 +1,293 @@
 # Engine-Review November 2026
 
-Stand: `main` nach Commit a05faf3, geprüft am 04.11.2026. Nur Prüfung, an der Rechnung ist nichts geändert.
-
-**Fälle** wie in `docs/abweichungen-vom-original.md`, aber mit dem aktuellen Standard `kvRate` 21,1 %:
-
-- **Default:** Standardwerte
-- **DK:** Default mit `kvOn`
-- **High:** a0 30, zvE 110.000 €, Rente 45.000 €, 500 €/Monat, `kvOn`
-
-Alle Beträge sind cumH (Summe netto bis H) in heutiger Kaufkraft.
-
-**Ausgangswerte:**
-
-| Fall | ETF | AVD | Versicherung | vorne |
-|---|---|---|---|---|
-| Default | 153.730 € | 174.891 € | 127.324 € | AVD (+21.161 €) |
-| DK | 137.576 € | 128.027 € | 97.162 € | ETF (+9.549 €) |
-| High | 323.094 € | 281.639 € | 245.025 € | ETF (+41.455 €) |
-
-**Messung:** Für jede Messung lief eine Kopie von `combo.ts` mit Schaltern. Ausgeschaltet war sie mit `analyze()` auf den Euro gleich. Die Probedateien sind wieder gelöscht, `npx vitest run` ist grün (221 Tests).
+Geprüft am 04.11.2026, Rechnung von `main` nach `a05faf3`. Der beim Prüfstart vorhandene Folgecommit
+`8cc847c` enthielt nur die Vorfassung dieses Berichts. Keine Änderung der Rechnung.
 
 ## Befunde nach Schweregrad
 
-| # | Befund | Schwere | Richtung | Wirkung Default / DK / High | Sieger ändert sich? |
+**Lesart:** Änderung gegenüber der heutigen Engine bei isolierter Korrektur bzw. ausdrücklich genannter
+Sensitivität, in **€ cumH heutiger Kaufkraft**, gerundet. Tripel immer **ETF / AVD / Versicherung**.
+Plus bedeutet mehr Auszahlung. Der aktive Fonds steht ergänzend im Text. Einzelsieger:
+Default AVD, DK und High ETF. **Kein isolierter Eingriff dieser Tabelle wechselt diese Sieger; gemeinsam kann es kippen.**
+
+| ID | Befund | Schwere / heutige Begünstigung | Default | DK | High |
 |---|---|---|---|---|---|
-| R1 | KV/PV-Beiträge im Alter mindern die Einkommensteuer nicht (Sonderausgaben fehlen) | **falsch** | benachteiligt alle Produkte mit KV, am stärksten AVD und Versicherung | 0 / ETF +3.976, AVD +12.947, Vers. +7.714 / ETF +11.817, AVD +34.748, Vers. +19.836 | nein, aber DK: ETF-Vorsprung 9.549 € → 578 € (0,4 %); High: 41.455 € → 18.524 € |
-| R2 | Auszahlprofil: ETF-Entnahme nominal gleichbleibend, AVD steigend; cumH zinst real mit 0 % ab | Verzerrung ≥ 0,5 % | begünstigt das AVD | ETF −3.465 (−2,3 %), Vers. −2.389 / ETF −2.392, Vers. −1.313 / ETF −5.413, Vers. −3.695 | nein |
-| R3 | Zulage und Steuererstattung zum Jahresende gutgeschrieben, in Wirklichkeit später | Verzerrung ≥ 0,5 % | begünstigt das AVD | AVD −2.695 (−1,5 %) / −2.060 / −2.338 bei 1 Jahr Verzug | nein |
-| R4 | Sparer-Pauschbetrag nominal fest, Tarif mit Inflation fortgeschrieben | Annahme, Verzerrung ≥ 0,5 % möglich | begünstigt AVD und Versicherung, falls der Pauschbetrag künftig steigt | wäre er indexiert: ETF +8.041 (+5,2 %) / +7.596 / +7.199 | nein |
-| R5 | KV-Satz für 40 Jahre auf dem Stand 2026 | Annahme | begünstigt die Produkte mit viel KV | +3 Pp. (24,1 %): DK ETF −2.297, AVD −6.663; High ETF −5.076, AVD −13.472 | nein |
-| R6 | `latentTax` unterschätzt die spätere AVD-Steuer | klein (kein Einfluss auf cumH) | begünstigt das AVD bei `capNet` und `heirMarried` | Default: 47.397 € geschätzt, 56.472 € tatsächlich (−16 %) | – |
-| R7 | Kapitalauszahlung der Versicherung immer in einem Jahr | klein, Gestaltungsfrage | benachteiligt die Versicherung | Default: Steuer 12.218 € auf einmal, 10.108 € über 5 Jahre verteilt | nein |
-| R8 | Vorabpauschale am Jahresende statt am ersten Werktag des Folgejahres | klein | uneinheitlich | DK, ETF: Vorabpauschale des letzten Ansparjahres fehlt im KV-Buch des Jahres n, ≈ 454 € einmalig | nein |
-| – | E4, E9, E11, E12, E13, FIFO, Verluste, Erbfall der Kombi | dokumentiert | | siehe `docs/abweichungen-vom-original.md` | |
+| R1 | Zusätzliche KV/PV nicht als Sonderausgaben abgezogen | **falsch**, benachteiligt besonders AVD | 0 / 0 / 0 | +3.976 / +12.947 / +7.714 | +11.817 / +34.748 / +19.836 |
+| R2 | Verkauf zur Zahlung der Vorabpauschalensteuer ohne eigene Gewinnsteuer | **falsch**, begünstigt vor allem ETF | −1.224 / −18 / −103 | −1.589 / −31 / −180 | −3.597 / −208 / −357 |
+| R3 | Günstigerprüfung für Kapitalerträge fehlt | **falsch**, benachteiligt offene Depots | +736 / 0 / +295 | +736 / 0 / +295 | 0 / 0 / 0 |
+| R4 | Vorabpauschale im falschen Steuer- und KV-Jahr | **falsch**, überwiegend zugunsten offener Depots | −139 / −12 / −64 | −666 / −67 / −58 | −1.183 / −332 / −553 |
+| R5 | Dasselbe Alterseinkommen für Tarif und belegte KV-BBG | **falsches Eingabemodell**, bei Brutto > zvE zu viel KV | 0 / 0 / 0 | 0 / 0 / 0 | 0 / +18.319 / +18.990¹ |
+| R6 | Unter 120 € Jahresbeitrag auch Sonderausgabenabzug abgeschaltet | **falsch**, benachteiligt AVD-Kleinbeiträge | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0² |
+| R7 | Hälftig besteuerte Versicherung nutzt keinen gemeinsamen Pauschbetrag | **falsch, klein**, benachteiligt Versicherung | 0 / 0 / +57 | 0 / 0 / +55 | 0 / 0 / +98 |
+| R8 | Steuerbetrag nicht auf volle Euro abgerundet | **falsch, klein**, Richtung wechselnd | 0 / +3 / −1 | 0 / +2 / −1 | 0 / +9 / 0 |
+| V1 | Unterschiedliche Entnahmeprofile beeinflussen die Rangfolge | **Verzerrung ≥ 0,5 %**, zugunsten AVD | +3.465 / +484 / +2.389 | +2.392 / +363 / +1.313 | +5.413 / +519 / +3.695 |
+| V2 | Zulage und Erstattung ohne Bearbeitungsverzug | **Verzerrung ≥ 0,5 %**, zugunsten AVD | 0 / −2.702 / 0 | 0 / −2.065 / 0 | 0 / −2.349 / 0 |
+| V3 | Pauschbetrag nominal fest bei indexiertem Tarif | **Annahme, ≥ 0,5 %**, relativ zugunsten Verträgen | +8.041 / +203 / +3.903 | +7.596 / +184 / +3.775 | +7.199 / +1.881 / +3.727 |
+| H1/H2 | Erbfall: latente Steuer, Restbeiträge und Förderrückzahlung grob | **offen / Verzerrung im Erbwert**, Richtung fallabhängig | cumH 0 | cumH 0 | cumH 0 |
 
-**Alle Befunde zusammen.** R1 und R3 zusammen, mit einem Jahr Verzug:
+¹ **Sensitivität**, keine aus `incRet` ableitbare Korrektur: beitragspflichtige sonstige Bruttoeinnahmen =
+1,2 × `incRet`, Steuerbasis unverändert. ² Bei stattdessen **9 €/Monat AVD**: +3.282 / +2.964 / +3.213 €
+für Default / DK / High. Kein Effekt auf ETF/Versicherung; Zusatzfälle mit geändertem AVD-Beitrag.
 
-| Fall | ETF | AVD | vorne |
-|---|---|---|---|
-| Default | 153.730 € | 172.196 € | AVD +18.466 € |
-| DK | 141.553 € | 138.724 € | ETF +2.829 € |
-| High | 334.911 € | 313.803 € | ETF +21.108 € |
+## Fälle und Messung
 
-Mit R2 dazu (ETF wie das AVD entnommen):
+Default = `readParams({...DEFAULTS})`: Alter 22, R 67, H 90, zvE Arbeit 38.000 €, Alter 20.000 €,
+je 150 €/Monat, Rendite 6 % / 4 %, Inflation 2 %, keine Dynamik, keine Umschichtung/Teilauszahlung,
+Versicherung mit Kapitalauszahlung. DK zusätzlich `kvOn:true`. High zusätzlich Alter 30, Arbeit 110.000 €,
+Alterseinkommen 45.000 €, **alle** Monatsbeiträge und `setAll` 500 €.
 
-| Fall | ETF | AVD | Versicherung | vorne |
+Haupttabellen mit **aktuellem Standard 21,1 % KV/PV**. Die früheren Wirkungstests in
+[Abweichungen](abweichungen-vom-original.md) verwenden teils 21,7 %; separate Nachrechnung unten.
+Der aktive Fonds wurde zusätzlich eingeschaltet, ohne die anderen Einzelbeiträge zu verändern.
+
+| Ausgangslage | ETF | AVD | Versicherung | aktiver Fonds | Vorsprung Erster vor Zweitem |
+|---|---:|---:|---:|---:|---:|
+| Default | 153.730 | 174.891 | 127.324 | 90.829 | AVD +21.161 |
+| DK | 137.576 | 128.027 | 97.162 | 84.133 | ETF +9.549 |
+| High | 323.094 | 281.639 | 245.025 | 212.525 | ETF +41.455 |
+
+Gemessen mit temporären Kopien von `combo.ts` und zwei Vitest-Probedateien. Unveränderte Kopie für alle vier
+Produkte und drei Fälle **bitgleich in cumHReal** mit `analyze()`. Je Variante nur den bezeichneten Block geändert;
+Messgröße `comboStats(p, combo(p, split)).cumHReal`. Probe-Code anschließend gelöscht. Die Beträge sind
+Modellvergleiche, keine Prognosen auf den Euro. Isolierte Wirkungen sind nicht einfach addierbar.
+
+## Rechen- und Steuerfehler
+
+### R1 – KV/PV als Sonderausgaben
+
+`src/lib/engine/combo.ts:285`, `:520`: Erst Tarifsteuer, danach KV-Abzug ohne steuerliche Entlastung.
+Zusätzlich selbst getragene Basis-KV/PV-Beiträge sind abziehbar; ohne Krankengeldanspruch keine 4-%-Kürzung.
+Auch KV auf ETF-Erträge kann die Tarifsteuer auf die übrige Rente senken. [§ 10 Abs. 1 Nr. 3, Abs. 4 EStG][sa]
+
+**Messformel je Rentenjahr:** `relief = [tax(incRet + X/I) − tax(max(0, incRet + (X−KV)/I))] × I`,
+`X = Σ taxBase[t]`, `KV = gemeinsames KV-Buch`. Entlastung als zusätzliche verfügbare Zahlung desselben Steuerjahres,
+ohne Wiederanlage. Voraussetzung: `incRet` ist das sonstige zvE **vor den zusätzlichen** produktbedingten Beiträgen;
+allgemeine Beiträge auf die bestehende Rente sind darin bereits berücksichtigt.
+
+DK: ETF-Vorsprung sinkt auf **578 €**, High auf **18.524 €**. Aktiver Fonds: +1.654 / +5.209 € in DK / High.
+**Vorschlag:** Gemeinsamen Abzug nach Ermittlung der tatsächlichen Beiträge rechnen; Erstattungszeitpunkt und
+Wiederanlage ausdrücklich festlegen.
+
+### R2 – Steuerzahlung aus dem Depot ist ein Verkauf
+
+`combo.ts:393`: Steuer vom Vermögen abgezogen, Basis anteilig vermindert. Der dabei realisierte Gewinn wird weder
+versteuert noch verbeitragt. Ohne externes Geld muss ein thesaurierender Fonds dafür Anteile verkaufen.
+[§ 19 Abs. 1 InvStG][verkauf], [§ 20 Abs. 4 EStG][kapital]
+
+**Messung:** Durchschnittsverfahren beibehalten; zuerst angesetzte VP zur Basis addiert, dann
+`q = max(0, (V−B)/V)`, Bruttoverkauf `S = VP-Steuer / (1−0,26375×tf×q)`.
+Basis danach `B×(1−S/V)`, Vermögen `V−S`; im Alter zusätzlich `tf×q×S` ins KV-Buch.
+Bei positiver VP-Steuer ist der Pauschbetrag bereits ausgeschöpft. FIFO bleibt unverändert.
+ETF-Überzeichnung **0,8 % / 1,2 % / 1,1 %**. Aktiver Fonds: −382 / −538 / −1.315 €.
+**Vorschlag:** Steuerverkäufe mit gemeinsamer Freibetrags-, Verlust- und KV-Abrechnung explizit erfassen.
+
+### R3 – Günstigerprüfung für Kapitalerträge
+
+`combo.ts:366`, `:374`, `:393`, `:417`: stets 26,375 %. Auf Antrag gilt jedoch der günstigere Tarif für
+**sämtliche** Kapitalerträge. Das ist eine andere Prüfung als die vorhandene AVD-Günstigerprüfung. [§ 32d Abs. 6][gp]
+
+**Messung:** Im Rentenjahr gesamte modellierte Abgeltungsteuer mit `taxAdd(incRet + X/I, steuerpflichtige
+Kapitalerträge, t)` verglichen, Differenz als verfügbare Erstattung ohne Wiederanlage. Default/DK:
+ETF +736 €, aktiver Fonds +342 €, Folge-ETF der Versicherung +295 €. Bei **5.000 € Alterseinkommen** stattdessen
+ETF +18.174 € (Default/DK) bzw. +39.226 € (High). In Ausbildungsjahren kann zusätzlich die Ansparphase betroffen sein.
+**Vorschlag:** Gemeinsame jährliche Prüfung nach Sonderausgaben und Pauschbetrag, auch beim Ansparen und im Erbfall.
+
+### R4 – Vorabpauschale: Zufluss im Folgejahr
+
+`combo.ts:385` bis `:396`: Berechnung, Steuer, Basisanrechnung und KV im Entstehungsjahr.
+Gesetzlich erst am ersten Werktag des Folgejahres; betrifft gemeinsamen Pauschbetrag und KV-Übergang. [§ 18 Abs. 3][vp]
+**Messung:** Vorjahres-VP vor der Entnahme zu Beginn des Folgejahres abrechnen, dort Pauschbetrag, Basis und KV
+berücksichtigen; Entnahme nach Steuerabzug neu bestimmen. Sonst unverändert, noch ohne R2.
+Aktiver Fonds: −192 / −527 / −922 €. **Vorschlag:** Offenen VP-Posten über den Jahreswechsel führen.
+Eine überschlägige KV-Zahl des ersten Rentenjahres ersetzt keine Messung über den ganzen Lebenslauf.
+
+### R5 – Tarifbasis ist keine KV-Basis
+
+`combo.ts:189`: `KV_BBG − incRet`. Steuer benötigt sonstiges zvE, KV beitragspflichtige Bruttoeinnahmen;
+Rentenfreibetrag und Sonderausgaben unterscheiden beide Größen. [§ 240 Abs. 1–2][kv], [BVSz § 3 Abs. 1][bvsz]
+Bei Bruttoeinnahmen 20 % über dem zvE ist die BBG früher erreicht: High-AVD +18.319 €, Versicherung +18.990 €;
+Default/DK ohne Effekt, deren BBG bindet nicht. **Keine Schätzung des tatsächlichen Bruttoeinkommens.**
+**Vorschlag:** Eigenes Feld für bereits beitragspflichtige Alterseinnahmen. Bei korrektem zvE wird sonst KV
+überschätzt, bei Bruttoeingabe gegebenenfalls Steuer. Der Glossarhinweis „Renteninformation × 12“ löst das nicht.
+
+### R6–R8 – Weitere abgrenzbare Fehler
+
+| ID / Fundstelle | Quelle und Vorschlag | Wirkung / Richtung |
+|---|---|---|
+| R6 `combo.ts:248` | 120-€-Mindestbeitrag nach § 86 n. F. betrifft Zulagen, nicht generell § 10a. Prüfungen trennen; [Art. 2 Nr. 1 und 9][avrg2]. | Hauptfälle 0. Bei 9 €/Monat fehlt die oben bezifferte Erstattung; benachteiligt kleine AVD-Beiträge. |
+| R7 `combo.ts:282`, `:361` | Hälftiger Versicherungsgewinn fällt auch unter § 20 Abs. 9; [§ 32d Abs. 2 Nr. 2][gp] schließt § 20 Abs. 6 aus, nicht Abs. 9. Pauschbetrag mit Fonds teilen. | Messung: erst tarifbesteuerte Versicherung, dann Fonds. Kleiner Vorteil, weil zugleich Fondsfreibetrag entfällt. E11 vor 12 Jahren schon dokumentiert. |
+| R8 `core.ts:17` | [§ 32a Abs. 1 S. 6][tarif]: Steuerbetrag abrunden. | Wenige Euro cumH; Richtung wechselnd, kein Siegerwechsel. |
+
+## Systematische Modellannahmen
+
+**V1 – Entnahmeprofil.** `combo.ts:349` zahlt aus Fonds nominal konstante vorschüssige Annuität,
+`:224` aus AVD Restkapital / Restjahre. Annuitätenformel korrekt. Summe realer Zahlungen (`analyze.ts:106`,
+`combo.ts:626`) zählt spätere reale Euro gleich hoch: zulässige Zielgröße, aber kein neutraler Vergleich
+unterschiedlicher Entnahmeentscheidungen. [AltZertG n. F. § 1 Abs. 1 Nr. 4 b][avrg6] erlaubt mindestens 80 % des
+Quotienten, Neufestlegung spätestens alle drei Jahre; gerechnet jährlich 100 %.
+**Messung:** Alle offenen Depots ebenfalls Rest / Restlaufzeit. Default-AVD-Vorsprung sinkt um 2.981 €,
+ETF-Vorsprung wächst DK um 2.029 €, High um 4.894 €.
+**Vorschlag:** Profile vereinheitlichen oder deren Einfluss auf die Rangfolge ausdrücklich ausweisen.
+
+**V2 – Förderverzug.** `combo.ts:255`, `:337`, `:402`: Zulage und Erstattung schon am Beitragsjahresende.
+Antragsübermittlung quartalsweise nach [§ 89 n. F., Art. 2 Nr. 10][avrg2]; Gutschrift/Steuerbescheid liegen später.
+**Messung:** Beide Zahlungen exakt ein Jahr verschoben, letzte Zahlung am Ende des ersten Rentenjahres berücksichtigt.
+AVD verliert **1,5 % / 1,6 % / 0,8 %**. **Vorschlag:** Verzögerung modellieren. Ein Jahr ist ein Szenario,
+kein gesetzlicher Auszahlungstermin; AVD-Verwaltungspraxis und individueller Steuerbescheid bleiben offen.
+
+**V3 – Nominaler Pauschbetrag.** `combo.ts:361`, `:389`, `:417`: 1.000 € fest, Tarif/BBG dagegen indexiert
+(`:187`, `:189`). [§ 20 Abs. 9][kapital] bestimmt einen nominalen Betrag: **kein Rechtsfehler**.
+Messung indexiert nur den jährlichen Pauschbetrag in der Fondsrechnung mit `I(t)`, sonst gleicher Tarif.
+Aktiver Fonds +6.000 / +5.750 / +6.426 €. **Vorschlag:** Asymmetrische Fortschreibung als Sensitivität offenlegen,
+zukünftige Gesetzesänderungen nicht vorwegnehmen.
+
+**Kosten, Beitragssätze, Renditerisiko.** `combo.ts:241`, `:271`, `:346`, `:190`: konstante Kosten und Sätze.
+Standarddepot-Kostendeckel nach [§ 2a Abs. 1–2 n. F.][avrg6] bezieht sich auf Effektivkosten bis Rentenbeginn,
+garantiert nicht dieselben Kosten im Alter. Folgendes sind **Annahmesensitivitäten**, keine nachgewiesenen fehlenden Kosten:
+
+| Änderung | Default | DK | High | Siegerwechsel |
 |---|---|---|---|---|
-| Default | 157.195 € | 172.700 € | 129.713 € | AVD +15.505 € |
-| DK | 144.208 € | 139.143 € | 106.451 € | ETF +5.065 € |
-| High | 341.179 € | 314.377 € | 269.232 € | ETF +26.802 € |
+| AVD-Kosten 1,0 statt 0,5 % | A −28.128 | A −19.917 | A −36.353 | **Default: ETF statt AVD** |
+| Versicherung 1,5 statt 0,9 % | V −18.450 | V −13.769 | V −34.385 | nein |
+| KV/PV +3 Prozentpunkte | 0 | E −2.297 / A −6.663 / V −4.288 | E −5.076 / A −13.472 / V −8.386 | nein |
+| Beide Renditen −2 Prozentpunkte | E −75.632 / A −93.664 / V −62.275 | E −64.139 / A −67.954 / V −47.707 | E −132.392 / A −127.845 / V −113.093 | nein |
 
-In keinem der drei Fälle wechselt der Sieger. In DK schrumpft der Abstand aber auf wenige Tausend Euro, also unter 4 %. Damit kann bei leicht anderen Annahmen das AVD vorne liegen.
+Ohne Verlustpfade bleibt das Risiko unzureichenden Ruhestandseinkommens unbeziffert; daraus folgt keine verlässliche
+Richtung für den Produktvergleich. Gleichmäßige Abschlusskosten können frühe Rückkaufs-/Todesfallwerte überzeichnen.
+Rentenfaktor/Überschüsse sind vertragsspezifisch. **Vorschlag:** Anspar-/Auszahlkosten trennen, Bandbreiten zeigen.
 
-## Rechtsstand und Parameter: geprüft, ohne Befund
+**Klein, Bezugsgröße des Ausgabeaufschlags:** `combo.ts:382` verwendet `c×(1−aa)`. Falls die eingegebenen 5 %
+stattdessen ein Aufschlag auf den Nettoanteilswert sind, wäre `c/(1+aa)` richtig: aktiver Fonds
+**+202 / +176 / +445 €**, kein Siegerwechsel. Kein allgemeiner Rechtsfehler: Bezugsgröße am konkreten Fondsprospekt
+prüfen und Eingabe entsprechend beschriften. Ein konkreter Prospekt liegt dieser Rechnung nicht zugrunde.
 
-| Wert | Code | Quelle | Ergebnis |
-|---|---|---|---|
-| Tarif 2026 | `core.ts:9-18` | [§ 32a EStG](https://www.gesetze-im-internet.de/estg/__32a.html) | Grenzen und Formeln stimmen. Den Steuerbetrag rundet das Gesetz auf volle Euro ab, der Code nicht (< 1 €/Jahr). |
-| Soli-Freigrenze 20.350 € | `core.ts:19` | [§ 3 Abs. 3 SolZG](https://www.gesetze-im-internet.de/solzg_1995/__3.html) | stimmt. Auf die Abgeltungsteuer fällt der Soli auch unterhalb der Freigrenze an (Abs. 3 S. 2). Die 26,375 % sind also richtig. |
-| KV-BBG 69.750 € | `core.ts:22` | SV-Rechengrößen 2026 | stimmt |
-| `kvRate` 21,1 % | `inputs.ts:59` | § 243 SGB V 14,0 % + Ø-Zusatzbeitrag 2,9 % + PV 4,2 % (kinderlos) | stimmt. Mit Kindern wäre die PV 3,6 % (Satz 20,5 %). |
-| Basiszins 3,20 % | `inputs.ts:60` | BMF-Schreiben vom 13.01.2026 ([Otto Schmidt](https://www.otto-schmidt.de/news/steuerrecht/basiszins-zur-berechnung-der-vorabpauschale-gem-18-absatz-4-invstg-basiszins-zum-2-1-2026-2026-01-15.html)) | stimmt |
-| Grundzulage 50 % bis 360 €, 25 % bis 1.800 €, Bonus 200 € unter 25 | `combo.ts:249-252` | [BGBl. 2026 I Nr. 156](https://www.recht.bund.de/bgbl/1/2026/156/regelungstext.pdf), Art. 2 Nr. 7 (§ 84 EStG n. F.) | stimmt |
-| Kinderzulage 100 % bis 300 € je Kind | `combo.ts:251` | ebd. Nr. 8 (§ 85 Abs. 1 n. F.) | stimmt |
-| Mindesteigenbeitrag 120 € | `combo.ts:248` | ebd. Nr. 9 (§ 86 n. F.) | stimmt |
-| Günstigerprüfung „1.800 € zuzüglich Zulage“ | `combo.ts:256` | ebd. Nr. 1 (§ 10a Abs. 1 S. 1 n. F.) | stimmt: Abzug `E + zSA` mit E ≤ 1.800 € |
-| 6.840 € ohne Zulage und Erträge | `core.ts:24`, `combo.ts:239` | ebd. Art. 6, § 1 Abs. 1 S. 1 Nr. 5 AltZertG n. F. | stimmt |
-| Auszahlplan bis mindestens 85, 30 % außerhalb der Monatsleistungen | `combo.ts:222-225` | § 1 Abs. 1 S. 1 Nr. 4 b AltZertG n. F. | stimmt. Gerechnet sind 100 % von Rest ÷ Restlaufzeit, erlaubt sind ≥ 80 %. Das ist in Settings dokumentiert. |
-| Standarddepot 50 %/30 % | `core.ts:31-39` | § 1 Abs. 1c Nr. 5 AltZertG n. F. | stimmt. Die Stufen liegen bei t = n−5 und t = n−2. |
-| Halbeinkünfte 62/12, Teilfreistellung 15 % (0,85 · 0,5) | `combo.ts:282` | § 20 Abs. 1 Nr. 6 S. 2 und 9 EStG | stimmt |
-| Ertragsanteile 60–70 | `core.ts:21` | § 22 Nr. 1 S. 3 a bb EStG | stimmt |
-| Vorabpauschale: 70 % Basiszins, Zwölftel-Kürzung, Deckel | `combo.ts:382-385` | § 18 InvStG | stimmt. Zum Zuflusszeitpunkt siehe R8. |
-| Teilfreistellung 30 %, KV 70 % | `combo.ts:318, 374, 396` | § 20 InvStG; GKV-Katalog „Investmenterträge“ | stimmt |
-| KV auf die Kapitalauszahlung einer privaten Rentenversicherung: ganzer Zahlbetrag, 1/120 | `combo.ts:488-491` | [GKV-Katalog § 240 SGB V, Stand 26.05.2026](https://www.gkv-spitzenverband.de/media/dokumente/krankenversicherung_1/grundprinzipien_1/finanzierung/beitragsbemessung/2026-05-26_Katalog_Einnahmen_beitragsrechtliche_Bewertung_240_SGB_V_BF.pdf), Zeile „Kapitalleistung aus einer privaten Rentenversicherung“ (BSG B 12 KR 28/08 R; § 5 Abs. 4 BVSz) | stimmt. Nur bei der Kapitallebensversicherung zählt der Kapitalertrag; die gibt es hier nicht. |
+## Zusammenwirken und Sieger
 
-**Zeitachse und Formeln ohne Befund:**
+**R1 + R2 + R3 + R4 gemeinsam**, unveränderte Profile; keine hypothetische Indexierung und kein R5-Bruttoaufschlag.
+Erstattungen als gleichjährige verfügbare Zahlungen. Die kleine Versicherungs-Pauschbetragskorrektur R7 bleibt
+hier außen vor. Günstigerprüfung nach KV-Sonderausgaben, Steuerverkäufe im VP-Zuflussjahr:
 
-- Annuität vorschüssig mit dem Zins `gPay − ter`, passend zur monatlichen Verzinsung.
-- Ende des Auszahlplans bei t = tEnd − 1 mit Restlaufzeit 1.
-- Anschaffungskosten fortgeschrieben: anteilig bei Entnahme und Steuerabzug, Vorabpauschale hinzugerechnet (§ 19 Abs. 1 S. 3 InvStG).
-- Gemeinsamer Pauschbetrag (Phase 1 Entnahmen und Umschichtung, Phase 2 Vorabpauschale) und KV-Buch der Kombi.
-- `heir`/`heirMarried` gegen § 93 Abs. 1 n. F.: Rückzahlung der Zulagen und der „nach § 10a Abs. 4 gesondert festgestellten Beträge“, also wie `foer`.
+| Fall | ETF | AVD | Versicherung | Erster vor Zweitem |
+|---|---:|---:|---:|---|
+| Default | 153.293 | 174.879 | 127.522 | AVD +21.585 |
+| DK | 140.716 | 140.923 | 105.129 | **AVD +207; Sieger gewechselt** |
+| High | 330.966 | 316.131 | 264.219 | ETF +14.835 |
+| Default, zusätzlich V2 | 153.293 | 172.181 | 127.522 | AVD +18.888 |
+| DK, zusätzlich V2 | 140.716 | 138.678 | 105.129 | **ETF +2.038** |
+| High, zusätzlich V2 | 330.966 | 313.553 | 264.219 | ETF +17.413 |
 
-## Einzelbefunde
+**DK liegt nahe am Gleichstand.** Der heutige Abstand ist keine belastbare Produktüberlegenheit.
+Diese Prüfrechnung ist keine freigegebene Ersatzengine.
 
-### R1 – KV/PV-Beiträge sind Sonderausgaben (falsch)
+### Frühere Wirkungstests mit 21,7 % KV/PV
 
-- **Was:** Freiwillig Versicherte zahlen im Alter KV/PV auf AVD-Raten, Leibrente, Kapitalauszahlung (1/120) und Fondserträge. Diese Beiträge sind als Basis-Kranken- und Pflegeversicherung voll als Sonderausgaben abziehbar, auch über die Höchstbeträge hinaus. Ohne Krankengeldanspruch entfällt die 4-%-Kürzung, Rentner haben keinen. Die Engine zieht die KV vom Netto ab, mindert aber die Einkommensteuer nicht. Das gilt auch beim ETF: Dessen Erträge fallen unter die Abgeltungsteuer, die KV darauf mindert aber die Tarifsteuer auf die übrige Rente.
-- **Fundstelle:** `combo.ts:285-293` (Steuer ohne KV-Abzug), `combo.ts:520-537` (KV-Buch)
-- **Quelle:** [§ 10 Abs. 1 Nr. 3 S. 1 a und b, S. 4, Abs. 4 S. 4 EStG](https://www.gesetze-im-internet.de/estg/__10.html)
-- **Richtung:** Die KV kostet netto rund (1 − Grenzsteuersatz) so viel wie gerechnet. Das AVD hat die meiste KV und gewinnt am meisten.
-- **Wirkung:** siehe Tabelle. DK: ETF +2,9 %, AVD +10,1 %, Versicherung +7,9 %. High: ETF +3,7 %, AVD +12,3 %, Versicherung +8,1 %.
-- **Vorschlag:** Neuer Fix, etwa `kvDeductible`:
-  - je Rentenjahr eine Entlastung `(tax(incRet + X/I) − tax(max(0, incRet + X/I − kv[t]/I))) · I`, mit `X` der
-    einkommensteuerpflichtigen Summe und `kv[t]` aus dem gemeinsamen KV-Buch
-  - die Entlastung anteilig nach KV auf die Teile verteilen
-  - Einen Zyklus gibt es nicht: Die KV hängt nicht an der Einkommensteuer. Die Entlastung lässt sich deshalb nach dem
-    KV-Buch (Abschnitt 6) rechnen.
-  - Gemessen ist R1 genau mit dieser Formel.
+Default bleibt ohne KV identisch. Wieder Tripel E / A / V, sonst unveränderte Fälle:
 
-### R2 – Auszahlprofil und Kennzahl (Verzerrung)
+| Lauf / isolierte Wirkung | DK | High |
+|---|---|---|
+| Ausgangs-cumH | 137.117 / 126.695 / 96.304 | 322.079 / 278.945 / 243.348 |
+| R1 | +4.089 / +13.311 / +7.923 | +12.151 / +35.716 / +20.385 |
+| R2 | −1.599 / −31 / −182 | −3.619 / −210 / −360 |
+| R3 | +736 / 0 / +295 | 0 / 0 / 0 |
+| R4 | −681 / −68 / −58 | −1.212 / −337 / −567 |
+| R5, Brutto +20 % | 0 / 0 / 0 | 0 / +18.840 / +19.530 |
+| V1 | +2.361 / +359 / +1.283 | +5.340 / +512 / +3.637 |
+| V2 | 0 / −2.047 / 0 | 0 / −2.332 / 0 |
+| V3 | +7.583 / +183 / +3.771 | +7.187 / +1.877 / +3.727 |
+| R1–R4 gemeinsam: Ergebnis | 140.357 / 139.952 / 104.490 | 330.249 / 314.400 / 263.082 |
 
-- **Was:** Die Zielgröße cumHReal summiert reale Beträge ohne Abzinsung. Bei positiver Realrendite zählt ein später ausgezahlter Euro deshalb gleich viel, obwohl er länger verzinst wurde.
-  - Das AVD zahlt Rest ÷ Restlaufzeit, die Raten steigen nominal mit `gPay − avdCost`. Das Gesetz schreibt dieses Profil vor (≥ 80 %, Nr. 4 b bb).
-  - ETF, aktiver Fonds, Nebendepot und das ETF aus der Kapitalauszahlung zahlen eine nominal gleichbleibende Annuität. Real fallen ihre Raten also.
-  - Das ETF-Profil ist eine Modellwahl. Ein ETF-Anleger kann genauso entnehmen wie das AVD.
-- **Fundstelle:** `combo.ts:349` (`annuityDue`) gegen `combo.ts:224` (`V / (tEnd − t)`). Kennzahl: `combo.ts:626`, `analyze.ts:106`.
-- **Richtung:** begünstigt das AVD
-- **Wirkung**, wenn die Fondsdepots mit demselben Profil wie das AVD entnehmen:
-  - Default: ETF +3.465 € (+2,3 %), Versicherung +2.389 € (+1,9 %), AVD +484 € (über das Nebendepot)
-  - DK: ETF +2.392 €
-  - High: ETF +5.413 €
-- **Vorschlag:** eine der beiden Möglichkeiten:
-  - Alle Depots entnehmen wie das AVD (Rest ÷ Restlaufzeit). Das ist am einfachsten und fair, weil dann das Profil gleich ist.
-  - Oder der Barwert zur Realrendite wird als zweite Kennzahl gezeigt. Dann hängt die Rangfolge nicht mehr am Profil.
+Bei 21,7 % bleibt in den isolierten und im kombinierten Lauf der ETF vorne (kombiniert DK +405 €).
 
-  Hinweis: Damit ändert sich die Ø-Monatsrente des ETF (erst niedriger, dann höher).
+## Erbfall und schon dokumentierte Punkte
 
-### R3 – Zeitpunkt von Zulage und Erstattung (Verzerrung)
+**H1 – `latentTax`** (`combo.ts:445`, `:461`, `:565`, `:577`): bekannt grob, **cumH-Wirkung überall 0 €**.
+Nutzt `incRet` der verstorbenen Person. Nur durch Austausch gegen `incHeir`, sonst gleiche Schätzung, ändert sich der
+AVD-Ehepartner-Erbwert bei Tod mit 50 um **−5.446 / −5.446 / +1.361 €**, mit 80 um **−5.949 / −5.949 / +1.665 €**.
+Heutige Kaufkraft. Sensitivität: künftiges Einkommen, Alter und Auszahlprofil des Ehepartners fehlen. Die spätere
+Steuer trifft diesen; [BMF Rn. 155, 232 ff.][bmf]. **Vorschlag:** Separater Hinterbliebenen-Auszahlplan.
+Keine einseitige Behauptung, `latentTax` sei immer zu niedrig: künftige Steuern auf weiterwachsendes Vermögen sind
+nicht direkt mit einer heutigen Kapitalsteuer vergleichbar.
 
-- **Was:** Die Engine schreibt die Zulage am Ende des Beitragsjahres gut. Die Erstattung aus der Günstigerprüfung landet zum selben Zeitpunkt im Nebendepot. In Wirklichkeit:
-  - Die Zulage wird erst nach Ablauf des Beitragsjahres beantragt. Der Anbieter übermittelt die Anträge quartalsweise, die zentrale Stelle zahlt danach aus (§ 89 Abs. 2 S. 2 n. F., § 90 EStG).
-  - Die Erstattung kommt mit dem Steuerbescheid, also im Folgejahr oder später.
+**H2 – Restbasis/Förderkonto** (`combo.ts:470`, `:581`): `V/C0` skaliert Beiträge, Zulagen und Erstattungen mit der
+späteren Rendite. Verbrauchte Beitragsbasis wächst dadurch wieder an. Mit separatem, nur durch Entnahmen sinkendem
+Basis-/Förderkonto (hier Restjahre / Gesamtjahre) ändert sich der AVD-Erbwert bei Tod mit 80 um
+**−1.264 / −1.264 / +213 €**; cumH jeweils **0 €**. Beitragszuordnung: [§ 22 Nr. 5 S. 2 c/S. 3][rente],
+Förderrückzahlung: [§ 93 Abs. 1][tod]. **Offen:** Zuordnung verbleibender Förderung nach bereits unschädlich ausgezahlten
+AVD-Raten mit ZfA/BMF klären. Prüfalternative ist keine behauptete Verwaltungsformel.
+**Vorschlag:** Basis-/Förderkonto getrennt vom Marktwert fortschreiben und Zuordnung bestätigen lassen.
 
-  Die Oberfläche nennt das („in echt 1–2 Jahre später“, `Settings.svelte:186`), beziffert ist es bisher nicht.
-- **Fundstelle:** `combo.ts:255` (`V += z`), `combo.ts:337` (`refunds` als `lumpEnd[t]`)
-- **Wirkung** bei 1 Jahr Verzug für beides:
-  - AVD −2.695 € (−1,5 %) Default, −2.060 € DK, −2.338 € High
-  - Bei realistisch 0,5 bis 1,5 Jahren etwa −1.300 € bis −4.000 €.
-- **Vorschlag:** Als Fix umsetzen: Zulage und Erstattung ein Jahr später gutschreiben. Das letzte Ansparjahr landet dann zu Beginn der Auszahlphase im Vertrag bzw. im Nebendepot. Rechtlich unklar ist nur die genaue Dauer: Für das AVD gibt es noch keine Verwaltungspraxis. 1 Jahr ist eine plausible, eher vorsichtige Annahme.
+Weitere Punkte kurz zu [Abweichungen](abweichungen-vom-original.md) und [Kombi § 6–7](kombi-modus.md):
 
-### R4 – Pauschbetrag nominal, Tarif indexiert (Annahme)
+- **E4:** offener Soli-Punkt. Dortige Formel mit aktuellem ALL_FIXES: **0 / 0 / −3.552 € AVD**;
+  High mit 21,7 % −3.541 €. Kein Siegerwechsel mehr, High bereits ETF; alte Wechsel-Angabe gilt nicht mit E10.
+  [§ 3 Abs. 2 SolZG][soli3]
+- **E9:** AVD-KV weiter offen. Nur ungeförderten Gewinn statt ganzer ungeförderter Rate verbeitragen:
+  **0 / 0 / +12.784 € AVD**, kein Siegerwechsel. 30-%-Auszahlung mit 1/120 gemeinsam deckeln/verteilen statt separat
+  sofort belasten, bei eingeschaltetem `einmal`: **0 / +963 / +1.946 € AVD**; Hauptfälle ohne `einmal` 0.
+  Separater Topf kann zu viel Beitrag verlangen, ist nicht unter jeder offenen Auslegung konservativ: 1/12 kann früher
+  stärker belasten. [BVSz § 5 Abs. 3–4][bvsz] klärt Depotverträge nicht ausdrücklich.
+- **E12/E13:** offen lassen. BMF Rn. 149 kennt ungeförderte Weiterzahlungen ohne Förderberechtigung bei bestehenden
+  Verträgen, klärt nicht alle Zugangsfragen neuer AVD. Rn. 148 nennt für Fondssparpläne 62/12, keine zusätzliche
+  fünfjährige Beitragsdauer. Keine abweichende AVD-Verwaltungsregel belegt; zusätzliche Bedingung nicht erfinden. [BMF][bmf]
+- **FIFO/Verluste:** schon dokumentiert. FIFO-Zahl dort **ohne Vorabpauschale** ist keine vollständige App-Messung.
+  Hauptfälle ohne Verlustverkäufe: Verlustkorrektur 0 €. FIFO-Näherung begünstigt offene Depots; Stärke hängt auch
+  am gemeinsamen Freibetrag. Ordergebühren/Spreads weiterhin nicht gerechnet.
+- **Erbfallgrenzen:** eine Person, Verkauf im Todesjahr, kein Splitting, keine eigene KV der Erben/Erbschaftsteuer.
+  Restrente ist Summe künftiger Zahlungen, kein sofort liquides Kapital; cumH-Wirkung 0 €. Genauere Beträge benötigen
+  Erbeneinkünfte, verbrauchte Freibeträge und Vertragsbedingungen. Dokumentierte Fünftelregelungsfrage nicht neu entschieden.
 
-- **Was:** Die Tarifgrenzen wachsen mit der Inflation (`taxAdd` rechnet mit dem realen Einkommen), der Pauschbetrag bleibt bei 1.000 €. Real sinkt er bis 67 auf etwa 410 €. Bisher dokumentiert als „bewusst übernommen“, die Wirkung war nicht beziffert.
-- **Fundstelle:** `combo.ts:361, 389, 417, 420`
-- **Quelle:** [§ 20 Abs. 9 EStG](https://www.gesetze-im-internet.de/estg/__20.html). Der Betrag ist gesetzlich nominal; seit 1993 wurde er meist gesenkt, nur 2023 erhöht.
-- **Wirkung**, wäre er mit der Inflation indexiert: ETF +8.041 € (+5,2 %), Versicherung +3.903 € (über das Folge-ETF), AVD +203 € (Default). DK und High ähnlich.
-- **Bewertung:** Nominal fest ist die gesetzeskonforme und historisch eher großzügige Annahme. Keine Korrektur nötig. Die Spanne gehört aber in die Doku (bei den „bewusst übernommenen Vereinfachungen“), denn sie ist größer als jeder andere Steuerparameter des ETF.
+## Rechtsstand und Zeitachse ohne weiteren wesentlichen Befund
 
-### R5 – KV-Satz konstant (Annahme)
+| Prüfung / Fundstelle | Ergebnis und Primärquelle |
+|---|---|
+| Tarif `core.ts:9`, Soli `:19` | Grenzen 12.348 / 17.799 / 69.878 / 277.825 € und Koeffizienten richtig; Rundung R8. Soli-Freigrenze 20.350 €, Milderung 11,9 %, Maximum 5,5 % richtig. [§ 32a][tarif], [§ 3][soli3], [§ 4 SolZG][soli4]. |
+| KV-BBG `core.ts:22` | 69.750 € richtig: [§ 2 Abs. 2 SVBezGrV 2026][bbg] i. V. m. § 223 Abs. 3 SGB V. |
+| KV/PV `inputs.ts:59` | 21,1 % für kinderlose Mitglieder ohne Krankengeld auf private Zusatzeinnahmen: [§ 243][erm] 14,0 % + [BMG/BAS 2026][zusatz] 2,9 % + [PBAV § 1][pflege]/[§ 55 SGB XI][kinder] 4,2 %. Kassenindividuellen Beitrag/Elternstatus eingeben; kein Universalsatz für jede Einnahmenart. |
+| Basiszins `inputs.ts:60` | 3,20 % richtig; [BMF 13.01.2026][basis]. 2026-VP fließt am 04.01.2027 zu. |
+| AVD `combo.ts:237`, `:248` | 1.800 € gefördert, 6.840 € Eigenbeiträge insgesamt; Grundzulage 50 % bis 360 €, dann 25 %, max. 540 €; Kinderzulage max. 300 €/Kind; Bonus 200 € unter 25; Mindestbeitrag 120 €. [AVRG Art. 2][avrg2], [Art. 6][avrg6], BGBl. 2026 I Nr. 156. Start 2027; Günstigerprüfung grundsätzlich richtig, R6/E4 beachten. |
+| Versicherung `combo.ts:276`, `:282`; `core.ts:21` | 12 Jahre; Alter 62 durch R≥65 erfüllt. 15 % nur soweit Gewinn aus Investmenterträgen stammt. [§ 20 Abs. 1 Nr. 6 S. 2/9][kapital], 62 aus [§ 52 Abs. 28 S. 7][alter]. Ertragsanteile 65/66 = 18 %, 67 = 17 %, 68 = 16 %, 69/70 = 15 % richtig. [§ 22][rente] |
+| Fonds `combo.ts:382`, `:385` | 70 % Basiszins, Erwerbsmonat zählt mit (`13−m`), Wertzuwachsdeckel grundsätzlich richtig für Thesaurierer. Einzahlungsbetrag statt Anteilswert zu Jahresbeginn ist zusätzlich approximativ; anteilsbezogene Rückrechnung des Basisertrags hier <1 € je Produkt, High-ETF rund +1 €. [§ 18 InvStG][vp] |
+| Teilfreistellung/KV `combo.ts:318`, `:374`, `:396`, `:488` | 30 % Aktienfonds, sicherer Teil 0 %: [§ 20 InvStG][tf]. [GKV-Katalog S. 15–16][katalog] berücksichtigt Teilfreistellung bei Investmenterträgen; private Rentenversicherung mit Kapitalwahlrecht dagegen ganzer Zahlbetrag. Verweis dort auf BSG 27.01.2010, B 12 KR 28/08 R. [BVSz § 5 Abs. 4][bvsz]: 1/120 ab Folgemonat. Jahresnäherung und fehlende 51-€-Werbungskostenpauschale klein; E9 gesondert offen. |
 
-- **Was:** `kvRate` gilt für 40 bis 70 Jahre auf dem Stand 2026. Zusatzbeitrag und PV-Satz sind zuletzt stark gestiegen.
-- **Wirkung** bei +3 Prozentpunkten:
-  - DK: ETF −2.297 €, AVD −6.663 €, Versicherung −4.288 €
-  - High: ETF −5.076 €, AVD −13.472 €
+- `combo.ts:183`, `:222`, `:349`: Beginn bei **t = n**, Entnahmen vorschüssig, Monatsbeiträge vor Monatsrendite.
+  Letzte Auszahlung t = H−a0−1, mit Alter H kein Depotrest. Kein zusätzlicher Jahresversatz gefunden.
+- `core.ts:31`, `:46`: Stufen n−5/n−2 richtig. Standarddepot meint Risikoklassen, nicht zwingend Aktien-/Anleihequote.
+  Engine nähert über zwei Renditen an; Rückkehr zu `gPay` im Alter ist eigene Annahme. [Art. 6][avrg6]
+- `combo.ts:361`, `:389`, `:520`, `:597`: gemeinsamer Fonds-Pauschbetrag, ein Tarif der Erben, gemeinsames laufendes
+  KV-Buch grundsätzlich richtig; Ausnahmen R2–R4/R7/E9. Basisreduktion normaler Entnahmen und volle VP-Anrechnung
+  im Durchschnittsmodell konsistent. Einzelprodukte tatsächlich über `single()` (`analyze.ts:80`).
+- Nominal-/Realumrechnung und Ranking mit `cumHReal` konsistent. Jahresauszahlungen statt monatlicher Zahlungen
+  sind eine offengelegte Zeitnäherung, keine exakt monatlich modellierte Rente.
 
-  Das wirkt etwa halb so stark wie R1, in die Gegenrichtung.
-- **Vorschlag:** Eine Szenario-Zeile „KV-Satz +3 Prozentpunkte“ bei `kvOn`. Keine Änderung des Standardwerts.
+**Prüfgrenzen:** Start heute statt 01.01.2027 ist in `Settings.svelte:187` offengelegt; die Engine hat keine
+Kalenderdatums-/Teiljahrsrechnung. Hauptfälle sind volle Modelljahre, keine taggenaue Planung ab November 2026.
+AVD-Auslegung durch Krankenkassen nicht ersetzt. BSG-Altfall über amtlichen GKV-Katalog/BVSz,
+nicht über einen abrufbaren Urteilsvolltext auf bsg.bund.de verifiziert. Keine e2e-Läufe/Screenshots.
 
-### R6 – `latentTax` (klein, ohne Einfluss auf die Rangfolge)
+**Abschlussprüfung:** Probedateien entfernt; `npx vitest run`: **11 Dateien, 221 Tests grün** (04.11.2026).
+Nur dieser Bericht wird committed.
 
-- **Was:** Die Schätzung verteilt das Kapital gleichmäßig auf die Restjahre, ohne Wachstum, mit dem Tarif des Bewertungsjahres. Die echten Raten steigen aber, die Progression wird also unterschätzt.
-- **Fundstelle:** `combo.ts:445, 565`
-- **Wirkung (Default):** latentTax(n) = 47.397 € real, die gerechnete Steuer der Rentenphase beträgt 56.472 € real (Summe ohne Abzinsung). Betroffen sind nur `capNet` des AVD (Anzeige) und `heirMarried`, nicht cumH.
-- **Vorschlag:** `latentTax` aus dem Auszahlplan selbst rechnen: dieselbe Schleife wie in Abschnitt 1 ab idx, mit `taxAdd` je Jahr.
-
-### R7 – Kapitalauszahlung in einem Jahr (klein)
-
-- **Was:** Die halbe Kapitalauszahlung der Versicherung kommt vollständig in den Tarif des Jahres n. Manche Tarife erlauben Teilauszahlungen über mehrere Jahre. Die hälftige Besteuerung bleibt dabei.
-- **Wirkung (Default):** Steuer 12.218 € real auf einmal, 10.108 € über 5 Jahre verteilt. Das sind etwa +2.100 € (+1,7 %) für die Versicherung, High etwa +6.300 €.
-- **Bewertung:** eine Frage des Vertrags, kein Rechenfehler. Allenfalls im Glossar nennen.
-
-### R8 – Zuflusszeitpunkt der Vorabpauschale (klein)
-
-- **Was:** Die Vorabpauschale gilt am ersten Werktag des Folgejahres als zugeflossen (§ 18 Abs. 3 InvStG). Die Engine versteuert sie im selben Jahr und mit dessen Pauschbetrag. Die des letzten Ansparjahres fehlt deshalb im KV-Buch des ersten Rentenjahres.
-- **Fundstelle:** `combo.ts:385-396`
-- **Wirkung:** DK, ETF ≈ 454 € einmalig. Die Verschiebung beim Pauschbetrag ist vernachlässigbar.
-- **Vorschlag:** keine Änderung, höchstens ein Satz in der Doku.
-
-## Offene Punkte (rechtlich unklar)
-
-- **Dauer bis zur Zulagengutschrift beim AVD (R3):** Für das AVD gibt es noch keine Verwaltungspraxis.
-- **E9:** KV auf AVD-Auszahlungen: 1/120 oder 1/12, ganze Rate oder nur der Ertrag. Der GKV-Katalog nennt nur die „Riester-Rentenversicherung“ (1/120), keinen Depotvertrag. Zählte nur der Gewinnanteil, gewänne das AVD im High-Fall gut 40.000 € (dokumentiert). Mit R1 würde das ETF in DK das AVD wahrscheinlich nicht mehr schlagen.
-- **E4, E12, E13:** weiter offen, siehe `docs/abweichungen-vom-original.md`.
-- Nicht gerechnet und in Settings offengelegt: Kirchensteuer, Ehegattensplitting, Altersentlastungsbetrag. Letzterer wirkt nur bei einem Rentenbeginn vor 2058, also bei heute über 33-Jährigen.
-
-## Empfehlung zur Reihenfolge
-
-1. **R1** als Fix umsetzen. Das ist ein echter Rechtsfehler und die größte Wirkung (bis 12 % beim AVD).
-2. **R3** als Fix, R2 entscheiden (gleiches Profil oder Barwert).
-3. R4 und R5 als Sensitivität dokumentieren bzw. als Szenario-Zeile.
-4. R6 bei Gelegenheit.
+[sa]: https://www.gesetze-im-internet.de/estg/__10.html
+[verkauf]: https://www.gesetze-im-internet.de/invstg_2018/__19.html
+[kapital]: https://www.gesetze-im-internet.de/estg/__20.html
+[gp]: https://www.gesetze-im-internet.juris.de/estg/__32d.html
+[vp]: https://www.gesetze-im-internet.de/invstg_2018/__18.html
+[kv]: https://www.gesetze-im-internet.de/sgb_5/__240.html
+[bvsz]: https://www.gkv-spitzenverband.de/media/dokumente/krankenversicherung_1/grundprinzipien_1/finanzierung/beitragsbemessung/2025-01-01_Einheitliche_Grundsaetze_zur_Beitragsbemessung_freiwilliger_Mitglieder_Stand_01_01_2025.pdf
+[avrg2]: https://www.buzer.de/gesetz/17547/a339399.htm
+[avrg6]: https://www.buzer.de/gesetz/17547/a339403.htm
+[tarif]: https://www.gesetze-im-internet.de/estg/__32a.html
+[rente]: https://www.gesetze-im-internet.de/estg/__22.html
+[tod]: https://www.gesetze-im-internet.de/estg/__93.html
+[bmf]: https://www.bundesfinanzministerium.de/Content/DE/Standardartikel/Themen/Steuern/Steuerliche_Themengebiete/Rentenbesteuerung/2023-10-05-stl-foerderung-private-altersvorsorge.pdf?__blob=publicationFile&v=3
+[soli3]: https://www.gesetze-im-internet.de/solzg_1995/__3.html
+[soli4]: https://www.gesetze-im-internet.de/solzg_1995/__4.html
+[bbg]: https://www.gesetze-im-internet.de/svbezgrv_2026/__2.html
+[erm]: https://www.gesetze-im-internet.de/sgb_5/__243.html
+[zusatz]: https://www.bundesamtsozialesicherung.de/de/service/newsroom/detail/gkv-schaetzerkreis-schaetzt-die-finanziellen-rahmenbedingungen-der-gesetzlichen-krankenversicherung-fuer-die-jahre-2025-und-2026/
+[pflege]: https://www.gesetze-im-internet.de/pbav_2025/__1.html
+[kinder]: https://www.gesetze-im-internet.de/sgb_11/__55.html
+[basis]: https://www.bundesfinanzministerium.de/Content/DE/Downloads/BMF_Schreiben/Steuerarten/Investmentsteuer/2026-01-13-basiszins-berechnung-vorabpauschale.pdf?__blob=publicationFile&v=4
+[alter]: https://www.gesetze-im-internet.de/estg/__52.html
+[tf]: https://www.gesetze-im-internet.de/invstg_2018/__20.html
+[katalog]: https://www.gkv-spitzenverband.de/media/dokumente/krankenversicherung_1/grundprinzipien_1/finanzierung/beitragsbemessung/2026-05-26_Katalog_Einnahmen_beitragsrechtliche_Bewertung_240_SGB_V_BF.pdf
