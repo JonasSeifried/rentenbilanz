@@ -8,7 +8,7 @@
 //   for (const row of robustRows(p, setup, lastBest.split))   // je Zeile ein Leerlauf-Slot, Generationszähler
 // analyzeCombo verwendet `lastBest` nur, wenn dessen Signatur zu (p, Budget, Produkte) passt, sonst best = 'pending'.
 
-import type { Params, ProductKey } from './engine';
+import type { Params, ProductKey } from './core';
 import { scenarioList, type ScenarioId } from './analyze';
 import type { EngineOptions } from './fixes';
 import { combo, comboStats, emptySplit, partStats, splitSum, SPLIT_KEYS, type ComboResult, type ComboSetup, type ComboStats, type Split } from './combo';

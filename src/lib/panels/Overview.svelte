@@ -11,7 +11,7 @@
   import AssumptionCheck from '../components/AssumptionCheck.svelte';
   import NotInNumbers from '../components/NotInNumbers.svelte';
   import { SPLIT_KEYS } from '../engine/combo';
-  import type { ProductKey } from '../engine/engine';
+  import type { ProductKey } from '../engine/core';
   import LineChart, { type Series } from '../components/LineChart.svelte';
 
   let { A, scen }: { A: Analysis; scen: Scenario[] } = $props();

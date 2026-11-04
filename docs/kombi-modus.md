@@ -21,7 +21,9 @@ Dialog hinter „+ Kombi“ in der Zeile „Vergleichen“. Dort zeigt der Rechn
 ## 1. Rechenmodell
 
 `combo(p, split)` rechnet alle Teile Jahr für Jahr. `split` enthält die Monatsbeiträge je Produkt in € (heutiges
-Geld). Sie wachsen mit der Beitragsdynamik wie im Einzelvergleich. Die Formeln stammen aus `engine.ts`, und zwar in
+Geld). Sie wachsen mit der Beitragsdynamik wie im Einzelvergleich. `combo.ts` ist die **einzige** Rechen-Engine der
+App: Auch jedes Einzelprodukt im Vergleich ist eine Kombi mit nur diesem Teil (`single()` in `analyze.ts`, mit
+`parts: [k]` auch bei 0 €). Die Formeln stammen aus `engine.ts` (Port des Originals, jetzt nur Referenz), und zwar in
 der Fassung **mit allen Korrekturen** (`docs/abweichungen-vom-original.md`). Gemeinsam gerechnet werden drei Dinge:
 
 1. **Einkommensteuer im Alter.** Steuerpflichtig sind der AVD-Auszahlplan einschließlich der 30-%-Auszahlung, der
@@ -68,7 +70,9 @@ Zufallsszenarien mal 4 Produkte (1.302 Fälle, ~194.000 Zahlen). Der Test läuft
 jedem Fix allein und mit allen Fixes außer einem. Die Option `fixes` von `combo()` gibt es nur dafür. Die App ruft
 `combo()` immer ohne Optionen auf, also mit allen Fixes.
 
-**Wer `engine.ts` ändert, muss `combo.ts` gleich mitändern.** Sonst schlägt I1 fehl.
+I1 vergleicht außerdem `heir(idx)` und `heirMarried(idx)` für jedes Todesjahr (Wert bitgenau, Hinweistext gleich)
+und `analyze()` selbst gegen `model()`. Neue Rechnung kommt nur noch in `combo.ts`; abgeschaltet muss sie bitgleich
+bleiben.
 
 ### Ausgaben
 
@@ -77,6 +81,7 @@ Diese Felder gibt es je Teil und für die Summe:
 - `net[t]`, `vals[t]`, `own`, `ownReal`, `capR`, `capNet`, `cost` (nur mit `{cost: true}`), `foerder`
 - nur AVD: `capAVD`, `sideR`, `zul`, `ref`, `lumpNet`
 - nur Versicherung: `kapNet`, `annual`
+- `heir(idx)` (Erbwert dieses Teils, für sich versteuert wie im Einzelvergleich), beim AVD auch `heirMarried(idx)`
 
 Je Teil gibt es außerdem die Anteile `incTax[]`, `abgTax[]` und `kv[]` sowie `taxBase[]`, den
 einkommensteuerpflichtigen Betrag. Die Summe enthält die gemeinsamen Bücher `incTax[]`, `abgTax[]` und `kv[]` und das

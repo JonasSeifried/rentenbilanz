@@ -1,7 +1,7 @@
 <script lang="ts">
   import { scrollRegion } from '../attach';
   import type { Analysis, Product } from '../engine/analyze';
-  import { ERTRAG } from '../engine/engine';
+  import { ERTRAG } from '../engine/core';
   import { eur } from '../format';
   import { splitText } from '../comboVerdict';
   import { app, setInput } from '../state.svelte';

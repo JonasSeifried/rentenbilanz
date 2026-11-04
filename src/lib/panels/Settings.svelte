@@ -1,7 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { app, setInput, resetToDefaults, forgetSaved } from '../state.svelte';
-  import { readParams } from '../engine/engine';
+  import { readParams } from '../engine/core';
   import { LIMITS } from '../engine/inputs';
   import { SITE } from '../site';
   import NumberField from '../components/NumberField.svelte';

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { scrollRegion } from '../attach';
   import type { Analysis } from '../engine/analyze';
-  import type { HeirValue, ProductKey } from '../engine/engine';
+  import type { HeirValue, ProductKey } from '../engine/core';
   import { eur } from '../format';
   import { app, setInput } from '../state.svelte';
   import NumberField from '../components/NumberField.svelte';

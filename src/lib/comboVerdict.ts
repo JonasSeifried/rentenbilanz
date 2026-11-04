@@ -1,7 +1,7 @@
 // Ergebnissatz im Kombi-Modus (Kombi-Design §4.3, UX U5). Neutral: „rechnerisch“, „unter diesen Annahmen“,
 // nie „optimal für dich“ oder „empfehlen“. Abstände (Δ) immer in heutiger Kaufkraft (Fix rankReal, E1);
 // im Nominalmodus mit dem Zusatz „(in heutiger Kaufkraft)“. Monatsdurchschnitte in der Anzeige-Einheit.
-import type { ProductKey } from './engine/engine';
+import type { ProductKey } from './engine/core';
 import { SPLIT_KEYS, type Split } from './engine/combo';
 import type { ComboAnalysis, RobustSummary } from './engine/comboAnalyze';
 import { AVD_CAP, TIE_EUR, TIE_REL } from './engine/search';

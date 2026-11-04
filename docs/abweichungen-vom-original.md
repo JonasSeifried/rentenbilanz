@@ -1,7 +1,11 @@
 # Abweichungen vom Original
 
-Die Engine (`src/lib/engine/engine.ts`, `analyze.ts`) ist ein 1:1-Port von `legacy/index.html`. Darauf liegen
-sieben Korrekturen. Jede hängt an einem eigenen Schalter (`src/lib/engine/fixes.ts`):
+`src/lib/engine/engine.ts` (`model()`) ist ein 1:1-Port von `legacy/index.html`. Darauf liegen sieben Korrekturen.
+Jede hängt an einem eigenen Schalter (`src/lib/engine/fixes.ts`). Die App rechnet seit dem Umbau „eine Engine“ mit
+`combo.ts`: Ein Einzelprodukt ist eine Kombi mit nur diesem Teil (`single()` in `analyze.ts`). `combo.ts` enthält jede
+Korrektur ebenfalls schaltbar und ist mit einem Teil bitgenau gleich `model()`, für jede Teilmenge der Fixes, inklusive
+Erbfall und Hinweistexten (I1, `tests/combo.test.ts`). `engine.ts` bleibt als Referenz; die Abschnitte „Code“ unten
+nennen die Stelle in `engine.ts`, in `combo.ts` steht sie im gleichnamigen Block.
 
 ```ts
 model(p, { fixes })    analyze(p, { fixes })    scenarios(p, { fixes })
@@ -21,8 +25,8 @@ model(p, { fixes })    analyze(p, { fixes })    scenarios(p, { fixes })
   - In den Wirkungstests wird mit `kvRate` 21,7 gerechnet, dem Standard zur Zeit der Prüfung. „cumH“ ist die
     Summe der Netto-Auszahlungen bis zum Alter H, in heutiger Kaufkraft.
 
-**Wichtig für die Kombi-Engine:** Sie spiegelt die Rechnung mit **allen** Fixes. Wer hier etwas ändert, muss es
-auch in der Kombi-Engine ändern.
+**Wichtig:** Neue Rechnung nur noch in `combo.ts`. Ist sie abgeschaltet (Standard), muss `combo.ts` bitgleich zu
+`model()` bleiben (I1, Golden-Test über `analyze()`).
 
 ---
 
@@ -372,7 +376,7 @@ gebildeten Kapitals sowie zwei Jahre vor der Auszahlungsphase und am Beginn der 
 im OGAW der Risikoklasse 3–5 liegen; der Vertragspartner kann andere Prozentsätze verlangen (Buchst. b). Kostendeckel
 des Standarddepots 1,0 % (§ 2a Abs. 2 AltZertG n. F.).
 
-**Formel.** `avdGrowth(p, t, n)` in `engine.ts` (von `combo.ts` mitbenutzt): Ansparjahre mit `n − t ≤ 5` rechnen mit
+**Formel.** `avdGrowth(p, t, n)` in `core.ts` (von `engine.ts` und `combo.ts` benutzt): Ansparjahre mit `n − t ≤ 5` rechnen mit
 `0,5 · g + 0,5 · avdSafe`, mit `n − t ≤ 2` mit `0,3 · g + 0,7 · avdSafe`, gestuft zu Jahresbeginn; sonst `g`. Gilt für
 den geförderten und den ungeförderten Teil (ein Vertrag), nicht für das ETF-Nebendepot. Auszahlphase: `gPay` wie bei
 allen Produkten. Wirkung Standardwerte, 450 €/Monat, `avdSafe` 2 %: AVD-Kapital bei Rentenbeginn rund 10 % niedriger (150 €: Ø 634 € → 575 € im Monat, ETF 557 €).

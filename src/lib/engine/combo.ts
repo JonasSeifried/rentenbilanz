@@ -6,16 +6,18 @@
 //  - einem KV/PV-Jahresbuch bis zur Beitragsbemessungsgrenze über ALLE Produkte (Fix kvSharedRoom, E7).
 // Gemeinsame Abzüge werden anteilig nach Bemessungsgrundlage auf die Produkte verteilt (Konvention, docs/kombi-modus.md).
 //
+// Eine Engine: Die App rechnet auch jedes Einzelprodukt hier (Kombi mit einem Teil, single() in analyze.ts).
 // Spiegel der Einzelrechnung: Jede Formel ist aus engine.ts übernommen (Stand mit den Korrekturen aus fixes.ts),
 // in derselben Reihenfolge der Gleitkomma-Operationen. Mit nur einem Produkt fällt jede Aufteilung auf den
 // ursprünglichen Ausdruck zurück (x·(c/c) = x, max(0, x − f·(x/x)) = max(0, x − f)), deshalb gilt
 // combo(p, {k: Betrag}) === model(p).res[k] bitgenau (tests/combo.test.ts, I1) – für jede Teilmenge der Fixes.
-// Wichtig: Jede Änderung an engine.ts muss hier nachgezogen werden (I1 schlägt sonst fehl).
+// engine.ts ist nur noch Referenz des Originals. Neue Rechnung nur hier, abschaltbar; abgeschaltet bitgleich (I1).
 //
 // Die Option `fixes` gibt es nur, damit I1 auch den Originalpfad prüfen kann. Die App ruft immer ohne Optionen,
 // also mit ALL_FIXES. Ohne kvSharedRoom wird (wie im Original) jeder KV-Strom einzeln bis zur BBG begrenzt.
 
-import { tax, avdGrowth, AVD_MAX, AVD_SUB_MAX, ERTRAG, KV_BBG, numOf, type Params, type ProductKey } from './engine';
+import { eur } from '../format';
+import { tax, avdGrowth, AVD_MAX, AVD_SUB_MAX, ERTRAG, KV_BBG, numOf, type HeirValue, type Params, type ProductKey, type ProductResult } from './core';
 import { fixesOf, type EngineOptions } from './fixes';
 import type { Inputs } from './inputs';
 
@@ -26,8 +28,8 @@ export const SPLIT_KEYS: readonly ProductKey[] = Object.freeze(['etf', 'avd', 'i
 export const emptySplit = (): Split => ({ etf: 0, avd: 0, ins: 0, fond: 0 });
 export const splitSum = (s: Split): number => s.etf + s.avd + s.ins + s.fond;
 
-/** Ergebnis je Teil der Aufteilung. Felder wie ProductResult in engine.ts (ohne Erbfall). */
-export interface ComboPart {
+/** Ergebnis je Teil der Aufteilung. Felder wie ProductResult (core.ts). */
+export interface ComboPart extends ProductResult {
   key: ProductKey;
   vals: (number | null)[]; net: number[];
   own: number; ownReal: number; capR: number; capNet: number; cost: number;
@@ -36,7 +38,11 @@ export interface ComboPart {
   incTax: number[]; abgTax: number[]; kv: number[];
   /** Einkommensteuerpflichtiger Betrag je Jahr (nominal), Grundlage der gemeinsamen Steuer (Fonds: 0). */
   taxBase: number[];
+  /** Erbwert bei Tod zu Beginn von Jahr idx (nominal), dieser Teil für sich versteuert (wie model()). */
+  heir: (idx: number) => HeirValue;
   // AVD
+  /** Erbwert, wenn der Ehepartner erbt (AVD auf eigenen Vertrag übertragen). */
+  heirMarried?: (idx: number) => HeirValue;
   capAVD?: number; sideR?: number; sideOwn?: number; sideOwnReal?: number; unsubOwn?: number; unsubOwnReal?: number;
   zul?: number; zulReal?: number; ref?: number; refReal?: number; noElig?: number;
   // Versicherung
@@ -64,6 +70,8 @@ export interface ComboResult {
 export interface ComboOptions extends EngineOptions {
   /** Zweiter Lauf ohne Kosten für `cost` (wie r0/a0/side0 in model()). Die Suche braucht das nicht. */
   cost?: boolean;
+  /** Diese Teile auch mit 0 € rechnen (Einzelprodukt mit Beitrag 0, wie model()). Standard: alle Teile mit Betrag > 0. */
+  parts?: readonly ProductKey[];
 }
 
 /** Wie Stats in analyze.ts. cumHReal ist die Zielgröße der Suche und des Rankings (Fix rankReal, E1). */
@@ -149,7 +157,7 @@ export function combo(p: Params, split: Split, opts: ComboOptions = {}): ComboRe
   return main;
 }
 
-function run(p: Params, split: Split, opts: EngineOptions, zeroCost: boolean): ComboResult {
+function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): ComboResult {
   const fx = fixesOf(opts);
   const F = {
     bonus: fx.has('bonusOutsideSA'),  // E3
@@ -157,9 +165,11 @@ function run(p: Params, split: Split, opts: EngineOptions, zeroCost: boolean): C
     kvShared: fx.has('kvSharedRoom'), // E7
     kvSpread: fx.has('kvLumpSpread'), // E8
     unsub: fx.has('avdUnsubsidized'), // E10
+    heir: fx.has('heirTax'),          // E2
   };
   const T = 100 - p.a0, n = p.R - p.a0, tH = p.H - p.a0;
   const I = (t: number) => Math.pow(1 + p.infl, t);
+  const Rn = (x: number, t: number) => p.real ? x / I(t) : x; // für Beträge in Hinweistexten (gleiche Basis wie die Anzeige)
   const incAt = (t: number) => (p.a0 + t < p.studyEnd ? p.incStudy : p.incWork);
   const taxAdd = (incReal: number, addNom: number, t: number) => addNom <= 0 ? 0 : (tax(incReal + addNom / I(t)) - tax(incReal)) * I(t);
   const taxSave = (incReal: number, dedNom: number, t: number) => (tax(incReal) - tax(Math.max(0, incReal - dedNom / I(t)))) * I(t);
@@ -171,7 +181,8 @@ function run(p: Params, split: Split, opts: EngineOptions, zeroCost: boolean): C
   const zero = () => new Array<number>(T).fill(0);
   const monthlyArr = (m: number) => Array.from({ length: T }, (_, t) => t < n ? m * dynF(t) : 0);
   const tEnd = p.H - p.a0; // Auszahlplan-Ende aller Fonds und des AVD
-  const on = (k: ProductKey) => split[k] > 0;
+  const forced = opts.parts;
+  const on = (k: ProductKey) => forced ? forced.includes(k) : split[k] > 0;
   const etfTer = zeroCost ? 0 : p.etfTer;
   // KV-Jahresbuch je Teil (nur mit kvSharedRoom): beitragspflichtige Beträge in derselben Reihenfolge wie in model().
   const claims: Partial<Record<ProductKey, number[]>> = {};
@@ -183,7 +194,8 @@ function run(p: Params, split: Split, opts: EngineOptions, zeroCost: boolean): C
   let avd: null | {
     vals: number[]; W: number[]; L: number[]; payY: number[]; paying: boolean[]; refunds: number[]; overflow: number[];
     xW: number[]; Lu: number[]; tb: number[]; cash: number[]; kvW: number[];
-    valsU: number[]; ownU: number; ownUReal: number;
+    valsU: number[]; basesU: number[]; ownU: number; ownUReal: number;
+    owns: number[]; zuls: number[]; foer: number[]; // für den Erbfall (wie in model())
     own: number; ownReal: number; zul: number; zulReal: number; ref: number; refReal: number; noElig: number;
   } = null;
   if (on('avd')) {
@@ -191,7 +203,7 @@ function run(p: Params, split: Split, opts: EngineOptions, zeroCost: boolean): C
     let V = 0, own = 0, ownReal = 0, zul = 0, zulReal = 0, ref = 0, refReal = 0, bonusUsed = false, noElig = 0;
     let Vu = 0, Bu = 0, ownU = 0, ownUReal = 0;
     const vals = [0], W = zero(), L = zero(), payY = zero(), paying = new Array<boolean>(T).fill(false), refunds = zero(), overflow = zero();
-    const xW = zero(), Lu = zero(), tb = zero(), cash = zero(), kvW = zero(), valsU = [0];
+    const xW = zero(), Lu = zero(), tb = zero(), cash = zero(), kvW = zero(), valsU = [0], basesU = [0], owns = [0], zuls = [0], foer = [0];
     for (let t = 0; t < T; t++) {
       const age = p.a0 + t, accum = t < n;
       if (!accum && t < tEnd && (V > 0 || Vu > 0)) {
@@ -232,9 +244,9 @@ function run(p: Params, split: Split, opts: EngineOptions, zeroCost: boolean): C
         const extra = Math.max(0, save - zSA);
         refunds[t] = extra; ref += extra; refReal += extra / I(t);
       }
-      vals.push(V); valsU.push(Vu);
+      vals.push(V); valsU.push(Vu); basesU.push(Bu); owns.push(own); zuls.push(zul); foer.push(zul + ref);
     }
-    avd = { vals, W, L, payY, paying, refunds, overflow, xW, Lu, tb, cash, kvW, valsU, ownU, ownUReal, own, ownReal, zul, zulReal, ref, refReal, noElig };
+    avd = { vals, W, L, payY, paying, refunds, overflow, xW, Lu, tb, cash, kvW, valsU, basesU, ownU, ownUReal, owns, zuls, foer, own, ownReal, zul, zulReal, ref, refReal, noElig };
   }
 
   // ---------- 2) Versicherung, Ansparphase ----------
@@ -355,9 +367,11 @@ function run(p: Params, split: Split, opts: EngineOptions, zeroCost: boolean): C
 
   // ---------- 5) Teile wie in model() zusammensetzen (Netto vor dem gemeinsamen KV-Buch) ----------
   const parts: ComboResult['parts'] = {};
+  const fundNote = 'Nach Steuer bei Verkauf. Behalten die Erben, übernehmen sie den Gewinn steuerlich.';
   const fundPart = (k: ProductKey, f: Fund): ComboPart => ({
     key: k, vals: f.vals, net: f.net, own: f.own, ownReal: f.ownReal, capR: f.vals[n], capNet: sellNet(f, n), cost: 0,
     foerder: 0, foerderReal: 0, payEnd: p.H, lumpNet: 0, incTax: zero(), abgTax: f.abg, kv: f.kvInline, taxBase: zero(),
+    heir: idx => ({ val: sellNet(f, idx), note: fundNote }),
   });
   if (fEtf) parts.etf = fundPart('etf', fEtf);
   if (fFond) parts.fond = fundPart('fond', fFond);
@@ -382,6 +396,26 @@ function run(p: Params, split: Split, opts: EngineOptions, zeroCost: boolean): C
       zul: avd.zul, zulReal: avd.zulReal, ref: avd.ref, refReal: avd.refReal,
       foerder: avd.zul + avd.ref, foerderReal: avd.zulReal + avd.refReal, cost: 0, payEnd: p.H, noElig: avd.noElig, lumpNet,
       incTax: taxAvd, abgTax: side.abg, kv: aKv, taxBase: avd.tb,
+      heir: () => ({ val: 0, note: '' }),
+    };
+    // Erbfall wie in model() (Formeln und Reihenfolge der Operationen identisch, I1).
+    const a = avd, gainU = (idx: number, half: boolean) => Math.max(0, a.valsU[idx] - a.basesU[idx]) * (half ? 0.5 : 1);
+    const unsubNote = (idx: number, tx: number) => a.valsU[idx] > 0 ? '; ungeförderter Teil ' + eur(Rn(a.valsU[idx], idx)) + ' ohne Förderrückzahlung, Steuer der Erben auf dessen Gewinn ca. ' + eur(Rn(tx, idx)) : '';
+    parts.avd.heirMarried = idx => {
+      const V = a.vals[idx], lt = latentTax(V, idx);
+      const halbU = p.heirHalf && idx >= 12, txU = taxAdd(p.incHeir, gainU(idx, halbU), idx);
+      return { val: V - lt + (a.valsU[idx] - txU) + sellNet(side, idx), note: 'Ohne Abzug auf einen eigenen AVD-Vertrag übertragbar, später aber voll steuerpflichtig (ca. ' + eur(Rn(lt, idx)) + ' Einkommensteuer, grob geschätzt und abgezogen)' + unsubNote(idx, txU) };
+    };
+    parts.avd.heir = idx => {
+      const V = a.vals[idx], age = p.a0 + idx, C0 = a.vals[n];
+      let back: number, ownR: number, zulR: number;
+      if (idx <= n) { back = a.foer[idx]; ownR = a.owns[idx]; zulR = a.zuls[idx]; }
+      else { const f = C0 > 0 ? V / C0 : 0; back = a.foer[n] * f; ownR = a.owns[n] * f; zulR = a.zuls[n] * f; }
+      const halb = F.heir ? p.heirHalf && idx >= 12 : p.heirHalf && age >= 62 && idx >= 12;
+      const rest = Math.max(0, V - back), gain = Math.max(0, V - ownR - zulR) * (halb ? 0.5 : 1);
+      const incDeath = F.heir ? p.incHeir : idx < n ? incAt(idx) : p.incRet;
+      const tx = taxAdd(incDeath, gain + gainU(idx, halb), idx);
+      return { val: (rest + a.valsU[idx]) - tx + sellNet(side, idx), note: 'Förderung ' + eur(Rn(back, idx)) + ' zurück, ' + (F.heir ? 'Steuer der Erben auf Erträge ' : 'Steuer auf Erträge ') + eur(Rn(tx, idx)) + (halb ? ' (hälftig)' : '') + (a.valsU[idx] > 0 ? '; darin der ungeförderte Teil ' + eur(Rn(a.valsU[idx], idx)) + ' ohne Förderrückzahlung' : '') };
     };
   }
   if (ins) {
@@ -398,14 +432,31 @@ function run(p: Params, split: Split, opts: EngineOptions, zeroCost: boolean): C
         if (F.kvShared) claims.ins![n + j] += ins.C / 10;
         else { const k = kvAdd(ins.C / 10, n + j); f.net[n + j] -= k; iKv[n + j] += k; kv[n + j] += k; }
       }
-      parts.ins = { ...base, vals: ins.vals.map((v, i) => i <= n ? v : f.vals[i]), net: f.net, payEnd: p.H, lifelong: false, abgTax: f.abg, kv: iKv };
+      const iv = ins.vals;
+      parts.ins = {
+        ...base, vals: iv.map((v, i) => i <= n ? v : f.vals[i]), net: f.net, payEnd: p.H, lifelong: false, abgTax: f.abg, kv: iKv,
+        heir: idx => idx <= n ? { val: iv[idx] as number, note: 'Fondsguthaben, einkommensteuerfrei (nur Erbschaftsteuer)' }
+                              : { val: sellNet(f, idx), note: 'ETF aus der Kapitalauszahlung. ' + fundNote },
+      };
     } else {
       const net = zero(), iKv = zero();
       for (let t = n; t < T; t++) {
         if (F.kvShared) { net[t] = ins.annual - taxIns[t]; claims.ins![t] += ins.annual; }
         else { const k = kvAdd(ins.annual, t); net[t] = (ins.annual - taxIns[t]) - k; iKv[t] += k; kv[t] += k; }
       }
-      parts.ins = { ...base, vals: ins.vals, net, payEnd: 100, lifelong: true, abgTax: zero(), kv: iKv };
+      const { vals: iv, annual, ea } = ins;
+      const annualNet = (t: number) => annual - taxAdd(p.incRet, annual * ea, t);
+      parts.ins = {
+        ...base, vals: iv, net, payEnd: 100, lifelong: true, abgTax: zero(), kv: iKv,
+        heir: idx => {
+          if (idx <= n) return { val: iv[idx] as number, note: 'Fondsguthaben, einkommensteuerfrei (nur Erbschaftsteuer)' };
+          const rest = Math.max(0, p.R + p.gz - (p.a0 + idx));
+          // Restrenten der Garantiezeit einzeln versteuert; Fix heirTax (E2): mit dem Einkommen der Erben.
+          const heirNet = (t: number) => F.heir ? annual - taxAdd(p.incHeir, annual * ea, t) : annualNet(t);
+          let v = 0; for (let k = 0; k < rest; k++) v += heirNet(idx + k) * (p.real ? I(idx) / I(idx + k) : 1);
+          return { val: v, note: rest > 0 ? 'Restliche Garantiezeit: ' + rest + ' Jahre, nach Steuer' + (F.heir ? ' der Erben' : '') : 'Garantiezeit abgelaufen – nichts' };
+        },
+      };
     }
   }
 

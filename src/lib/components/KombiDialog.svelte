@@ -4,7 +4,7 @@
   // Teilnehmer mit (analyze(), gemeinsam versteuert). Hier gibt es dazu die rechnerisch beste Aufteilung.
   import { untrack } from 'svelte';
   import { PRODUCTS } from '../engine/analyze';
-  import { readParams, type ProductKey } from '../engine/engine';
+  import { readParams, type ProductKey } from '../engine/core';
   import { emptySplit, INPUT_OF, scaleSplit, SPLIT_KEYS, splitSum, storedSplit, type Split } from '../engine/combo';
   import { analyzeCombo, restTarget, SPLIT_EPS } from '../engine/comboAnalyze';
   import { bestSplit } from '../engine/search';

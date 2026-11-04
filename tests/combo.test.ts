@@ -3,7 +3,7 @@
 // Er läuft mit ALL_FIXES (Standard), NO_FIXES (Original) und jedem Fix allein, damit Drift zwischen engine.ts
 // und combo.ts auf jedem Pfad sofort auffällt.
 import { describe, expect, it } from 'vitest';
-import { readParams, model, tax, type Params, type ProductKey } from '../src/lib/engine/engine';
+import { readParams, model, tax, type HeirValue, type Params, type ProductKey } from '../src/lib/engine/engine';
 import { analyze } from '../src/lib/engine/analyze';
 import { ALL_FIXES, FIX_IDS, NO_FIXES, type FixId } from '../src/lib/engine/fixes';
 import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
@@ -89,6 +89,16 @@ const SCENARIOS: Inputs[] = [...NAMED.map(([, v]) => ({ ...DEFAULTS, ...v })), .
 // Skalare Felder, die model() je Produkt liefert und die Kombi-Engine gleich liefern muss.
 const SKIP = new Set(['tEnd']); // interne Laufzeit von runFund, kein Ergebnis
 
+/** Kennzahlen wie analyze() im Original, direkt aus model() (Referenz; analyze() selbst rechnet über combo()). */
+function refStats(p: Params, m: ReturnType<typeof model>, k: ProductKey) {
+  const r = m.res[k]!, { n, tH, T, I } = m, R = (x: number, t: number) => p.real ? x / I(t) : x;
+  const lump = r.lumpNet ? R(r.lumpNet, n) : 0;
+  let sumH = 0; for (let t = n; t < tH; t++) sumH += R(r.net[t], t);
+  let sumHR = 0; for (let t = n; t < tH; t++) sumHR += r.net[t] / I(t);
+  let cum100 = 0; for (let t = n; t < T; t++) cum100 += R(r.net[t], t);
+  return { avgMonthly: (sumH - lump) / (tH - n) / 12, cumH: sumH, cumHReal: sumHR, cum100, lump };
+}
+
 /** I1 für eine Teilmenge der Fixes; liefert Anzahl Fälle und verglichener Zahlen. */
 function oneProductInvariant(inputs: Inputs[], fixes: ReadonlySet<FixId>) {
   let cases = 0, numbers = 0;
@@ -97,16 +107,18 @@ function oneProductInvariant(inputs: Inputs[], fixes: ReadonlySet<FixId>) {
     for (const k of SPLIT_KEYS) {
       const p: Params = { ...p0, on: only(k) };
       const amount = p[M[k]] as number;
-      if (!(amount > 0)) continue; // 0 € = kein Teil (I8)
+      // 0 € = kein Teil (I8); als Einzelprodukt (analyze) wird es mit parts: [k] trotzdem gerechnet.
       const ctx = `${JSON.stringify(inp)} ${k} fixes=[${[...fixes]}]`;
-      const single = model(p, { fixes }).res[k]! as unknown as Record<string, unknown>;
+      const m = model(p, { fixes });
+      const single = m.res[k]! as unknown as Record<string, unknown>;
       const A = analyze(p, { fixes });
-      const c = combo(p, S({ [k]: amount }), { fixes, cost: true });
+      const c = combo(p, S({ [k]: amount }), { fixes, cost: true, parts: [k] });
       const part = c.parts[k]! as unknown as Record<string, unknown>;
       expect(Object.keys(c.parts), ctx).toEqual([k]);
       for (const [f, v] of Object.entries(single)) {
         if (SKIP.has(f) || typeof v === 'function' || (typeof v !== 'number' && typeof v !== 'boolean')) continue;
         expect(part[f], `${ctx} .${f}`).toBe(v); numbers++;
+        expect((A.res[k] as unknown as Record<string, unknown>)[f], `${ctx} analyze .${f}`).toBe(v);
       }
       for (const f of ['net', 'vals'] as const) {
         const a = single[f] as (number | null)[], b = part[f] as (number | null)[];
@@ -116,12 +128,28 @@ function oneProductInvariant(inputs: Inputs[], fixes: ReadonlySet<FixId>) {
       }
       const net = single.net as number[];
       for (let t = 0; t < net.length; t++) if (!Object.is(net[t], c.net[t])) expect.fail(`${ctx} Summe net[${t}]: model ${net[t]}, combo ${c.net[t]}`);
-      // Kennzahlen wie analyze(); Summe und Teil identisch
-      const st = comboStats(p, c), ps = partStats(p, c, k)!;
-      for (const [f, v] of Object.entries(A.stats[k]!)) { expect((st as never)[f], `${ctx} stats.${f}`).toBe(v); expect((ps as never)[f], `${ctx} partStats.${f}`).toBe(v); numbers += 2; }
+      // Erbfall für jedes Todesjahr, Wert bitgenau und Hinweistext gleich
+      for (const f of ['heir', 'heirMarried'] as const) {
+        const a = m.res[k]![f], b = c.parts[k]![f], b2 = A.res[k]![f];
+        expect(typeof b, `${ctx} .${f}`).toBe(typeof a);
+        if (!a) continue;
+        for (let i = 0; i <= m.T; i++) {
+          const x: HeirValue = a(i), y: HeirValue = b!(i), z: HeirValue = b2!(i);
+          if (!Object.is(x.val, y.val) || x.note !== y.note) expect.fail(`${ctx} .${f}(${i}): model ${x.val} „${x.note}“, combo ${y.val} „${y.note}“`);
+          if (!Object.is(x.val, z.val) || x.note !== z.note) expect.fail(`${ctx} analyze .${f}(${i})`);
+          numbers++;
+        }
+      }
+      // Kennzahlen wie im Original; Summe, Teil und analyze() identisch
+      const st = comboStats(p, c), ps = partStats(p, c, k)!, ref = refStats(p, m, k);
+      for (const [f, v] of Object.entries(ref)) {
+        expect((st as never)[f], `${ctx} stats.${f}`).toBe(v); expect((ps as never)[f], `${ctx} partStats.${f}`).toBe(v);
+        expect((A.stats[k] as never)[f], `${ctx} analyze stats.${f}`).toBe(v); numbers += 3;
+      }
       expect(c.own).toBe(single.own); expect(c.ownReal).toBe(single.ownReal); expect(c.capR).toBe(single.capR);
       expect(c.capNet).toBe(single.capNet); expect(c.cost).toBe(single.cost); expect(c.foerder).toBe(single.foerder);
       expect(c.kvClipped).toBe(false);
+      if (amount > 0) expect(Object.keys(combo(p, S({ [k]: amount }), { fixes }).parts), ctx).toEqual([k]);
       cases++;
     }
   }

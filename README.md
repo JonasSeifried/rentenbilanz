@@ -28,7 +28,7 @@ Für die Browser-Tests einmalig: `npx playwright install chromium webkit`.
 | Pfad | Inhalt |
 |---|---|
 | `legacy/index.html` | Ursprünglicher Rechner, Referenz für die Golden-Tests. Nicht ändern. |
-| `src/lib/engine/` | Rechen-Engine, unverändert aus dem Original portiert (`engine.ts`, `analyze.ts`), Eingaben und Standardwerte (`inputs.ts`) |
+| `src/lib/engine/` | Eine Rechen-Engine für Einzelprodukte und Kombi (`combo.ts`; ein Einzelprodukt ist eine Kombi mit einem Teil), Auswertung (`analyze.ts`), Tarif, Konstanten und Eingaben (`core.ts`, `inputs.ts`). `engine.ts` ist der unveränderte Port des Originals und nur noch Referenz für die Tests. |
 | `src/lib/link.ts`, `storage.ts`, `state.svelte.ts` | Link-Format, Speichern im Browser, App-Zustand |
 | `src/lib/glossary.ts` | Erklärtexte zu Fachbegriffen |
 | `src/lib/panels/`, `src/lib/components/` | Oberfläche (Svelte 5) |
@@ -38,7 +38,7 @@ Für die Browser-Tests einmalig: `npx playwright install chromium webkit`.
 
 ## Wichtig beim Ändern
 
-- **Engine:** `tests/golden.test.ts` vergleicht jede Zahl mit `legacy/index.html` (29 benannte und 300 Zufallsszenarien). Rechtliche Änderungen deshalb bewusst machen: Engine ändern, Golden-Test-Erwartung dokumentiert anpassen.
+- **Engine:** Gerechnet wird nur in `combo.ts`. `tests/golden.test.ts` vergleicht `analyze()` (also `combo.ts` ohne Korrekturen) und die Referenz `engine.ts` mit `legacy/index.html` (29 benannte und 300 Zufallsszenarien); `tests/combo.test.ts` (I1) prüft `combo.ts` mit einem Teil bitgenau gegen `engine.ts`. Neue Rechnung (z. B. Umschichtung) nur in `combo.ts`, abschaltbar, damit beide Tests im Standard bitgleich bleiben. Rechtliche Änderungen bewusst machen und dokumentieren.
 - **Standardwerte** (`DEFAULTS` in `inputs.ts`) dürfen sich ändern; geteilte Links bleiben gültig, weil sie gegen eine eingefrorene Basis kodiert sind (`link.ts`, `LINK_VERSION`).
 - **Rechtsstand und Prüfdatum** stehen in `src/lib/site.ts` und werden im Kopf, im Druck und in der Fußzeile angezeigt.
 
@@ -47,9 +47,9 @@ Für die Browser-Tests einmalig: `npx playwright install chromium webkit`.
 Die Rechnung nutzt Werte, die sich jedes Jahr ändern. Nach jeder Änderung: `npm run test:all`, dann Rechtsstand und Prüfdatum in `src/lib/site.ts` anpassen.
 
 - [ ] **Januar – Basiszins** für die Vorabpauschale (BMF-Schreiben): Standardwert `basis` in `src/lib/engine/inputs.ts`, Text in `glossary.ts` (`basiszins`) und unter „Weitere Einstellungen“.
-- [ ] **Einkommensteuertarif** (§ 32a EStG) und **Soli-Freigrenze**: `est()` / `soli()` in `src/lib/engine/engine.ts` (Steuerreform 2027 im Blick behalten).
-- [ ] **Beitragsbemessungsgrenze KV/PV** (`KV_BBG` in `engine.ts`), **Versicherungspflichtgrenze** und **Zusatzbeitrag/Pflegesatz** (Standard `kvRate`, Texte `kvFreiwillig`/`kvRate` im Glossar).
-- [ ] **Altersvorsorgedepot:** Zulagen, Höchstbeträge, Bonus, Auszahlregeln gegen das aktuelle Gesetz/BMF-Schreiben prüfen; Hinweis zum Start (`avdStart`) entfällt ab 2027 automatisch. Standarddepot: Umschichtungsanteile (`AVD_STD_GLIDE` in `engine.ts`, § 1 Abs. 1c Nr. 5 AltZertG) und Kostendeckel (§ 2a Abs. 2) mit Glossar (`standarddepot`, `avdKosten`) und `src/lib/prosCons.ts` abgleichen.
+- [ ] **Einkommensteuertarif** (§ 32a EStG) und **Soli-Freigrenze**: `est()` / `soli()` in `src/lib/engine/core.ts` (Steuerreform 2027 im Blick behalten).
+- [ ] **Beitragsbemessungsgrenze KV/PV** (`KV_BBG` in `core.ts`), **Versicherungspflichtgrenze** und **Zusatzbeitrag/Pflegesatz** (Standard `kvRate`, Texte `kvFreiwillig`/`kvRate` im Glossar).
+- [ ] **Altersvorsorgedepot:** Zulagen, Höchstbeträge, Bonus, Auszahlregeln gegen das aktuelle Gesetz/BMF-Schreiben prüfen; Hinweis zum Start (`avdStart`) entfällt ab 2027 automatisch. Standarddepot: Umschichtungsanteile (`AVD_STD_GLIDE` in `core.ts`, § 1 Abs. 1c Nr. 5 AltZertG) und Kostendeckel (§ 2a Abs. 2) mit Glossar (`standarddepot`, `avdKosten`) und `src/lib/prosCons.ts` abgleichen.
 - [ ] **„Was die Zahlen nicht zeigen“** (`src/lib/prosCons.ts`): Rechtsaussagen mit Fundstelle (§ 12 SGB II, § 93 EStG, AltZertG) gegen den aktuellen Stand prüfen.
 - [ ] Änderungen an der Rechnung bewusst machen: Golden-Tests vergleichen mit `legacy/index.html` (Korrekturen aus), `tests/fixes.test.ts` und `tests/combo*.test.ts` prüfen die aktuelle Rechnung. Abweichungen in `docs/abweichungen-vom-original.md` dokumentieren.
 - [ ] Standardwerte ändern sich nur in `DEFAULTS`; die Link-Basis in `link.ts` nie ändern (sonst neue `LINK_VERSION`).

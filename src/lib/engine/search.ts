@@ -8,7 +8,7 @@
 // einzeln gerechnet und nur der Rest per Tauschsuche (50 €, dann 10 €) auf die anderen Produkte verteilt,
 // warm gestartet vom Optimum des vorigen AVD-Betrags.
 
-import { AVD_MAX, type Params, type ProductKey } from './engine';
+import { AVD_MAX, type Params, type ProductKey } from './core';
 import { fixesOf, type EngineOptions } from './fixes';
 import { combo, comboStats, emptySplit, SPLIT_KEYS, type ComboStats, type Split } from './combo';
 

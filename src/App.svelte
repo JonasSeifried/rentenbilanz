@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { readParams } from './lib/engine/engine';
+  import { readParams } from './lib/engine/core';
   import { analyze, scenarios, PRODUCTS, KOMBI } from './lib/engine/analyze';
   import { readKombi } from './lib/engine/combo';
   import { splitText } from './lib/comboVerdict';

@@ -1,7 +1,7 @@
 // „Was die Zahlen nicht zeigen“: Vor- und Nachteile je Produkt und häufige Fragen, die nicht im Kapital oder in der
 // Monatsrente stecken (Verfügbarkeit, Umschichten, Schutz, Bindung, Kostenrisiko). Neutral formuliert, Rechtsaussagen mit
 // Fundstelle. Reine Funktionen: Texte hängen nur von den Params und den gewählten Produkten ab (tests/pros-cons.test.ts).
-import type { Params, ProductKey } from './engine/engine';
+import type { Params, ProductKey } from './engine/core';
 import type { Tab } from './link';
 import { SITE } from './site';
 

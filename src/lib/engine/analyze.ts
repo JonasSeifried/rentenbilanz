@@ -1,10 +1,12 @@
 // Auswertung und Szenarien: Port des Originals (legacy/index.html: analyze, scenarios) plus dokumentierte
 // Korrekturen (fixes.ts, docs/abweichungen-vom-original.md); mit NO_FIXES bitgleich zum Original (Golden-Test).
+// Gerechnet wird mit der einen Engine combo.ts: jedes Einzelprodukt als Kombi mit nur diesem Teil (I1 in
+// tests/combo.test.ts: bitgleich zu model() in engine.ts, der Referenz des Originals).
 // Die Szenario-Beschriftungen sind neutral formuliert (keine Rechenrelevanz).
 import { eur } from '../format';
-import { model, type ModelResult, type Params, type ProductKey, type ProductResult } from './engine';
+import type { Params, ProductKey, ProductResult } from './core';
 import { fixesOf, type EngineOptions } from './fixes';
-import { combo, comboStats, SPLIT_KEYS, type ComboResult, type Split } from './combo';
+import { combo, comboStats, emptySplit, SPLIT_KEYS, type ComboPart, type ComboResult, type Split } from './combo';
 
 /** Ein Teilnehmer am Vergleich: eines der vier Produkte oder die Kombi (mehrere Produkte, gemeinsam gerechnet). */
 export type ContenderKey = ProductKey | 'kombi';
@@ -30,10 +32,13 @@ export const PRODUCTS: readonly SingleProduct[] = [
  */
 export interface Stats { avgMonthly: number; cumH: number; cumHReal: number; cum100: number; lump: number }
 
-export interface Analysis extends ModelResult {
+export interface Analysis {
   p: Params;
-  /** Einzelprodukte aus model() plus `kombi`, falls eine Kombi im Vergleich ist. */
-  res: Partial<Record<ProductKey, ProductResult>> & { kombi?: KombiResult };
+  /** Einzelprodukte (je eine Kombi mit nur diesem Teil) plus `kombi`, falls eine Kombi im Vergleich ist. */
+  res: Partial<Record<ProductKey, ComboPart>> & { kombi?: KombiResult };
+  /** Jahre bis Alter 100, bis Rentenbeginn, bis Auszahlplan-Ende; Inflationsfaktor I(t). */
+  T: number; n: number; tH: number;
+  I: (t: number) => number;
   R: (x: number, t: number) => number;
   active: Product[];
   stats: Partial<Record<ContenderKey, Stats>>;
@@ -68,13 +73,25 @@ export function kombiResult(p: Params, split: Split, opts?: EngineOptions): Komb
   };
 }
 
+/** Monatsbeitrag je Einzelprodukt. */
+export const AMOUNT: Readonly<Record<ProductKey, 'etfM' | 'avdM' | 'insM' | 'fondM'>> = Object.freeze({ etf: 'etfM', avd: 'avdM', ins: 'insM', fond: 'fondM' });
+
+/** Ein Einzelprodukt mit seinem eigenen Monatsbeitrag (auch 0 €), gerechnet als Kombi mit nur diesem Teil. */
+export function single(p: Params, k: ProductKey, opts?: EngineOptions): ComboPart {
+  const split = emptySplit(); split[k] = p[AMOUNT[k]];
+  return combo(p, split, { ...opts, cost: true, parts: [k] }).parts[k]!;
+}
+
 // Rechnet ein Szenario durch und leitet die Vergleichskennzahlen ab.
 // `kombi`: Aufteilung einer Kombi, die als weiterer Teilnehmer mitverglichen wird (gemeinsam versteuert, combo.ts).
 // Ohne Kombi ist das Ergebnis unverändert (Golden-Test).
 export function analyze(p: Params, opts?: EngineOptions, kombi?: Split | null): Analysis {
   const rankReal = fixesOf(opts).has('rankReal');
-  const m = model(p, opts), { T, n, tH, I } = m;
-  const res: Analysis['res'] = kombi ? { ...m.res, kombi: kombiResult(p, kombi, opts) } : m.res;
+  const T = 100 - p.a0, n = p.R - p.a0, tH = p.H - p.a0;
+  const I = (t: number) => Math.pow(1 + p.infl, t);
+  const res: Analysis['res'] = {};
+  for (const k of SPLIT_KEYS) if (p.on[k]) res[k] = single(p, k, opts);
+  if (kombi) res.kombi = kombiResult(p, kombi, opts);
   const R = (x: number, t: number) => p.real ? x / I(t) : x;
   const active: Product[] = PRODUCTS.filter(pr => res[pr.key]).map(pr => pr.key === 'ins'
     ? Object.assign({}, pr, { name: pr.name + (res.ins!.lump ? ' (Kapitalauszahlung)' : ' (Leibrente)') }) : pr);
@@ -99,7 +116,7 @@ export function analyze(p: Params, opts?: EngineOptions, kombi?: Split | null): 
   const rankBy = rankReal ? (k: ContenderKey) => stats[k]!.cumHReal : (k: ContenderKey) => stats[k]!.cumH;
   const lead = active.length > 1 && fairOwn ? active.reduce((a, b) => rankBy(b.key) > rankBy(a.key) ? b : a) : null;
   const canRank = !!lead && !refundSpent;
-  return Object.assign({}, m, { p, res, R, active, stats, ownOf, fairOwn, refundSpent, lead, canRank });
+  return { p, res, T, n, tH, I, R, active, stats, ownOf, fairOwn, refundSpent, lead, canRank };
 }
 
 /** Stabile Kennung je Szenario-Zeile (für Oberfläche und Kombi-Robustheit; das Label kann sich ändern). */

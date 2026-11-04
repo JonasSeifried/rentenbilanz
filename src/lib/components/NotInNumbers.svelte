@@ -1,7 +1,7 @@
 <script lang="ts">
   // „Was die Zahlen nicht zeigen“: Vor- und Nachteile je Produkt und häufige Fragen, jeweils aufklappbar.
   // Inhalte aus prosCons.ts; Links führen zum passenden Einstellungsfeld.
-  import type { Params, ProductKey } from '../engine/engine';
+  import type { Params, ProductKey } from '../engine/core';
   import { PRODUCTS } from '../engine/analyze';
   import { faqs, prosCons } from '../prosCons';
   import { focusField } from '../state.svelte';
