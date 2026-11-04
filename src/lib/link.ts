@@ -30,6 +30,9 @@ const BASES: Record<string, Inputs & { avdStd: boolean; avdSafe: number }> = {
     avdStd: false, avdSafe: 2,
     // Später angehängt: Umschichtung vor Rentenbeginn in allen Produkten aus (bisheriges Verhalten).
     shift: false, safeRate: 2,
+    // R5: neuer unabhängiger Standard, auch für alte Links. Keine Bruttoableitung aus incRet.
+    kvGrossRet: 20000, payResidual: false, fundingDelay: false, indexAllowance: false,
+    avdPayCost: -1, etfPayTer: -1, fondPayTer: -1,
   },
 };
 /** Die eingefrorene Basis von Version 1 (Tests und Speicher-Migration). */

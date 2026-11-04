@@ -16,7 +16,7 @@ export const GLOSSARY = {
     text: [
       'Steuerpflichtiges Einkommen im Ruhestand ohne die hier verglichenen Produkte, zum Beispiel gesetzliche Rente, Betriebsrente oder Mieteinnahmen. Bei Rentenbeginn ab 2058 ist die gesetzliche Rente voll steuerpflichtig.',
       'Dieser Wert ist das zu versteuernde Einkommen ohne die verglichenen Produkte. Beiträge zur Kranken- und Pflegeversicherung auf dieses bisherige Einkommen sind darin bereits abgezogen. Zusätzliche Beiträge auf die verglichenen Produkte zieht der Rechner gesondert ab. Betrag in heutigem Geld.',
-      'Die voraussichtliche gesetzliche Rente steht in der jährlichen Renteninformation (Monatsbetrag × 12).',
+      'Die Renteninformation nennt eine Bruttorente, kein zu versteuerndes Einkommen. Sonstige KV-beitragspflichtige Bruttoeinnahmen werden unter Weitere Einstellungen getrennt eingegeben.',
     ],
   },
   rendite: {
@@ -136,7 +136,7 @@ export const GLOSSARY = {
   },
   avdKosten: {
     title: 'Kosten des Altersvorsorgedepots',
-    text: ['Das Standarddepot ist auf 1,0 % Effektivkosten gedeckelt (§ 2a Abs. 2 AltZertG), schichtet aber ab 5 Jahre vor Rentenbeginn in sichere Anlagen um. Die Umschichtung lässt sich unter „Markt“ einschalten, dann für alle Produkte gleich. Für andere Altersvorsorgedepots gibt es keinen Kostendeckel. Ein selbst gewähltes Altersvorsorgedepot ist meist günstiger und muss nicht umschichten.'],
+    text: ['Das Standarddepot ist bis zum Beginn der Auszahlphase auf 1,0 % Effektivkosten gedeckelt (§ 2a Abs. 1–2 AltZertG). Für die Auszahlung sind eigene Kosten einstellbar; standardmäßig wird die Ansparquote weiterverwendet. Es schichtet aber ab 5 Jahre vor Rentenbeginn in sichere Anlagen um. Die Umschichtung lässt sich unter „Markt“ einschalten, dann für alle Produkte gleich. Für andere Altersvorsorgedepots gibt es keinen Kostendeckel. Ein selbst gewähltes Altersvorsorgedepot ist meist günstiger und muss nicht umschichten.'],
   },
   standarddepot: {
     title: 'Umschichtung im Standarddepot',
@@ -147,7 +147,7 @@ export const GLOSSARY = {
   },
   ausgabeaufschlag: {
     title: 'Ausgabeaufschlag',
-    text: ['Einmalige Gebühr beim Kauf von Fondsanteilen, z. B. 5 % jeder Einzahlung. Bei aktiven Fonds über Bank oder Vermittlung üblich, bei ETFs nicht.'],
+    text: ['Die Eingabe zieht Kaufkosten als Anteil vom Bruttobeitrag ab: Bei 5 % werden von 100 € Beitrag 95 € angelegt. Nennt ein Prospekt dagegen 5 % Aufschlag auf den Nettoanteilswert, entspricht das rund 4,762 % dieser Eingabe (5 ÷ 105). Die Bezugsgröße im Prospekt prüfen.'],
   },
   auszahlplan: {
     title: 'Auszahlplan',
@@ -212,7 +212,7 @@ export const GLOSSARY = {
   },
   incHeir: {
     title: 'Einkommen der Erben',
-    text: ['Zu versteuerndes Einkommen der Erben im Todesjahr, in heutigem Geld. Danach richtet sich der Steuersatz auf die AVD-Erträge und auf Restrenten der Versicherung. Standard: 38.000 €.'],
+    text: ['Zu versteuerndes Einkommen der Erben im Todesjahr, in heutigem Geld. Danach richtet sich der Steuersatz auf AVD-Erträge und Restrenten sowie die gemeinsame Günstigerprüfung beim Depotverkauf. Standard: 38.000 €.'],
   },
   erbschaftsteuer: {
     title: 'Erbschaftsteuer',

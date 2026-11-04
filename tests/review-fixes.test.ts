@@ -5,7 +5,7 @@ import { readParams, tax, tax2026 } from '../src/lib/engine/core';
 import { ALL_FIXES, type FixId } from '../src/lib/engine/fixes';
 import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
 
-const P = (patch: Partial<Inputs> = {}) => readParams({ ...DEFAULTS, ...patch });
+const P = (patch: Partial<Inputs> = {}) => readParams({ ...DEFAULTS, kvGrossRet: patch.incRet ?? DEFAULTS.incRet, ...patch });
 const S = (s: Partial<Split>): Split => ({ ...emptySplit(), ...s });
 const without = (...ids: FixId[]) => ({ fixes: new Set([...ALL_FIXES].filter(f => !ids.includes(f))) });
 
@@ -76,7 +76,7 @@ describe('R1 – gemeinsamer KV/PV-Sonderausgabenabzug', () => {
       const X = Object.values(c.parts).reduce((s, r) => s + r.taxBase[t], 0);
       const expected = tax2026(Math.max(0, base + X - c.kv[t]), I) - tax2026(base, I);
       expect(c.incTax[t]).toBeCloseTo(expected, 7);
-      expect(c.net[t] - before.net[t]).toBeCloseTo(before.incTax[t] - expected, 7);
+      expect(c.net[t] - before.net[t]).toBeCloseTo(before.incTax[t] - expected + before.abgTax[t] - c.abgTax[t], 7);
       expect(Object.values(c.parts).reduce((s, r) => s + r.incTax[t], 0)).toBeCloseTo(c.incTax[t], 7);
       expect(c.net[t]).toBeGreaterThanOrEqual(before.net[t] - 1e-7);
     }
@@ -92,7 +92,7 @@ describe('R1 – gemeinsamer KV/PV-Sonderausgabenabzug', () => {
   });
 
   it('30-%-Auszahlung: marginale Steuer nach Abzug statt doppelt in der Monatsrente', () => {
-    const p = P({ kvOn: true, einmal: true }), c = combo(p, S({ avd: 150 }));
+    const p = P({ kvOn: true, einmal: true }), c = combo(p, S({ avd: 150 }), without('capitalGuenstiger'));
     const a = c.parts.avd!, n = c.n, I = c.I(n), L = .3 * a.capAVD!;
     const kvL = p.kvRate * Math.min(L, 10 * (69750 - p.incRet) * I);
     const W = .7 * a.capAVD! / (c.tH - n), income = p.incRet * I + W + L - c.kv[n];
@@ -107,7 +107,7 @@ describe('R1 – gemeinsamer KV/PV-Sonderausgabenabzug', () => {
 describe('R2 – Vorabpauschale aus einem Anteilsverkauf finanzieren', () => {
   it('erster Sparjahrgang: Verkaufserlös deckt VP-Steuer und eigene Gewinnsteuer exakt', () => {
     const p = P({ etfTer: 0, g: 10, basis: 10 });
-    const c = combo(p, S({ etf: 10000 })), f = c.parts.etf!;
+    const c = combo(p, S({ etf: 10000 }), without('vpNextYear')), f = c.parts.etf!;
     // Unabhängige Monats-Cashflows des ersten Jahres, vor jeglicher Steuer.
     let gross = 0;
     for (let month = 1; month <= 12; month++) gross += 10000 * Math.pow(1.1, (13 - month) / 12);

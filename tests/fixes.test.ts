@@ -321,10 +321,17 @@ describe('Eigenschaften über 200 Zufallsszenarien', () => {
 });
 
 describe('jede Teilmenge der Fixes', () => {
-  it('alle Teilmengen laufen auf Default, DK und High (inkl. Szenarien)', () => {
+  it('E-Teilmengen, neues R-Paket und alle Schalter einzeln/an/aus laufen inkl. Szenarien', () => {
     const cases = [P(), P(DK), P(HIGH), P({ ...HIGH, incRet: 60000, einmal: true, real: false, deathAge: 75, heirHalf: true })];
-    for (let mask = 0; mask < 1 << FIX_IDS.length; mask++) {
-      const fixes = new Set(FIX_IDS.filter((_, i) => mask & (1 << i)));
+    // Historische E-Kombinationen vollständig; R-Schalter zusätzlich einzeln, ausgehend
+    // von ALL, und sämtliche Teilmengen des neuen Pakets auf dem geprüften R1/R2/R6/R8-Stand.
+    const historical = FIX_IDS.filter(f => FIXES[f].finding.startsWith('E'));
+    const newIds: FixId[] = ['capitalGuenstiger', 'vpNextYear', 'kvGrossIncome', 'insuranceAllowance'];
+    const previous = FIX_IDS.filter(f => !newIds.includes(f));
+    const sets = [NO_FIXES, ALL_FIXES, ...FIX_IDS.map(f => new Set([f])), ...FIX_IDS.map(f => new Set(FIX_IDS.filter(x => x !== f)))];
+    for (let mask = 0; mask < 1 << historical.length; mask++) sets.push(new Set(historical.filter((_, i) => mask & (1 << i))));
+    for (let mask = 0; mask < 1 << newIds.length; mask++) sets.push(new Set([...previous, ...newIds.filter((_, i) => mask & (1 << i))]));
+    for (const fixes of sets) {
       for (const p of cases) {
         const a = analyze(p, { fixes });
         for (const pr of a.active) expect(Number.isFinite(a.stats[pr.key]!.cumH)).toBe(true);
@@ -338,9 +345,9 @@ describe('Szenarien', () => {
   it('stabile IDs, Reihenfolge wie im Original, Label ohne Klammerzusatz', () => {
     // Reihenfolge des Originals; „shift“ (Umschichtung, nicht im Original) nur außerhalb des Originalpfads, am Ende.
     expect(scenarioList(P(), null, NONE).map(s => s.id)).toEqual(['kv', 'avdCost', 'refund', 'g', 'incWork', 'incRetLow', 'incRetHigh', 'insMode', 'insCost']);
-    expect(scenarioList(P()).map(s => s.id)).toEqual(['kv', 'avdCost', 'refund', 'g', 'incWork', 'incRetLow', 'incRetHigh', 'insMode', 'insCost', 'shift']);
-    expect(scenarioList(P({ avdCost: 1, insEff: 2, incRet: 10000, reinvest: false })).map(s => s.id)).toEqual(['kv', 'g', 'incWork', 'incRetHigh', 'insMode', 'shift']);
-    expect(scenarioList(P({ avdOn: false, insOn: false })).map(s => s.id)).toEqual(['kv', 'g', 'incWork', 'incRetLow', 'incRetHigh', 'shift']);
+    expect(scenarioList(P()).map(s => s.id)).toEqual(['kv', 'avdCost', 'refund', 'g', 'incWork', 'incRetLow', 'incRetHigh', 'insMode', 'insCost', 'shift', 'payProfile', 'fundingDelay', 'payCost', 'allowance']);
+    expect(scenarioList(P({ avdCost: 1, insEff: 2, incRet: 10000, reinvest: false })).map(s => s.id)).toEqual(['kv', 'g', 'incWork', 'incRetHigh', 'insMode', 'shift', 'payProfile', 'fundingDelay', 'payCost', 'allowance']);
+    expect(scenarioList(P({ avdOn: false, insOn: false })).map(s => s.id)).toEqual(['kv', 'g', 'incWork', 'incRetLow', 'incRetHigh', 'shift', 'payProfile', 'allowance']);
     expect(scenarioList(P()).find(s => s.id === 'refund')!.label).toBe('Steuererstattung ausgegeben statt angelegt');
   });
   it('Szenarien rechnen mit denselben Fixes wie die Basis', () => {
@@ -356,18 +363,18 @@ describe('Snapshots mit ALL_FIXES (aktuelle Standardwerte)', () => {
     return { lead: a.lead?.key, ...Object.fromEntries(a.active.map(pr => [pr.key, Math.round(a.stats[pr.key]!.cumH)])) };
   };
   it('Default mit nominaler Tarifrundung (R8)', () => {
-    expect(snap({})).toEqual({ lead: 'avd', etf: 152506, avd: 174850, ins: 127222 });
+    expect(snap({})).toEqual({ lead: 'avd', etf: 153289, avd: 174856, ins: 127694 });
   });
   it('DK mit KV-Sonderausgabenabzug (R1)', () => {
-    expect(snap({ kvOn: true })).toEqual({ lead: 'avd', etf: 140049, avd: 140926, ins: 104712 });
+    expect(snap({ kvOn: true })).toEqual({ lead: 'avd', etf: 140713, avd: 140903, ins: 105292 });
   });
   it('High mit KV-Sonderausgabenabzug (R1)', () => {
-    expect(snap({ ...HIGH, kvRate: 21.1 })).toEqual({ lead: 'etf', etf: 331567, avd: 316189, ins: 264532 });
+    expect(snap({ ...HIGH, kvRate: 21.1 })).toEqual({ lead: 'etf', etf: 330961, avd: 316109, ins: 254574 });
   });
 });
 
 describe('Laufzeit', () => {
-  it('analyze + scenarios mit ALL_FIXES höchstens 1,5 × so lang wie ohne Fixes', () => {
+  it('analyze + scenarios mit ALL_FIXES höchstens 3,5 × (mehr Sensitivitäten und jährliche Steuerprüfung) so lang wie ohne Fixes', () => {
     // Messung (MacBook, Node 26, 2026-11-03): siehe Konsole; ohne Fixes entspricht der Pfad dem Original.
     const cases = [P(), P(DK), P(HIGH), P({ insLump: false, fondOn: true, kvOn: true })];
     const run = (o: { fixes: ReadonlySet<FixId> }) => { for (const p of cases) { analyze(p, o); scenarios(p, o); } };
@@ -376,6 +383,6 @@ describe('Laufzeit', () => {
     let tn = Infinity, ta = Infinity;
     for (let i = 0; i < 7; i++) { tn = Math.min(tn, time(NONE)); ta = Math.min(ta, time(ALL)); }
     console.log(`Laufzeit analyze+scenarios: ohne Fixes ${(tn / 80).toFixed(2)} ms, mit allen ${(ta / 80).toFixed(2)} ms je Fall (× ${(ta / tn).toFixed(2)})`);
-    expect(ta / tn).toBeLessThan(1.5);
+    expect(ta / tn).toBeLessThan(3.5);
   }, 60_000);
 });

@@ -225,9 +225,15 @@ describe('I4 – gemeinsam gegen getrennt', () => {
       const joint = comboStats(p, c).cumHReal, sepSum = sep.reduce((a, x) => a + comboStats(p, x).cumHReal, 0);
       if (!p.kvOn) {
         // Rundung von Einkommen/ESt kann die Konvexität um wenige nominale Euro pro Jahr verletzen.
-        const roundingBound = 4 * c.net.slice(c.n, c.tH).reduce((s, _, i) => s + 1 / c.I(c.n + i), 0);
-        expect(joint, JSON.stringify(inp)).toBeLessThanOrEqual(sepSum + roundingBound + 1e-6);
-        const opts = { fixes: new Set([...ALL_FIXES].filter(f => f !== 'taxRounding')) };
+        const convexOpts = { fixes: new Set([...ALL_FIXES].filter(f => f !== 'capitalGuenstiger')) };
+        const rounded = combo(p, MIX, convexOpts);
+        const separateRounded = SPLIT_KEYS.reduce((s, k) => s + comboStats(p, combo(p, S({ [k]: MIX[k] }), convexOpts)).cumHReal, 0);
+        const roundingBound = 4 * rounded.net.slice(rounded.n, rounded.tH).reduce((s, _, i) => s + 1 / rounded.I(rounded.n + i), 0);
+        expect(comboStats(p, rounded).cumHReal, JSON.stringify(inp)).toBeLessThanOrEqual(separateRounded + roundingBound + 1e-6);
+        expect(Number.isFinite(joint) && Number.isFinite(sepSum)).toBe(true);
+        // Die Wahl min(Tarif, Abgeltungsteuer) ist an der Wechselstelle nicht konvex.
+        // Die historische Konvexitätsinvariante gilt daher nur ohne Kapital-Günstigerprüfung.
+        const opts = { fixes: new Set([...ALL_FIXES].filter(f => f !== 'taxRounding' && f !== 'capitalGuenstiger')) };
         const exact = comboStats(p, combo(p, MIX, opts)).cumHReal;
         const separate = SPLIT_KEYS.reduce((s, k) => s + comboStats(p, combo(p, S({ [k]: MIX[k] }), opts)).cumHReal, 0);
         expect(exact).toBeLessThanOrEqual(separate + 1e-6 + Math.abs(separate) * 1e-12);
@@ -238,7 +244,7 @@ describe('I4 – gemeinsam gegen getrennt', () => {
         // R2: Ein gemeinsamer Pauschbetrag erzwingt andere Steuerverkäufe und damit andere KV-Basen.
         // Für die tatsächlich realisierten Basen gilt trotzdem genau eine BBG (E9-Teilauszahlung separat).
         for (let t = 0; t < c.T; t++) {
-          const room = Math.max(0, (69750 - p.incRet) * c.I(t));
+          const room = Math.max(0, (69750 - p.kvGrossRet) * c.I(t));
           const lumpKv = p.einmal && t === c.n ? p.kvRate * Math.min(.3 * c.parts.avd!.capAVD!, 10 * room) : 0;
           expect(c.kv[t]).toBeLessThanOrEqual(p.kvRate * room + lumpKv + 1e-6);
         }
@@ -253,7 +259,7 @@ describe('I4 – gemeinsam gegen getrennt', () => {
     console.log(`I4: größte KV-Ersparnis durch eine gemeinsame BBG ${Math.round(maxKvSaving).toLocaleString('de-DE')} € (real)`);
   });
   it('Beispiel: KV an, Rente 60.000, Leibrente 300/150/300 → gemeinsam mehr netto (eine BBG statt drei), BBG deckelt gemeinsam', () => {
-    const p = readParams({ ...DEFAULTS, kvOn: true, incRet: 60000, insLump: false });
+    const p = readParams({ ...DEFAULTS, kvOn: true, incRet: 60000, kvGrossRet: 60000, insLump: false });
     const split = S({ etf: 300, avd: 150, ins: 300 });
     const c = combo(p, split);
     const sep = SPLIT_KEYS.reduce((a, k) => a + (split[k] > 0 ? comboStats(p, combo(p, S({ [k]: split[k] }))).cumHReal : 0), 0);
@@ -430,7 +436,7 @@ describe('I9 – Erbfall gemeinsam versteuert', () => {
     const c = combo(p, S({ etf: 150, avd: 150 }));
     const joint = c.heir(idx), sep = sepSum(c, idx, false);
     expect(joint.val).toBeLessThan(sep); // ETF und Nebendepot teilen sich einen Pauschbetrag
-    expect(joint.note).toMatch(/^Gemeinsam versteuert: AVD-Förderung .* zurück; Einkommensteuer der Erben .* in einem Tarif \(AVD-Erträge\); Depots nach Abgeltungsteuer bei Verkauf .* \(ein Sparer-Pauschbetrag\)$/);
+    expect(joint.note).toMatch(/^Gemeinsam versteuert: AVD-Förderung .* zurück; Einkommensteuer der Erben .* in einem Tarif \(AVD-Erträge\); Depots nach Kapitalertragsteuer\/Günstigerprüfung bei Verkauf .* \(ein Sparer-Pauschbetrag\)$/);
     expect(c.heirMarried!(idx).note).toMatch(/^Gemeinsam versteuert: AVD ohne Abzug auf einen Vertrag des Ehepartners übertragbar/);
   });
 

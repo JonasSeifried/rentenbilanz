@@ -93,11 +93,26 @@
     </div>
     <div class="grp" role="group" aria-labelledby="s-kv">
       <h3 id="s-kv">Krankenversicherung</h3>
+      <NumberField id="f-kvGrossRet" layout="row" label="Sonstige KV-beitragspflichtige Bruttoeinnahmen im Alter" value={i.kvGrossRet} onchange={v => setInput('kvGrossRet', v)} min={0} step={1000} unit="€/Jahr" limits={LIMITS.kvGrossRet}
+        hint="Heutiges Geld, ohne die verglichenen Produkte. Unabhängig vom sonstigen zu versteuernden Einkommen eingeben; keine Brutto-Schätzung. Auch bei alten Links zunächst eigener Standardwert 20.000 €." />
       <NumberField id="f-kvRate" layout="row" label="Beitragssatz KV + PV bei freiwilliger Versicherung" value={i.kvRate} onchange={v => setInput('kvRate', v)} step={0.1} min={0} max={40} unit="%" info="kvRate"
         limits={LIMITS.kvRate} effective={pc(p.kvRate)}
         hint={i.kvOn ? 'Gilt, weil oben „Freiwillig gesetzlich“ gewählt ist.' : 'Wirkt nur, wenn oben bei „Krankenversicherung als Rentner“ „Freiwillig gesetzlich“ gewählt ist.'} />
     </div>
   </div>
+</section>
+
+<section class="card" aria-labelledby="s-model">
+  <h2 id="s-model">Modellannahmen und Sensitivitäten</h2>
+  <Switch checked={i.payResidual} onchange={v => setInput('payResidual', v)} label="Offene Depots wie das AVD: jährlich Restkapital ÷ Restlaufzeit" />
+  <p class="hint">Sonst nominal konstante vorschüssige Annuität für Depots. Das Entnahmeprofil beeinflusst die Summe der realen Zahlungen und die Rangfolge.</p>
+  <Switch checked={i.fundingDelay} onchange={v => setInput('fundingDelay', v)} label="AVD-Zulagen und Erstattungen ein Jahr später (Sensitivität)" />
+  <p class="hint">Standard: Ende des Beitragsjahres. Ein Jahr Verzug ist ein Szenario, keine gesetzliche Bearbeitungsfrist. Die letzte Gutschrift kommt am Ende des ersten Rentenjahres.</p>
+  <Switch checked={i.indexAllowance} onchange={v => setInput('indexAllowance', v)} label="Sparer-Pauschbetrag wächst mit Inflation (hypothetische Sensitivität)" />
+  <p class="hint">Gesetzlicher Ausgangswert: nominal 1.000 € jährlich. Tarif, Soli-Grenze und KV-BBG wachsen im Modell mit Inflation; diese Fortschreibung ist keine zugesicherte Rechtsentwicklung.</p>
+  <NumberField layout="row" label="AVD-Kosten in der Auszahlung" value={i.avdPayCost} onchange={v => setInput('avdPayCost', v)} min={-1} step={0.1} unit="% p. a." limits={LIMITS.avdPayCost} hint="−1 übernimmt die Ansparkosten. Der Standarddepot-Kostendeckel betrifft die Ansparphase." />
+  <NumberField layout="row" label="ETF-Kosten in der Auszahlung (auch Neben-/Folgedepot)" value={i.etfPayTer} onchange={v => setInput('etfPayTer', v)} min={-1} step={0.1} unit="% p. a." limits={LIMITS.etfPayTer} hint="−1 übernimmt die jeweilige TER; sonst eigener Kostensatz." />
+  <NumberField layout="row" label="Aktiver Fonds: Kosten in der Auszahlung" value={i.fondPayTer} onchange={v => setInput('fondPayTer', v)} min={-1} step={0.1} unit="% p. a." limits={LIMITS.fondPayTer} hint="−1 übernimmt die TER. Ein sicherer ETF-Teil nutzt die ETF-Auszahlkosten." />
 </section>
 
 <section class="products" aria-labelledby="s-prod">
@@ -117,7 +132,7 @@
       <h3 id="s-avd"><span class="key" style:background="var(--s2)"></span>Altersvorsorgedepot</h3>
       {@render offNote('avdOn')}
       <NumberField layout="row" label="Beitrag (max. 150 gefördert)" value={i.avdM} onchange={v => setInput('avdM', v)} step={10} min={0} unit="€/Monat" info="nebendepot" limits={LIMITS.avdM} />
-      <NumberField id="f-avdCost" layout="row" label="Kosten" value={i.avdCost} onchange={v => setInput('avdCost', v)} step={0.1} min={0} unit="% p. a." info="avdKosten" testid="avdCost"
+      <NumberField id="f-avdCost" layout="row" label="Ansparkosten" value={i.avdCost} onchange={v => setInput('avdCost', v)} step={0.1} min={0} unit="% p. a." info="avdKosten" testid="avdCost"
         limits={LIMITS.avdCost} effective={pc(p.avdCost)} />
       <p class="hint">Umschichtung vor Rentenbeginn wie im Standarddepot: unter „Markt“ (für alle Produkte).</p>
       <Switch checked={i.reinvest} onchange={v => setInput('reinvest', v)} label="Zusätzliche Steuererstattung in ETF anlegen" info="reinvest" testid="reinvest" />
@@ -137,7 +152,7 @@
       <h3 id="s-fond"><span class="key" style:background="var(--s4)"></span>Aktiver Fonds</h3>
       {@render offNote('fondOn')}
       <NumberField layout="row" label="Beitrag" value={i.fondM} onchange={v => setInput('fondM', v)} step={10} min={0} unit="€/Monat" limits={LIMITS.fondM} />
-      <NumberField id="f-fondAA" layout="row" label="Ausgabeaufschlag" value={i.fondAA} onchange={v => setInput('fondAA', v)} step={0.5} min={0} unit="%" info="ausgabeaufschlag" limits={LIMITS.fondAA} effective={pc(p.fondAA)} />
+      <NumberField id="f-fondAA" layout="row" label="Kaufkosten (Anteil am Bruttobeitrag)" value={i.fondAA} onchange={v => setInput('fondAA', v)} step={0.5} min={0} unit="%" info="ausgabeaufschlag" limits={LIMITS.fondAA} effective={pc(p.fondAA)} />
       <NumberField layout="row" label="Laufende Kosten" value={i.fondTer} onchange={v => setInput('fondTer', v)} step={0.1} min={0} unit="% p. a." info="ter" limits={LIMITS.fondTer} effective={pc(p.fondTer)} />
     </section>
   </div>
@@ -179,12 +194,12 @@
   </details>
   <details>
     <summary>ETF und Fonds</summary>
-    <p>Abgeltungsteuer 26,375 %, 30 % Teilfreistellung (Aktienfonds), Sparerpauschbetrag 1.000 € pro Jahr (je Produkt gerechnet), Vorabpauschale jährlich. Die Steuer wird aus dem Depot bezahlt; die beim dafür nötigen Anteilsverkauf entstehende Steuer ist mitgerechnet. Entnahmen jährlich am Jahresanfang (für ETF/AVD leicht konservativ).</p>
+    <p>Abgeltungsteuer 26,375 %, 30 % Teilfreistellung (Aktienfonds), Sparer-Pauschbetrag 1.000 € nominal pro Jahr (in der Kombi gemeinsam einschließlich Versicherungsleistung), Vorabpauschale mit Zufluss im Folgejahr. Die Steuer wird aus dem Depot bezahlt; die beim dafür nötigen Anteilsverkauf entstehende Steuer ist mitgerechnet. Entnahmen jährlich am Jahresanfang als Zeitnäherung statt monatlicher Zahlung.</p>
   </details>
   <details>
     <summary>Altersvorsorgedepot</summary>
     <p>Gesetz vom 26.05.2026 (BGBl. 2026 I Nr. 156), gilt ab 2027: 50 % Zulage auf die ersten 360 €, 25 % bis 1.800 € (max. 540 €), min. 120 € Eigenbeitrag; Kinderzulage 1:1 bis 300 € je Kind; Berufseinsteigerbonus 200 € unter 25 (zählt nicht in der Günstigerprüfung); Sonderausgabenabzug (Beitrag + Zulagen) mit Günstigerprüfung; Auszahlung aus dem geförderten Teil voll steuerpflichtig, ohne Fünftelregelung; der Sonderausgabenabzug ist auch unter 120 € Eigenbeitrag möglich, dann ohne Zulagen; Auszahlplan bis mind. 85, gerechnet als jährlich Restkapital ÷ Restlaufzeit (gesetzlich reicht es, mindestens 80 % davon zu zahlen und die Rate spätestens alle 3 Jahre neu festzulegen); Rentenbeginn 65–70 (früher nur zusammen mit einer früheren gesetzlichen Altersrente, nicht gerechnet).</p>
-    <p>Beiträge über 1.800 € im Jahr bleiben bis zum Höchstbetrag von 6.840 € im Jahr ungefördert im AVD (AVD-Kosten, keine Steuer in der Ansparphase; bei Auszahlung ist nur der Gewinnanteil steuerpflichtig, nach 12 Jahren Laufzeit zur Hälfte). Für freiwillig gesetzlich Versicherte zählt die ganze Auszahlung zur Krankenversicherung (wie bei privaten Renten, BSG B 12 KR 28/08 R; für das AVD noch nicht entschieden). Was über 6.840 € hinausgeht, und Beiträge aus Jahren ohne Förderberechtigung (ob sie ungefördert ins AVD dürfen, ist offen) liegen in einem ETF-Nebendepot (gleiche TER wie das ETF-Depot). Vereinfacht wird ab heute statt ab 01.01.2027 gerechnet, und Zulagen werden sofort zum Jahresende gutgeschrieben (in echt 1–2 Jahre später).</p>
+    <p>Beiträge über 1.800 € im Jahr bleiben bis zum Höchstbetrag von 6.840 € im Jahr ungefördert im AVD (AVD-Kosten, keine Steuer in der Ansparphase; bei Auszahlung ist nur der Gewinnanteil steuerpflichtig, nach 12 Jahren Laufzeit zur Hälfte). Für freiwillig gesetzlich Versicherte zählt die ganze Auszahlung zur Krankenversicherung (wie bei privaten Renten, BSG B 12 KR 28/08 R; für das AVD noch nicht entschieden). Was über 6.840 € hinausgeht, und Beiträge aus Jahren ohne Förderberechtigung (ob sie ungefördert ins AVD dürfen, ist offen) liegen in einem ETF-Nebendepot (gleiche TER wie das ETF-Depot). Vereinfacht wird ab heute statt ab 01.01.2027 gerechnet, und Zulagen/Erstattungen werden standardmäßig zum Beitragsjahresende gutgeschrieben (Verzögerung als Sensitivität wählbar; tatsächliche Bearbeitungsdauer offen).</p>
   </details>
   <details>
     <summary>Heutige Kaufkraft</summary>
@@ -192,7 +207,11 @@
   </details>
   <details>
     <summary>Erbfall</summary>
-    <p>Altersvorsorgedepot: Ehepartner können das Guthaben förderunschädlich auf einen eigenen Vertrag übertragen; die spätere Einkommensteuer darauf ist grob abgezogen. Alle anderen Erben: Zulagen und Steuervorteile werden zurückgefordert (§ 93 EStG). Die Erträge versteuern die Erben mit ihrem eigenen Steuersatz (§ 22 Nr. 5 S. 3 EStG; BMF-Schreiben vom 05.10.2023, Rn. 229 f.), nur zur Hälfte, wenn der Erbe mindestens 62 ist und der Vertrag mindestens 12 Jahre lief. Nach Rentenbeginn anteilig zum Restguthaben. Der ungeförderte Teil (Beiträge über 1.800 € im Jahr) geht ohne Rückforderung an alle Erben; sie versteuern nur dessen Gewinn (§ 22 Nr. 5 S. 2 Buchst. c EStG), beim Ehepartner ebenso. Restrenten aus der Garantiezeit der Versicherung versteuern die Erben ebenfalls selbst.</p>
+    <p>Altersvorsorgedepot: Ehepartner können das Guthaben förderunschädlich auf einen eigenen Vertrag übertragen; die spätere Einkommensteuer darauf ist grob abgezogen. Alle anderen Erben: Zulagen und Steuervorteile werden zurückgefordert (§ 93 EStG). Die Erträge versteuern die Erben mit ihrem eigenen Steuersatz (§ 22 Nr. 5 S. 3 EStG; BMF-Schreiben vom 05.10.2023, Rn. 229 f.), nur zur Hälfte, wenn der Erbe mindestens 62 ist und der Vertrag mindestens 12 Jahre lief. Nach Rentenbeginn werden Restbeiträge und verbleibende Förderung noch grob am Restguthaben bemessen; deren genaue Zuordnung ist offen. Die latente Ehepartnersteuer nutzt weiterhin das Einkommen und den Restzeitraum der verstorbenen Person. Das ist kein eigener Hinterbliebenen-Auszahlplan. Bei verzögerter Förderung sind noch offene Ansprüche im Erbwert nicht zusätzlich bewertet. Der ungeförderte Teil (Beiträge über 1.800 € im Jahr) geht ohne Rückforderung an alle Erben; sie versteuern nur dessen Gewinn (§ 22 Nr. 5 S. 2 Buchst. c EStG), beim Ehepartner ebenso. Restrenten aus der Garantiezeit der Versicherung versteuern die Erben ebenfalls selbst.</p>
+  </details>
+  <details>
+    <summary>Kapitalerträge</summary>
+    <p>Ein gemeinsamer Sparer-Pauschbetrag für Versicherungsleistung und alle Fondsdepots: zunächst Versicherung, dann zugeflossene Vorabpauschalen, danach Entnahmen/Umschichtungen. Vorabpauschalen gelten am ersten Werktag des Folgejahres als zugeflossen. Die jährliche Kapitalertrags-Günstigerprüfung vergleicht die gesamte Abgeltungsteuer mit dem persönlichen Tarif nach Sonderausgaben. Erstattungen zählen im selben Steuerjahr als verfügbares Geld ohne Wiederanlage, auch beim Ansparen. Diese Zahlungen vor Rentenbeginn gehen nicht in die Summe der Rentenauszahlungen ein. Nicht modellierte Kapitalerträge oder schon verbrauchte Freibeträge müssen gesondert betrachtet werden.</p>
   </details>
   <details>
     <summary>Versicherung</summary>

@@ -75,6 +75,7 @@
           </tbody>
         </table>
       </div>
+      <p class="hint">Restrenten sind künftige Zahlungen, kein sofort verfügbares Kapital. Die spätere AVD-Steuer beim Ehepartner ist nur mit deinem Einkommen und Restzeitraum geschätzt; ein eigener Hinterbliebenen-Auszahlplan fehlt. Restbeiträge und verbleibende Förderung nach Rentenbeginn sind näherungsweise am Restguthaben bemessen, die genaue Zuordnung ist offen.</p>
     </section>
 
     <section class="card" aria-labelledby="heir-c-h">

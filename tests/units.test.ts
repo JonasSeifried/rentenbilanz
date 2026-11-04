@@ -33,7 +33,7 @@ describe('Link-Format', () => {
     expect(LEGACY_KEYS).not.toContain('kvKind');
     expect(LEGACY_KEYS).not.toContain('avdStd');
     expect(LEGACY_KEYS).not.toContain('avdSafe');
-    expect(LEGACY_KEYS.length + COMBO_KEYS.length + 4).toBe(INPUT_KEYS.length);
+    expect(LEGACY_KEYS.length + COMBO_KEYS.length + 11).toBe(INPUT_KEYS.length);
   });
   it('Jeder numerische Schlüssel hat Grenzen, die den Standardwert enthalten', () => {
     for (const k of NUMERIC_KEYS) {

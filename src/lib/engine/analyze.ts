@@ -120,7 +120,7 @@ export function analyze(p: Params, opts?: EngineOptions, kombi?: Split | null): 
 }
 
 /** Stabile Kennung je Szenario-Zeile (für Oberfläche und Kombi-Robustheit; das Label kann sich ändern). */
-export type ScenarioId = 'kv' | 'avdCost' | 'refund' | 'g' | 'incWork' | 'incRetLow' | 'incRetHigh' | 'insMode' | 'insCost' | 'shift';
+export type ScenarioId = 'kv' | 'avdCost' | 'refund' | 'g' | 'incWork' | 'incRetLow' | 'incRetHigh' | 'insMode' | 'insCost' | 'shift' | 'payProfile' | 'fundingDelay' | 'allowance' | 'payCost' | 'kvGross' | 'kvRate';
 
 export interface ScenarioDef { id: ScenarioId; label: string; p: Params }
 export interface Scenario extends ScenarioDef { a: Analysis }
@@ -134,7 +134,7 @@ export function scenarioList(p: Params, kombi?: Split | null, opts?: EngineOptio
   const avd = p.on.avd || (kombi?.avd ?? 0) > 0, ins = p.on.ins || (kombi?.ins ?? 0) > 0;
   const add = (id: ScenarioId, label: string, patch: Partial<Params>) => list.push({ id, label, p: Object.assign({}, p, patch) });
   add('kv', p.kvOn ? 'Als Rentner in der KVdR oder privat versichert' : 'Als Rentner freiwillig gesetzlich versichert', { kvOn: !p.kvOn });
-  if (avd && p.avdCost < 0.01) add('avdCost', 'AVD kostet 1,0 % (Deckel Standarddepot)', { avdCost: 0.01 });
+  if (avd && p.avdCost < 0.01) add('avdCost', 'AVD-Ansparkosten 1,0 % (Deckel Standarddepot)', { avdCost: 0.01 });
   if (avd && p.reinvest) add('refund', 'Steuererstattung ausgegeben statt angelegt', { reinvest: false });
   add('g', 'Rendite 2 Prozentpunkte niedriger', { g: p.g - 0.02, gPay: p.gPay - 0.02 });
   add('incWork', 'Gehalt 30 % niedriger (' + eur(p.incWork * 0.7) + ')', { incWork: p.incWork * 0.7 });
@@ -143,6 +143,18 @@ export function scenarioList(p: Params, kombi?: Split | null, opts?: EngineOptio
   if (ins) add('insMode', p.insLump ? 'Versicherung als lebenslange Rente' : 'Versicherung mit Kapitalauszahlung', { insLump: !p.insLump });
   if (ins && p.insEff < 0.015) add('insCost', 'Versicherung mit 1,5 % Kosten (typisch für Provisionstarife)', { insEff: 0.015 });
   if (fixesOf(opts).size > 0) add('shift', p.shift ? 'Niemand schichtet vor der Rente um' : 'Alle schichten vor der Rente um (wie das Standarddepot)', { shift: !p.shift });
+  if (fixesOf(opts).has('capitalGuenstiger')) {
+    add('payProfile', p.payResidual ? 'Depots mit nominal konstanter Annuität' : 'Depots mit Restkapital ÷ Restlaufzeit', { payResidual: !p.payResidual });
+    if (avd) {
+      add('fundingDelay', p.fundingDelay ? 'AVD-Förderung ohne Verzug' : 'AVD-Förderung ein Jahr später (Szenario)', { fundingDelay: !p.fundingDelay });
+      add('payCost', 'AVD-Auszahlkosten 0,5 Prozentpunkte höher', { avdPayCost: (p.avdPayCost < 0 ? p.avdCost : p.avdPayCost) + .005 });
+    }
+    add('allowance', p.indexAllowance ? 'Pauschbetrag nominal fest' : 'Pauschbetrag indexiert (hypothetisch)', { indexAllowance: !p.indexAllowance });
+    if (p.kvOn) {
+      add('kvGross', 'Sonstige KV-Bruttoeinnahmen 10.000 € höher (zvE gleich)', { kvGrossRet: p.kvGrossRet + 10000 });
+      add('kvRate', 'KV/PV 3 Prozentpunkte höher', { kvRate: Math.min(.4, p.kvRate + .03) });
+    }
+  }
   return list;
 }
 

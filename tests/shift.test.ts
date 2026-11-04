@@ -86,7 +86,7 @@ describe('Umschichtung vor Rentenbeginn (shift)', () => {
     const off = single(at(x), 'etf'), on = single(at({ ...x, shift: true }), 'etf');
     expect(on.capR).toBeCloseTo(off.capR, 6);
     for (let t = 0; t < n; t++) { expect(on.kv[t]).toBe(0); expect(on.abgTax[t]).toBeCloseTo(0, 9); } // vor der Rente: nichts
-    for (const t of [n, n + 1]) {
+    for (const t of [n + 1, n + 2]) {
       expect(on.kv[t] / off.kv[t]).toBeCloseTo(0.91 / 0.7, 2);
       expect(on.abgTax[t]).toBeGreaterThan(off.abgTax[t]);
     }
@@ -122,7 +122,7 @@ describe('Umschichtung vor Rentenbeginn (shift)', () => {
     expect(row.p.shift).toBe(true);
     expect(scenarioList(p, null, { fixes: NO_FIXES }).map(s => s.id)).not.toContain('shift');
     expect(scenarioList(at({ shift: true })).find(s => s.id === 'shift')!.label).toBe('Niemand schichtet vor der Rente um');
-    expect(scenarioList(p).at(-1)!.id).toBe('shift'); // am Ende, die Reihenfolge des Originals bleibt
+    expect(scenarioList(p).findIndex(s => s.id === 'shift')).toBeLessThan(scenarioList(p).findIndex(s => s.id === 'payProfile')); // am Ende, die Reihenfolge des Originals bleibt
   });
 });
 

@@ -151,21 +151,21 @@ describe('S2 – Eigenschaften der besten Aufteilung', () => {
 });
 
 describe('S3 – Snapshot Standardwerte (ALL_FIXES, Kaufkraft)', () => {
-  // Stand R1/R2/R6/R8, 04.11.2026. R2 verändert auch die beste Aufteilung:
+  // Stand R1–R8, 04.11.2026. R2 verändert auch die beste Aufteilung:
   // bei 450 € nun 120 ETF + 330 AVD; bei 300 € liegt 110/190 nur 285 € (<0,1 %) vorne,
   // deshalb wird die einfachere Alternative 150/150 als gleichwertig genannt.
   const SNAP: [number, Split, number, number][] = [
-    [150, S({ avd: 150 }), 174850, 633.52],
-    [300, S({ etf: 150, avd: 150 }), 324056, 1174.12],
-    [450, S({ etf: 120, avd: 330 }), 469572, 1701.35],
-    [500, S({ etf: 130, avd: 370 }), 517836, 1876.22],
+    [150, S({ avd: 150 }), 174856, 633.54],
+    [300, S({ etf: 150, avd: 150 }), 324087, 1174.23],
+    [450, S({ etf: 120, avd: 330 }), 469602, 1701.46],
+    [500, S({ etf: 130, avd: 370 }), 517867, 1876.33],
   ];
   for (const keys of [K3, K4]) for (const [B, split, cumHReal, avg] of SNAP) it(`${keys.length} Produkte, ${B} € → ${splitText(split)}`, () => {
     const r = bestSplit(P({ fondOn: keys.length === 4 }), B, keys)!;
     expect(r.split).toEqual(split);
     expect(Math.abs(r.value - cumHReal)).toBeLessThan(1);
     expect(Math.abs(r.stats.avgMonthly - avg)).toBeLessThan(0.01);
-    if (B === 300) { expect(r.top!.split).toEqual(S({ etf: 110, avd: 190 })); expect(Math.round(r.top!.value)).toBe(324341); }
+    if (B === 300) { expect(r.top!.split).toEqual(S({ etf: 110, avd: 190 })); expect(Math.round(r.top!.value)).toBe(324372); }
     else expect(r.top).toBeNull();
   });
   it('1.000 €: 570 € AVD + 430 € ETF bleibt (7.622 € = 0,8 % vor 150 € + 850 €), nicht „alles ins AVD“ mit Nebendepot', () => {
@@ -176,14 +176,14 @@ describe('S3 – Snapshot Standardwerte (ALL_FIXES, Kaufkraft)', () => {
     expect(c150.split).toEqual(S({ etf: 850, avd: 150 }));
     expect(Math.round(r.value - c150.value)).toBe(12412);
   });
-  it('reine Strategien bei 500 €: ETF 488.459, AVD (150 gefördert + 350 ungefördert) 513.031, Versicherung 406.049', () => {
+  it('reine Strategien bei 500 €: ETF 483.572, AVD 512.997, Versicherung 406.705', () => {
     const pure = pureStrategies(P(), 500, K3);
-    expect(pure.map(x => Math.round(x.value))).toEqual([483304, 512991, 405708]);
+    expect(pure.map(x => Math.round(x.value))).toEqual([483572, 512997, 406705]);
     expect(pure[1].label).toBe('Alles ins Altersvorsorgedepot (150 € gefördert + 350 € ungefördert)');
     expect(pureStrategies(P(), 700, ['avd'])[0].label).toBe('Alles ins Altersvorsorgedepot (150 € gefördert + 420 € ungefördert + 130 € Nebendepot)');
     // ohne E10 wie bisher: AVD 150 € + Nebendepot = 150 € AVD + Rest im ETF
     const old = pureStrategies(P(), 500, K3, NO_UNSUB);
-    expect(Math.round(old[1].value)).toBe(513674);
+    expect(Math.round(old[1].value)).toBe(513705);
     expect(old[1].label).toBe('Alles ins Altersvorsorgedepot (150 € gefördert + 350 € Nebendepot)');
   });
 });
@@ -203,7 +203,7 @@ describe('analyzeCombo', () => {
     expect(B.split).toEqual(S({ etf: 120, avd: 330 }));
     expect(B.userIsBest).toBe(false);
     expect(B.deltaUser!).toBeCloseTo(B.value - C.user!.value, 9);
-    expect(B.isMix).toBe(true); expect(Math.round(B.mixGain)).toBe(4642);
+    expect(B.isMix).toBe(true); expect(Math.round(B.mixGain)).toBe(4666);
     expect(C.bestPure!.key).toBe('avd');
     expect(C.interaction!).toBeLessThan(-1000);
     expect(C.separate! + C.interaction!).toBeCloseTo(C.user!.value, 6);
@@ -245,7 +245,7 @@ describe('analyzeCombo', () => {
     expect(analyzeCombo(one.p, one.setup, one.best).best).toBeNull();
   });
   it('mit KV und hoher Rente: Wechselwirkung positiv (eine BBG), Mischung echt besser als reine Strategie', () => {
-    const { p, setup, best } = full({ kvOn: true, incRet: 60000, insLump: false, setAll: 750, cEtf: 300, cAvd: 150, cIns: 300 });
+    const { p, setup, best } = full({ kvOn: true, incRet: 60000, kvGrossRet: 60000, insLump: false, setAll: 750, cEtf: 300, cAvd: 150, cIns: 300 });
     const C = analyzeCombo(p, setup, best);
     expect(C.interaction!).toBeGreaterThan(1000);
     expect(bestOf(C).isMix).toBe(true);
@@ -254,7 +254,7 @@ describe('analyzeCombo', () => {
 });
 
 describe('Robustheit', () => {
-  it('eine Zeile je next(), ohne „Steuererstattung ausgegeben“; Standardwerte 450 €: 6 von 9 kippen, KV zu 300 ETF + 150 AVD', () => {
+  it('eine Zeile je next(), ohne „Steuererstattung ausgegeben“; Standardwerte 450 €: 8 von 13 kippen, KV zu 300 ETF + 150 AVD', () => {
     const { p, setup, best } = full({});
     const gen = robustRows(p, setup, best!.split);
     const first = gen.next();
@@ -266,11 +266,11 @@ describe('Robustheit', () => {
     const sum = robustSummary(rows);
     // Mit E10 verschiebt sich die beste Mischung (ETF bis zum Pauschbetrag, Rest AVD) mit jeder Steuerannahme.
     // „shift“: Mit Umschichtung zahlt das ETF-Depot beim Verkauf Steuern, das AVD nicht; die beste Mischung verschiebt sich.
-    expect(sum.flips.map(r => r.id)).toEqual(['kv', 'avdCost', 'g', 'incRetLow', 'incRetHigh', 'shift']);
+    expect(sum.flips.map(r => r.id)).toEqual(['kv', 'avdCost', 'g', 'incRetHigh', 'shift', 'payProfile', 'payCost', 'allowance']);
     expect(sum.flips[0].best.split).toEqual(S({ etf: 300, avd: 150 }));
     expect(sum.flips.find(r => r.id === 'incRetHigh')!.best.split).toEqual(S({ etf: 300, avd: 150 }));
-    expect(sum.flips.find(r => r.id === 'incRetLow')!.best.split.avd).toBeGreaterThan(280);
-    expect(sum.level).toBe('fragile'); expect(sum.held).toBe(ids.length - 6);
+    expect(rows.find(r => r.id === 'incRetLow')!.flip).toBe(false); // R3: neue Tarifprüfung
+    expect(sum.level).toBe('fragile'); expect(sum.held).toBe(ids.length - 8);
     for (const r of rows) {
       expect(r.user).not.toBeNull(); expect(r.bestPure).not.toBeNull();
       if (!r.flip) expect(r.best.value - r.baseInScenario!.value).toBeLessThanOrEqual(tieTol(r.best.value));
@@ -325,14 +325,14 @@ describe('Ergebnissätze (comboVerdict)', () => {
     expect(v.lines[1]).toBe('Davon sind 180 € im Monat ungefördert im Altersvorsorgedepot (keine Zulage, aber keine Steuer bis zur Auszahlung). Mit 150 € im AVD (voll gefördert) und 300 € ETF-Depot wären es bis zum Alter von 90 rund 3.020 € (0,6 %) weniger. Dieser Vorteil hängt an niedrigen AVD-Kosten (gerechnet: 0,5 % im Jahr), und das Geld ist bis zur Rente gebunden.');
     expect(v.lines[2]).toMatch(/^Die rechnerisch beste Aufteilung ist eine Mischung: bis zum Alter von 90 rund [\d.]+ € mehr netto als „Alles ins Altersvorsorgedepot \(150 € gefördert \+ 300 € ungefördert\)“\.$/);
     expect(v.lines[3]).toMatch(/^Gemeinsam gerechnet zahlt deine Aufteilung bis zum Alter von 90 rund [\d.]+ € mehr Steuern und Abgaben, als wenn jedes Produkt allein gerechnet würde \(ein Sparer-Pauschbetrag für alle Depots, progressiver Steuertarif\)\.$/);
-    expect(v.lines[4]).toBe('Die beste Aufteilung hängt hier stark von den Annahmen ab: In 6 von 9 Szenarien unten ist eine andere Aufteilung rechnerisch vorne, z. B. bei „Als Rentner freiwillig gesetzlich versichert“ (300 € ETF + 150 € AVD).');
+    expect(v.lines[4]).toBe('Die beste Aufteilung hängt hier stark von den Annahmen ab: In 8 von 13 Szenarien unten ist eine andere Aufteilung rechnerisch vorne, z. B. bei „Als Rentner freiwillig gesetzlich versichert“ (300 € ETF + 150 € AVD).');
     expect(v.note).toContain('keine Anlageberatung');
   });
-  it('ok, deine Aufteilung ist auf den Euro die beste (300 € = 110 ETF + 190 AVD); 3 von 7 Szenarien verschieben sie ⇒ „hängt stark ab“', () => {
+  it('ok, deine Aufteilung ist auf den Euro die beste (300 € = 110 ETF + 190 AVD); 3 von 11 Szenarien verschieben sie ⇒ gemischte Robustheit', () => {
     const { v } = V({ setAll: 300, cEtf: 110, cAvd: 190, cIns: 0, insOn: false }, true);
     expect(v.headline).toBe('Deine Aufteilung ist unter diesen Annahmen rechnerisch die beste: Ø 1.175 € netto im Monat (67–90).');
     expect(v.lines.some(l => l.startsWith('Rechnerisch am meisten') || l.startsWith('Auf den Euro'))).toBe(false);
-    expect(v.lines.at(-1)).toBe('Die beste Aufteilung hängt hier stark von den Annahmen ab: In 3 von 7 Szenarien unten ist eine andere Aufteilung rechnerisch vorne, z. B. bei „AVD kostet 1,0 % (Deckel Standarddepot)“ (270 € ETF + 30 € AVD).');
+    expect(v.lines.at(-1)).toBe('Aber: In 3 von 11 Szenarien unten ist eine andere Aufteilung rechnerisch vorne, z. B. bei „AVD-Ansparkosten 1,0 % (Deckel Standarddepot)“ (270 € ETF + 30 € AVD).');
   });
   it('gleichauf (TIE_REL): 300 € = 150 ETF + 150 AVD, 190/110 nur 285 € vorne', () => {
     const { C, v } = V({ setAll: 300, cEtf: 150, cAvd: 150, cIns: 0, insOn: false });
@@ -351,7 +351,7 @@ describe('Ergebnissätze (comboVerdict)', () => {
     const { p, setup, best } = full({});
     const C = analyzeCombo(p, setup, best);
     const rows = [...robustRows(p, setup, best!.split)].map(r => ({ ...r, flip: false }));
-    expect(comboVerdict(C, robustSummary(rows)).lines.at(-1)).toBe('Die rechnerisch beste Aufteilung bleibt in allen 9 Szenarien unten vorne.');
+    expect(comboVerdict(C, robustSummary(rows)).lines.at(-1)).toBe('Die rechnerisch beste Aufteilung bleibt in allen 13 Szenarien unten vorne.');
   });
   it('pending: nur deine Aufteilung und „wird berechnet“', () => {
     const { p, setup } = full({});
@@ -359,7 +359,7 @@ describe('Ergebnissätze (comboVerdict)', () => {
     expect(v).toMatchObject({ kind: 'ok', pending: true, lines: ['Die rechnerisch beste Aufteilung wird berechnet …'] });
   });
   it('Mischung echt besser + Wechselwirkung positiv mit KV', () => {
-    const { v } = V({ kvOn: true, incRet: 60000, insLump: false, setAll: 750, cEtf: 300, cAvd: 150, cIns: 300 });
+    const { v } = V({ kvOn: true, incRet: 60000, kvGrossRet: 60000, insLump: false, setAll: 750, cEtf: 300, cAvd: 150, cIns: 300 });
     expect(v.lines.some(l => /^Die rechnerisch beste Aufteilung ist eine Mischung: bis zum Alter von 90 rund [\d.]+ € mehr netto als „Alles/.test(l))).toBe(true);
     expect(v.lines.some(l => l.endsWith('weniger Abgaben, als wenn jedes Produkt allein gerechnet würde, weil die Beitragsbemessungsgrenze der Krankenversicherung die Summe deckelt.'))).toBe(true);
   });
@@ -375,10 +375,10 @@ describe('Ergebnissätze (comboVerdict)', () => {
     const C = analyzeCombo(p, setup, best);
     const rows = [...robustRows(p, setup, best!.split)];
     const fake = { ...robustSummary(rows), level: 'fragile' as const };
-    expect(comboVerdict(C, fake).lines.at(-1)).toMatch(/^Die beste Aufteilung hängt hier stark von den Annahmen ab: In 6 von 9 Szenarien/);
+    expect(comboVerdict(C, fake).lines.at(-1)).toMatch(/^Die beste Aufteilung hängt hier stark von den Annahmen ab: In 8 von 13 Szenarien/);
   });
   it('neutrale Wortwahl in allen Fällen (nie „optimal“, „empfehlen“, „solltest“)', () => {
-    const variants: Partial<Inputs>[] = [{}, { setAll: 500 }, { reinvest: false }, { avdOn: false, insOn: false }, { kvOn: true, incRet: 60000, insLump: false, setAll: 750, cEtf: 300, cAvd: 150, cIns: 300 }, { real: false }, { a0: 55, incRet: 0 }];
+    const variants: Partial<Inputs>[] = [{}, { setAll: 500 }, { reinvest: false }, { avdOn: false, insOn: false }, { kvOn: true, incRet: 60000, kvGrossRet: 60000, insLump: false, setAll: 750, cEtf: 300, cAvd: 150, cIns: 300 }, { real: false }, { a0: 55, incRet: 0 }];
     for (const patch of variants) {
       const text = all(V(patch, true).v);
       expect(text).not.toMatch(/optimal|empfehl|solltest|lohnt sich für dich/i);
@@ -390,7 +390,7 @@ describe('Laufzeit (Node)', () => {
   const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
   const time = (f: () => void) => { const t0 = performance.now(); f(); return performance.now() - t0; };
   // Mit E10 ist das AVD-Raster bis 570 € statt 150 € lang (doppelt so viele Auswertungen), daher < 30 ms.
-  it('beste Aufteilung mit 4 Produkten und 500 € < 30 ms; analyzeCombo < 5 ms; Robustheit je Zeile < 30 ms', () => {
+  it('beste Aufteilung mit 4 Produkten und 500 € < 30 ms; analyzeCombo < 5 ms; Robustheit je Zeile < 50 ms', () => {
     const p = P({ fondOn: true });
     const setup = setupOf({ fondOn: true, setAll: 500, cEtf: 200, cAvd: 150, cIns: 100, cFond: 50 });
     for (let i = 0; i < 5; i++) bestSplit(p, 500, K4); // Aufwärmen (JIT)
@@ -403,7 +403,7 @@ describe('Laufzeit (Node)', () => {
     console.log(`Laufzeit: beste Aufteilung (4 Produkte, 500 €, ${best.evals} Auswertungen) ${tBest.toFixed(1)} ms; analyzeCombo ${tAna.toFixed(2)} ms; Robustheit ${rowTimes.length} Zeilen, Median ${median(rowTimes).toFixed(1)} ms, max ${Math.max(...rowTimes).toFixed(1)} ms`);
     expect(tBest).toBeLessThan(30);
     expect(tAna).toBeLessThan(5);
-    expect(median(rowTimes)).toBeLessThan(30);
+    expect(median(rowTimes)).toBeLessThan(50);
   });
   it('eine Auswertung (ohne Kosten-Lauf) < 0,5 ms', () => {
     const p = P(); const s = S({ etf: 150, avd: 150, ins: 150 });

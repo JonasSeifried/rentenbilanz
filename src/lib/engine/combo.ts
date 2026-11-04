@@ -156,6 +156,7 @@ interface Fund {
   /** Umschichtung im laufenden Jahr: Verkaufsbetrag aus diesem Depot (> 0) und dessen Gewinn. */
   sell: number; sellGain: number;
   V: number; B: number; own: number; ownReal: number;
+  pending: number; pendingAt: number[];
   vals: number[]; bases: number[]; net: number[]; abg: number[]; kvInline: number[];
   pay: boolean; W: number; gain: number; rm: number; vp: number; payY: number; dedY: number; kvBase: number;
 }
@@ -182,6 +183,8 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     kvDeduct: fx.has('kvDeductible'), // R1
     small: fx.has('avdSmallContribution'), // R6
     round: fx.has('taxRounding'),    // R8
+    gp: fx.has('capitalGuenstiger'), nextVP: fx.has('vpNextYear'),
+    grossKV: fx.has('kvGrossIncome'), insAllowance: fx.has('insuranceAllowance'),
     vpSale: fx.has('vpTaxSale'),     // R2
   };
   const T = 100 - p.a0, n = p.R - p.a0, tH = p.H - p.a0;
@@ -195,9 +198,11 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   const taxSave = (incReal: number, dedNom: number, t: number) => F.round
     ? taxNom(incReal * I(t), t) - taxNom(Math.max(0, incReal * I(t) - dedNom), t)
     : (tax(incReal) - tax(Math.max(0, incReal - dedNom / I(t)))) * I(t);
-  const kvRoom = (t: number) => Math.max(0, (KV_BBG - p.incRet) * I(t));
+  const kvRoom = (t: number) => Math.max(0, (KV_BBG - (F.grossKV ? p.kvGrossRet : p.incRet)) * I(t));
   const kvAdd = (addNom: number, t: number) => p.kvOn && addNom > 0 ? p.kvRate * Math.min(addNom, kvRoom(t)) : 0;
   const kvLump = (addNom: number, t: number) => p.kvOn && addNom > 0 ? p.kvRate * Math.min(addNom, 10 * kvRoom(t)) : 0;
+  const allowance = (t: number) => 1000 * (p.indexAllowance ? I(t) : 1);
+  const saDed = new Array<number>(T).fill(0), saZ = new Array<number>(T).fill(0);
   const dynF = (t: number) => Math.pow(1 + p.dyn, t);
   const annuityDue = (V: number, rr: number, rem: number) => rem <= 1 ? V : (Math.abs(rr) < 1e-9 ? V / rem : V * rr / ((1 + rr) * (1 - Math.pow(1 + rr, -rem))));
   const zero = () => new Array<number>(T).fill(0);
@@ -225,6 +230,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     let V = 0, own = 0, ownReal = 0, zul = 0, zulReal = 0, ref = 0, refReal = 0, bonusUsed = false, noElig = 0;
     let Vu = 0, Bu = 0, ownU = 0, ownUReal = 0;
     const vals = [0], W = zero(), L = zero(), payY = zero(), paying = new Array<boolean>(T).fill(false), refunds = zero(), overflow = zero();
+    const delayedZ = zero();
     const xW = zero(), Lu = zero(), tb = zero(), cash = zero(), kvW = zero(), valsU = [0], basesU = [0], owns = [0], zuls = [0], foer = [0];
     for (let t = 0; t < T; t++) {
       const age = p.a0 + t, accum = t < n;
@@ -247,7 +253,8 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       const E = elig ? Math.min(want, AVD_SUB_MAX) : 0;
       const U = F.unsub && elig ? Math.min(want, AVD_MAX) - E : 0;
       overflow[t] = (want - E - U) / 12;
-      const rm = Math.pow(1 + contractGrowth(p, t, n) - cost, 1 / 12) - 1;
+      const payCost = zeroCost ? 0 : p.avdPayCost < 0 ? cost : p.avdPayCost;
+      const rm = Math.pow(1 + contractGrowth(p, t, n) - (accum ? cost : payCost), 1 / 12) - 1;
       for (let m = 1; m <= 12; m++) {
         if (E > 0) { V += E / 12; own += E / 12; }
         if (U > 0) { Vu += U / 12; Bu += U / 12; ownU += U / 12; }
@@ -262,11 +269,14 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
         let bon = 0; if (hasAllowance && p.bonus && !bonusUsed && age < 25) { bon = 200; bonusUsed = true; }
         const z = grund + kind + bon;
         const zSA = F.bonus ? grund + kind : z; // Günstigerprüfung ohne Bonus (E3); hängt nur am AVD-Teil
-        V += z; zul += z; zulReal += z / I(t);
+        if (p.fundingDelay) delayedZ[t + 1] = z; else V += z;
+        zul += z; zulReal += z / I(t + (p.fundingDelay ? 1 : 0));
+        saDed[t] = E + zSA; saZ[t] = zSA;
         const save = taxSave(incAt(t), E + zSA, t);
         const extra = Math.max(0, save - zSA);
-        refunds[t] = extra; ref += extra; refReal += extra / I(t);
+        refunds[t + (p.fundingDelay ? 1 : 0)] = extra; ref += extra; refReal += extra / I(t + (p.fundingDelay ? 1 : 0));
       }
+      if (p.fundingDelay) V += delayedZ[t];
       vals.push(V); valsU.push(Vu); basesU.push(Bu); owns.push(own); zuls.push(zul); foer.push(zul + ref);
     }
     avd = { vals, W, L, payY, paying, refunds, overflow, xW, Lu, tb, cash, kvW, valsU, basesU, ownU, ownUReal, owns, zuls, foer, own, ownReal, zul, zulReal, ref, refReal, noElig };
@@ -292,6 +302,13 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     if (p.insLump) { if (ins.halb) xIns[n] = ins.gain * 0.85 * 0.5; else kapTaxFlat = ins.gain * 0.85 * 0.26375; }
     else for (let t = n; t < T; t++) xIns[t] = ins.annual * ins.ea;
   }
+  const insuranceFree = zero();
+  if (F.insAllowance && ins && p.insLump) {
+    const x = ins.halb ? xIns[n] : kapTaxFlat / .26375;
+    insuranceFree[n] = Math.min(allowance(n), x);
+    if (ins.halb) xIns[n] -= insuranceFree[n];
+    else kapTaxFlat = (x - insuranceFree[n]) * .26375;
+  }
   for (let t = n; t < T; t++) {
     const xa = avd ? avd.tb[t] : 0, xi = xIns[t];
     const X = avd && ins ? xa + xi : avd ? xa : xi;
@@ -316,7 +333,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   // Versicherung: Steuer auf die Kapitalauszahlung (gemeinsam im Jahr n) bzw. für die Anzeige allein (Leibrente).
   let kapTax = 0, kapNet = 0, kvLi = 0;
   if (ins) {
-    kapTax = p.insLump ? (ins.halb ? taxIns[n] : kapTaxFlat) : (ins.halb ? taxAdd(p.incRet, ins.gain * 0.85 * 0.5, n) : ins.gain * 0.85 * 0.26375);
+    kapTax = p.insLump ? (ins.halb ? taxIns[n] : kapTaxFlat) : (ins.halb ? taxAdd(p.incRet, Math.max(0, ins.gain * 0.85 * 0.5 - (F.insAllowance ? allowance(n) : 0)), n) : ins.gain * 0.85 * 0.26375);
     // Ohne kvLumpSpread (Original): KV auf die Kapitalauszahlung sofort, eigener Topf 10 × Spielraum(n).
     if (!F.kvSpread) kvLi = kvLump(ins.C, n);
     kapNet = F.kvSpread ? ins.C - kapTax : ins.C - kapTax - kvLi;
@@ -327,6 +344,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   const funds: Fund[] = [];
   const mk = (part: ProductKey, monthly: number[], lumpEnd: number[] | null, ter: number, aa: number, gA = p.g, tf = 0.7): Fund => ({
     part, monthly, lumpEnd, ter, aa, tEnd, gA, tf, safe: null, risky: null, sell: 0, sellGain: 0,
+    pending: 0, pendingAt: [0],
     V: 0, B: 0, own: 0, ownReal: 0, vals: [0], bases: [0], net: zero(), abg: zero(), kvInline: zero(),
     pay: false, W: 0, gain: 0, rm: 0, vp: -1, payY: 0, dedY: 0, kvBase: 0,
   });
@@ -347,16 +365,44 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   if (avd) fSide = add('avd', avd.overflow, p.reinvest ? avd.refunds : null, etfTer, 0);
   if (ins && p.insLump) { const la = zero(); la[n - 1] = kapNet; fIns = add('ins', zero(), la, etfTer, 0); }
 
+  const settleVP = (f: Fund, vp: number, tx: number, t: number, accum: boolean) => {
+    if (F.vpSale) {
+      f.B += vp;
+      if (tx > 0 && f.V > 0) {
+        const q = Math.max(0, (f.V - f.B) / f.V);
+        const sale = tx / (1 - q * f.tf * .26375);
+        f.B *= (f.V - sale) / f.V; f.V -= sale; f.abg[t] += sale;
+        if (!accum && t < f.tEnd) f.kvBase += q * sale * (F.kvInv ? f.tf : 1);
+      }
+    } else {
+      if (tx > 0 && f.V > 0) { f.B *= (f.V - tx) / f.V; f.V -= tx; f.abg[t] += tx; }
+      f.B += vp;
+    }
+    if (F.kvInv && !accum && t < f.tEnd) f.kvBase += f.tf * vp;
+  };
   const nf = funds.length, xs = new Array<number>(nf);
   for (let t = 0; t < T; t++) {
     const accum = t < n;
+    // R4: VP-Zufluss am ersten Werktag, vor Entnahmen/Umschichtung. Versicherung hat beim
+    // Pauschbetrag Vorrang (tarifbesteuerte Erträge); Bankabzug wird als Jahresabrechnung genähert.
+    let free = Math.max(0, allowance(t) - insuranceFree[t]);
+    for (const f of funds) { f.payY = 0; f.dedY = 0; f.kvBase = 0; }
+    if (F.nextVP) {
+      const due = shareAllowance(funds.map(f => f.pending * f.tf), free); free = due.left;
+      for (let i = 0; i < nf; i++) {
+        const f = funds[i];
+        settleVP(f, f.pending, due.taxed[i] * .26375, t, accum); f.pending = 0;
+      }
+    }
     // Phase 1: Entnahmen am Jahresanfang, Gewinnanteil
     for (let i = 0; i < nf; i++) {
       const f = funds[i];
-      f.rm = Math.pow(1 + (accum ? f.gA : p.gPay) - f.ter, 1 / 12) - 1;
-      f.W = 0; f.gain = 0; f.payY = 0; f.dedY = 0; f.kvBase = 0; f.vp = -1;
+      const configured = f.part === 'fond' && !f.risky ? p.fondPayTer : p.etfPayTer;
+      const ter = zeroCost ? 0 : !accum && configured >= 0 ? configured : f.ter;
+      f.rm = Math.pow(1 + (accum ? f.gA : p.gPay) - ter, 1 / 12) - 1;
+      f.W = 0; f.gain = 0; f.vp = -1;
       f.pay = !accum && t < f.tEnd && f.V > 0;
-      if (f.pay) { f.W = annuityDue(f.V, p.gPay - f.ter, f.tEnd - t); f.gain = Math.max(0, f.W * (f.V - f.B) / f.V); }
+      if (f.pay) { f.W = p.payResidual ? f.V / (f.tEnd - t) : annuityDue(f.V, p.gPay - ter, f.tEnd - t); f.gain = Math.max(0, f.W * (f.V - f.B) / f.V); }
       xs[i] = f.gain * f.tf;
       // Umschichtung zu Jahresbeginn auf den Zielanteil (nur Ansparphase): Verkauf aus dem übergewichteten Teil-Depot,
       // Gewinn anteilig nach Anschaffungskosten (Durchschnitt statt FIFO), Verlust ohne Verrechnung (wie bei Entnahmen).
@@ -368,7 +414,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       }
     }
     for (let i = 0; i < nf; i++) if (funds[i].sell > 0) xs[i] += funds[i].sellGain * funds[i].tf;
-    const s1 = shareAllowance(xs, 1000);
+    const s1 = shareAllowance(xs, free);
     // Umschichtung ausführen: Die Abgeltungsteuer wird aus dem Verkaufserlös bezahlt, der Rest wird umgeschichtet.
     for (let i = 0; i < nf; i++) {
       const f = funds[i];
@@ -381,7 +427,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       const f = funds[i];
       if (f.pay) {
         const tb = s1.taxed[i];
-        if (F.kvInv || F.kvShared) { f.dedY = tb * 0.26375; f.kvBase = F.kvInv ? f.tf * f.gain : f.gain; }
+        if (F.kvInv || F.kvShared) { f.dedY = tb * 0.26375; f.kvBase += F.kvInv ? f.tf * f.gain : f.gain; }
         else { const k = kvAdd(f.gain, t); f.dedY = tb * 0.26375 + k; f.kvInline[t] += k; }
         f.abg[t] += tb * 0.26375;
         f.B -= f.W * f.B / f.V; f.V -= f.W; f.payY = f.W;
@@ -396,34 +442,21 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       xs[i] = f.vp >= 0 ? f.vp * f.tf : 0;
     }
     // Phase 2: Vorabpauschale mit dem Rest des gemeinsamen Pauschbetrags
-    const s2 = shareAllowance(xs, s1.left);
+    const s2 = shareAllowance(F.nextVP ? xs.map(() => 0) : xs, s1.left);
     for (let i = 0; i < nf; i++) {
       const f = funds[i];
-      if (f.vp >= 0) {
+      if (F.nextVP) f.pending = Math.max(0, f.vp);
+      else if (f.vp >= 0) {
         const tx = s2.taxed[i] * 0.26375;
-        if (F.vpSale) {
-          // Die angesetzte VP mindert auch den Gewinn der zur Steuerzahlung verkauften Anteile (§ 19 InvStG).
-          f.B += f.vp;
-          if (tx > 0) {
-            const q = Math.max(0, (f.V - f.B) / f.V);
-            // S − Steuer(S) = VP-Steuer; bei positiver VP-Steuer ist der Pauschbetrag ausgeschöpft.
-            const sale = tx / (1 - q * f.tf * 0.26375);
-            f.B *= (f.V - sale) / f.V; f.V -= sale; f.abg[t] += sale;
-            if (!accum && t < f.tEnd) f.kvBase += q * sale * (F.kvInv ? f.tf : 1);
-          }
-        } else {
-          if (tx > 0) { f.B *= (f.V - tx) / f.V; f.V -= tx; f.abg[t] += tx; }
-          f.B += f.vp;
-        }
-        if (F.kvInv && !accum && t < f.tEnd) f.kvBase += f.tf * f.vp; // Vorabpauschale in der Rentenphase (E6)
+        settleVP(f, f.vp, tx, t, accum);
       }
       if (f.kvBase > 0) {
         if (F.kvShared) claims[f.part]![t] += f.kvBase;
         else { const k = kvAdd(f.kvBase, t); f.dedY += k; f.kvInline[t] += k; }
       }
-      if (accum && f.lumpEnd && f.lumpEnd[t] > 0) { f.V += f.lumpEnd[t]; f.B += f.lumpEnd[t]; }
+      if ((accum || (p.fundingDelay && f.part === 'avd')) && f.lumpEnd && f.lumpEnd[t] > 0) { f.V += f.lumpEnd[t]; f.B += f.lumpEnd[t]; }
       f.net[t] = f.payY - f.dedY;
-      f.vals.push(f.V); f.bases.push(f.B);
+      f.vals.push(f.V); f.bases.push(f.B); f.pendingAt.push(f.pending);
     }
   }
   for (const f of funds) for (let t = 0; t < T; t++) { abgTax[t] += f.abg[t]; kv[t] += f.kvInline[t]; }
@@ -435,7 +468,25 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     return { vals: sum(a.vals, b.vals), bases: sum(a.bases, b.bases), net: sum(a.net, b.net), abg: sum(a.abg, b.abg), kvInline: sum(a.kvInline, b.kvInline), own: a.own + b.own, ownReal: a.ownReal + b.ownReal, members: [a, b] };
   };
   /** Verkauf aller Fonds der Liste zum Zeitpunkt idx mit einem Sparer-Pauschbetrag; Gewinne je Teilfreistellung. */
-  const sellFunds = (fs: readonly Fund[], idx: number) => {
+  const liquidation = (fs: readonly Fund[], idx: number, income = p.incHeir, X = 0, free = allowance(idx)) => {
+    let value = 0, gain = 0;
+    for (const f of fs) {
+      const pending = F.nextVP ? f.pendingAt[idx] : 0;
+      value += f.vals[idx];
+      // Zugeflossene VP und Veräußerung nach voller Basisanrechnung; im selben Jahr saldiert.
+      const basisAfterVP = f.bases[idx] + pending;
+      gain += pending * f.tf + (f.vals[idx] - basisAfterVP) * f.tf;
+    }
+    const taxable = Math.max(0, gain - free);
+    const flat = taxable * .26375;
+    const base = income * I(idx) + X;
+    const tariff = taxNom(base + taxable, idx) - taxNom(base, idx);
+    return { value, tax: F.gp ? Math.min(flat, tariff) : flat };
+  };
+  const sellFunds = (fs: readonly Fund[], idx: number, income = p.incHeir) => {
+    if (F.gp || F.nextVP || p.indexAllowance) {
+      const l = liquidation(fs, idx, income); return l.value - l.tax;
+    }
     if (fs.length === 1) { const V = fs[0].vals[idx], B = fs[0].bases[idx], tf = fs[0].tf; return V - Math.max(0, (V - B) * tf - 1000) * 0.26375; }
     let V = 0, G = 0, X = 0, mixed = false;
     for (const f of fs) { const g = f.vals[idx] - f.bases[idx]; V += f.vals[idx]; G += g; X += g * f.tf; if (f.tf !== 0.7) mixed = true; }
@@ -447,7 +498,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   const parts: ComboResult['parts'] = {};
   const fundNote = 'Nach Steuer bei Verkauf. Behalten die Erben, übernehmen sie den Gewinn steuerlich.';
   const fundPart = (k: ProductKey, f: Depot): ComboPart => ({
-    key: k, vals: f.vals, net: f.net, own: f.own, ownReal: f.ownReal, capR: f.vals[n], capNet: sellNet(f, n), cost: 0,
+    key: k, vals: f.vals, net: f.net, own: f.own, ownReal: f.ownReal, capR: f.vals[n], capNet: sellFunds(f.members, n, p.incRet), cost: 0,
     foerder: 0, foerderReal: 0, payEnd: p.H, lumpNet: 0, incTax: zero(), abgTax: f.abg, kv: f.kvInline, taxBase: zero(),
     heir: idx => ({ val: sellNet(f, idx), note: fundNote }),
   });
@@ -471,7 +522,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       own: (avd.own + avd.ownU) + side.own, ownReal: (avd.ownReal + avd.ownUReal) + side.ownReal, sideOwn: side.own, sideOwnReal: side.ownReal,
       ...(F.unsub ? { unsubOwn: avd.ownU, unsubOwnReal: avd.ownUReal } : {}),
       capR: (avd.vals[n] + Vu) + side.vals[n], capAVD: avd.vals[n] + Vu, sideR: side.vals[n],
-      capNet: (avd.vals[n] + Vu) - latentTax(avd.vals[n] + gU, n) + sellNet(side, n),
+      capNet: (avd.vals[n] + Vu) - latentTax(avd.vals[n] + gU, n) + sellFunds(side.members, n, p.incRet),
       zul: avd.zul, zulReal: avd.zulReal, ref: avd.ref, refReal: avd.refReal,
       foerder: avd.zul + avd.ref, foerderReal: avd.zulReal + avd.refReal, cost: 0, payEnd: p.H, noElig: avd.noElig, lumpNet,
       incTax: taxAvd, abgTax: side.abg, kv: aKv, taxBase: avd.tb,
@@ -582,15 +633,46 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       parts.avd!.lumpNet = lumpNet;
     }
   }
+  // R3: Jahresantrag für ALLE modellierten Abgeltungserträge. Quellensteuer/Steuerverkäufe
+  // bleiben erhalten; Erstattung als Cash im selben Jahr, ohne Wiederanlage (auch beim Ansparen).
+  const capitalWithheld = F.gp ? abgTax.slice() : [];
+  if (F.gp) for (let t = 0; t < T; t++) {
+    const paid = abgTax[t];
+    if (!(paid > 0)) continue;
+    const K = paid / .26375;
+    const base = (t < n ? incAt(t) : p.incRet) * I(t);
+    const X = list.reduce((s, r) => s + r.taxBase[t], 0);
+    const income = base + X - (F.kvDeduct && t >= n ? kv[t] : 0);
+    const liability = (x: number) => t < n
+      ? Math.min(taxNom(Math.max(0, x), t), taxNom(Math.max(0, x - saDed[t]), t) + saZ[t])
+      : taxNom(Math.max(0, x), t);
+    const refund = Math.max(0, paid - (liability(income + K) - liability(income)));
+    for (const r of list) {
+      const share = refund * (r.abgTax[t] / paid);
+      r.abgTax[t] -= share; r.net[t] += share;
+    }
+    abgTax[t] -= refund;
+  }
+  if (F.gp && avd && avd.L[n] + avd.Lu[n] > 0) {
+    const L = avd.L[n] + avd.Lu[n], xL = avd.tb[n] - (avd.W[n] + avd.xW[n]);
+    const income = p.incRet * I(n) + list.reduce((s, r) => s + r.taxBase[n], 0) - (F.kvDeduct ? kv[n] : 0);
+    const paid = capitalWithheld[n], K = paid / .26375;
+    const totalTax = (x: number) => taxNom(Math.max(0, x), n) + Math.min(paid,
+      taxNom(Math.max(0, x + K), n) - taxNom(Math.max(0, x), n));
+    lumpNet = L - (totalTax(income) - totalTax(income - xL + (F.kvDeduct ? kvLa : 0))) - kvLa;
+    parts.avd!.lumpNet = lumpNet;
+  }
   const net = list.length ? list[0].net.slice() : zero();
   for (let i = 1; i < list.length; i++) { const x = list[i].net; for (let t = 0; t < T; t++) net[t] += x[t]; }
   const sum = (f: (r: ComboPart) => number) => list.reduce((a, r) => a + f(r), 0);
   // Kapital nach Steuern gesamt: Fonds bei Rentenbeginn gemeinsam verkauft (ein Pauschbetrag)
   const capDepots = [dEtf, dFond, dSide].filter((d): d is Depot => !!d);
   let capNet = sum(r => r.capNet);
-  if (capDepots.length > 1) {
-    const joint = sellFunds(capDepots.flatMap(d => d.members), n);
-    capNet += joint - capDepots.reduce((a, d) => a + sellNet(d, n), 0);
+  if (capDepots.length > 1 || (F.insAllowance && ins && p.insLump && capDepots.length > 0)) {
+    const fs = capDepots.flatMap(d => d.members);
+    const l = liquidation(fs, n, p.incRet, xIns[n], Math.max(0, allowance(n) - insuranceFree[n]));
+    const joint = F.insAllowance ? l.value - l.tax : sellFunds(fs, n, p.incRet);
+    capNet += joint - capDepots.reduce((a, d) => a + sellFunds(d.members, n, p.incRet), 0);
   }
   // ---------- 8) Erbfall gemeinsam (docs/kombi-modus.md, Abschnitt „Erbfall“) ----------
   // Tod zu Beginn von Jahr idx; die Erben (eine Person, Einkommen p.incHeir) bekommen alles im selben Jahr.
@@ -607,14 +689,14 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   // Ohne Fix heirTax (Original: Steuer mit dem Einkommen der verstorbenen Person) gibt es keine gemeinsame Steuer der
   // Erben; dann ist der Erbwert die Summe der Teile, jeder für sich versteuert.
   const latentTaxO = (V: number, t: number) => { const yrs = Math.max(1, tEnd - Math.max(t, n)); return yrs * taxAdd(p.incRet, V / yrs, t); };
-  const heirJoint = (idx: number, married: boolean): HeirValue => {
+  const heirJoint = (idx: number, married: boolean, only?: ProductKey): HeirValue => {
     if (!F.heir) {
       let v = 0; for (const r of list) v += (married && r.heirMarried ? r.heirMarried : r.heir)(idx).val;
       return { val: v, note: 'Teile einzeln versteuert' };
     }
     let gross = 0, X = 0, back = 0, lt = 0, halbAvd = false, rentYears = 0, insFree = 0;
     const bits: string[] = [];
-    if (avd) {
+    if (avd && (!only || only === 'avd')) {
       const a = avd, V = a.vals[idx], C0 = a.vals[n];
       const gU = (half: boolean) => Math.max(0, a.valsU[idx] - a.basesU[idx]) * (half ? 0.5 : 1);
       halbAvd = p.heirHalf && idx >= 12;
@@ -627,7 +709,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
         X += Math.max(0, V - ownR - zulR) * (halbAvd ? 0.5 : 1) + gU(halbAvd);
       }
     }
-    if (ins) {
+    if (ins && (!only || only === 'ins')) {
       if (idx <= n) { insFree = ins.vals[idx] as number; gross += insFree; }
       else if (!p.insLump) {
         rentYears = Math.max(0, p.R + p.gz - (p.a0 + idx));
@@ -637,21 +719,25 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       }
     }
     const tx = taxAdd(p.incHeir, X, idx);
-    const depots = [dEtf, dFond, dSide, idx > n ? dIns : null].filter((d): d is Depot => !!d).flatMap(d => d.members);
+    const depots = [dEtf, dFond, dSide, idx > n ? dIns : null].filter((d): d is Depot => !!d).flatMap(d => d.members).filter(f => !only || f.part === only);
     let V = 0, minGain = Infinity;
     for (const f of depots) { const g = f.vals[idx] - f.bases[idx]; V += f.vals[idx]; if (g < minGain) minGain = g; }
-    const abg = depots.length ? V - sellFunds(depots, idx) : 0;
+    const abg = depots.length ? (F.gp || F.nextVP || p.indexAllowance ? liquidation(depots, idx, p.incHeir, X).tax : V - sellFunds(depots, idx)) : 0;
     const e = (x: number) => eur(Rn(x, idx));
-    if (avd) bits.push(married
+    if (avd && (!only || only === 'avd')) bits.push(married
       ? 'AVD ohne Abzug auf einen Vertrag des Ehepartners übertragbar (spätere Einkommensteuer ca. ' + e(lt) + ', grob geschätzt und abgezogen)'
       : 'AVD-Förderung ' + e(back) + ' zurück');
-    if (tx > 0 || X > 0) bits.push('Einkommensteuer der Erben ' + e(tx) + ' in einem Tarif (' + [avd ? 'AVD-Erträge' + (halbAvd ? ' hälftig' : '') : '', rentYears > 0 ? 'Ertragsanteil der Restrente' : ''].filter(Boolean).join(' und ') + ')');
-    if (depots.length) bits.push('Depots nach Abgeltungsteuer bei Verkauf ' + e(abg) + ' (ein Sparer-Pauschbetrag)');
-    if (ins && idx <= n) bits.push('Versicherung einkommensteuerfrei');
+    if (tx > 0 || X > 0) bits.push('Einkommensteuer der Erben ' + e(tx) + ' in einem Tarif (' + [avd && (!only || only === 'avd') ? 'AVD-Erträge' + (halbAvd ? ' hälftig' : '') : '', rentYears > 0 ? 'Ertragsanteil der Restrente' : ''].filter(Boolean).join(' und ') + ')');
+    if (depots.length) bits.push((F.gp ? 'Depots nach Kapitalertragsteuer/Günstigerprüfung bei Verkauf ' : 'Depots nach Abgeltungsteuer bei Verkauf ') + e(abg) + ' (ein Sparer-Pauschbetrag)');
+    if (ins && (!only || only === 'ins') && idx <= n) bits.push('Versicherung einkommensteuerfrei');
     if (rentYears > 0) bits.push('Restrente noch ' + rentYears + ' Jahre');
     return { val: gross - tx + (V - abg), note: 'Gemeinsam versteuert: ' + bits.join('; '), detail: { incomeTax: tx, abgTax: abg, minDepotGain: minGain } };
   };
 
+  if (F.heir && (F.gp || F.nextVP)) for (const r of list) {
+    r.heir = idx => heirJoint(idx, false, r.key);
+    if (r.heirMarried) r.heirMarried = idx => heirJoint(idx, true, r.key);
+  }
   return {
     parts, net, own: sum(r => r.own), ownReal: sum(r => r.ownReal), capR: sum(r => r.capR), capNet, cost: 0,
     foerder: sum(r => r.foerder), foerderReal: sum(r => r.foerderReal), lumpNet,

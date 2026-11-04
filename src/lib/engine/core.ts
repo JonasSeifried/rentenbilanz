@@ -62,6 +62,9 @@ export interface Params {
   a0: number; studyEnd: number; incStudy: number; eligStudy: boolean;
   incWork: number; incRet: number; R: number; H: number;
   kvOn: boolean; kvRate: number;
+  kvGrossRet: number; payResidual: boolean; fundingDelay: boolean; indexAllowance: boolean;
+  /** -1: Kosten der Ansparphase weiterverwenden, sonst separater Satz. */
+  avdPayCost: number; etfPayTer: number; fondPayTer: number;
   g: number; gPay: number; infl: number; dyn: number; basis: number;
   etfM: number; etfTer: number;
   avdM: number; avdCost: number; kids: number; kidsFrom: number; kidsYears: number;
@@ -87,6 +90,10 @@ export function readParams(inp: Inputs): Params {
   const p: Params = {
     a0: clamp(Math.round(num('a0')), 16, 60), studyEnd: Math.round(num('studyEnd')), incStudy: Math.max(0, num('incStudy')), eligStudy: chk('eligStudy'),
     incWork: Math.max(0, num('incWork')), incRet: Math.max(0, num('incRet')), R: clamp(Math.round(num('R')), 65, 70), H: Math.round(num('H')),
+    kvGrossRet: Math.max(0, num('kvGrossRet')), payResidual: chk('payResidual'), fundingDelay: chk('fundingDelay'), indexAllowance: chk('indexAllowance'),
+    avdPayCost: num('avdPayCost') < 0 ? -1 : pct('avdPayCost', 0, 10),
+    etfPayTer: num('etfPayTer') < 0 ? -1 : pct('etfPayTer', 0, 10),
+    fondPayTer: num('fondPayTer') < 0 ? -1 : pct('fondPayTer', 0, 10),
     kvOn: chk('kvOn'), kvRate: pct('kvRate', 0, 40),
     g: pct('g', -50, 30), gPay: pct('gPay', -50, 30), infl: pct('infl', -5, 20), dyn: pct('dyn', -10, 20), basis: pct('basis', 0, 10),
     etfM: Math.max(0, num('etfM')), etfTer: pct('etfTer', 0, 10),
@@ -108,7 +115,7 @@ export function readParams(inp: Inputs): Params {
 
 export interface HeirValue {
   val: number; note: string;
-  /** Nur gemeinsamer Erbwert der Kombi: Einkommensteuer der Erben im Todesjahr, Abgeltungsteuer der Depots, kleinster Depotgewinn. */
+  /** Nur gemeinsamer Erbwert der Kombi: Einkommensteuer der Erben im Todesjahr, Kapitalsteuer der Depots nach Günstigerprüfung, kleinster Depotgewinn. */
   detail?: { incomeTax: number; abgTax: number; minDepotGain: number };
 }
 

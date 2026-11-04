@@ -14,7 +14,7 @@ const CENT = 0.005;
 const OPTS = { fixes: NO_FIXES };
 // Einzige erlaubte neue Schlüssel (fehlen im Original): params.incHeir, params.shift/safeRate (Umschichtung vor
 // Rentenbeginn, Standard aus) und stats.*.cumHReal. Alles andere muss strukturell gleich sein.
-const ALLOW_NEW = [/^(params|scen\[\d+\]\.p)\.(incHeir|shift|safeRate)$/, /^(scen\[\d+\]\.)?stats\.\w+\.cumHReal$/];
+const ALLOW_NEW = [/^(params|scen\[\d+\]\.p)\.(incHeir|shift|safeRate|kvGrossRet|payResidual|fundingDelay|indexAllowance|avdPayCost|etfPayTer|fondPayTer)$/, /^(scen\[\d+\]\.)?stats\.\w+\.cumHReal$/];
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
 let legacy: { readParams: () => Any; model: (p: Any) => Any; analyze: (p: Any) => Any; scenarios: (p: Any) => Any };
