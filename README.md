@@ -10,6 +10,8 @@
 npm install
 npm run dev        # http://localhost:5173
 npm run build      # statische Seite in dist/
+npm test           # Funktions-/Golden-Tests, danach separate Laufzeitprüfung
+npm run test:perf  # nur warme Node-Laufzeitbudgets, ohne parallele Funktionstests
 npm run test:all   # Typprüfung, Golden-/Unit-Tests, Build, Browser-Tests
 ```
 

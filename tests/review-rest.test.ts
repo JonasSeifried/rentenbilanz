@@ -5,6 +5,7 @@ import { ALL_FIXES, type FixId } from '../src/lib/engine/fixes';
 import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
 import { decodeState, encodeState } from '../src/lib/link';
 import { sanitize } from '../src/lib/storage';
+import { scenarioList } from '../src/lib/engine/analyze';
 const P = (patch: Partial<Inputs> = {}) => readParams({ ...DEFAULTS, ...patch });
 const S = (patch: Partial<Split>) => ({ ...emptySplit(), ...patch });
 const without = (...ids: FixId[]) => ({ fixes: new Set([...ALL_FIXES].filter(f => !ids.includes(f))) });
@@ -185,4 +186,78 @@ it('R1/R3: AVD-Teilauszahlung mit marginalem Netto einschließlich Kapital-Güns
   const paid = b.abgTax[n], K = paid / .26375;
   const total = (x: number) => tax2026(x, index) + Math.min(paid, tax2026(x + K, index) - tax2026(x, index));
   expect(a.lumpNet).toBeCloseTo(L - kvL - (total(income) - total(income - L + kvL)), 6);
+});
+
+// Regressionen aus dem unabhängigen Review von 882adbe (F1–F3).
+describe('R7 – alternative Kapitalanzeige mit eigenem gemeinsamem Pauschbetrag', () => {
+  it('kurzer Vertrag: alternative und tatsächliche Anfangsauszahlung stimmen überein, auch mit KV', () => {
+    for (const kvOn of [false, true]) for (const incRet of [0, 60000]) {
+      const p = P({ a0: 60, R: 65, insLump: false, insEff: 0, infl: 0, incRet, basis: 0, kvOn });
+      const alt = combo(p, S({ ins: 500 })), actual = combo({ ...p, insLump: true }, S({ ins: 500 }));
+      const r = alt.parts.ins!, taxable = Math.max(0, (r.capR - r.own) * .85 - 1000);
+      expect(r.kapNet).toBeCloseTo(r.capR - taxable * .26375, 7);
+      expect(r.kapNet).toBe(actual.parts.ins!.kapNet);
+      // Auch bei günstigem Tarif/KV-Abzug bleibt die spätere Erstattung außerhalb des Anfangskapitals.
+      expect(actual.parts.ins!.capNet).toBe(actual.parts.ins!.kapNet);
+    }
+  });
+  it('ein Pauschbetrag für alternative Versicherung und ein/mehrere Depots mit beiden Teilfreistellungen', () => {
+    for (const a0 of [50, 60]) for (const shift of [false, true]) for (const indexAllowance of [false, true]) for (const multi of [false, true]) {
+      const p = P({ a0, R: 65, insLump: false, basis: 0, incRet: 100000, shift, indexAllowance });
+      const funds = S({ etf: 500, fond: multi ? 300 : 0 });
+      const c = combo(p, { ...funds, ins: 500 }), standalone = combo(p, funds);
+      const r = c.parts.ins!, free = 1000 * (indexAllowance ? c.I(c.n) : 1);
+      const insBase = (r.capR - r.own) * .85 * (a0 === 50 ? .5 : 1);
+      const used = Math.min(free, insBase);
+      expect(c.capNet).toBeCloseTo(r.kapNet! + standalone.capNet - used * .26375, 6);
+      const noR7 = combo(p, { ...funds, ins: 500 }, without('insuranceAllowance'));
+      // Die hypothetische Kapitalwahl verändert keine tatsächliche Leibrente und keine Fondsentnahme.
+      expect(c.net).toEqual(noR7.net);
+      expect(c.incTax).toEqual(noR7.incTax);
+      expect(c.abgTax).toEqual(noR7.abgTax);
+      expect(c.kv).toEqual(noR7.kv);
+    }
+  });
+  it('Versicherung verbraucht nur ihren kleinen Ertrag; der verbleibende Pauschbetrag bleibt den Fonds', () => {
+    const p = P({ a0: 50, R: 65, insLump: false, infl: 0, basis: 0, incRet: 100000 });
+    const c = combo(p, S({ etf: 500, ins: 1 })), funds = combo(p, S({ etf: 500 }));
+    const r = c.parts.ins!, used = (r.capR - r.own) * .85 * .5;
+    expect(used).toBeGreaterThan(0); expect(used).toBeLessThan(1000);
+    expect(c.capNet).toBeCloseTo(r.kapNet! + funds.capNet - used * .26375, 6);
+  });
+  it('kurze Versicherungsleistung und hypothetischer Fondsverkauf nehmen gemeinsam an R3 teil', () => {
+    const p = P({ a0: 60, R: 65, insLump: false, insEff: 0, etfTer: 0, infl: 0, basis: 0, incRet: 5000 });
+    const c = combo(p, S({ etf: 500, ins: 500 }));
+    const r = c.parts.ins!, f = c.parts.etf!;
+    const insuranceK = Math.max(0, (r.capR - r.own) * .85 - 1000);
+    const fundK = (f.capR - f.own) * .7; // Pauschbetrag bereits vollständig in der Versicherungsleistung
+    const totalTax = (K: number) => Math.min(K * .26375, tax2026(p.incRet + K) - tax2026(p.incRet));
+    const marginalFundTax = totalTax(insuranceK + fundK) - totalTax(insuranceK);
+    expect(c.capNet).toBeCloseTo(r.kapNet! + f.capR - marginalFundTax, 7);
+    expect(r.kapNet).toBeCloseTo(r.capR - insuranceK * .26375, 7);
+  });
+  it('vollständige Fondsliquidation saldiert Verluste mit kurzer Versicherungsleistung, ohne die Anfangsauszahlung zu ändern', () => {
+    for (const gp of [true, false]) {
+      const p = P({ a0: 60, R: 65, insLump: false, insEff: 0, etfTer: 10, g: 6, infl: 0, basis: 0, incRet: 60000 });
+      const opts = gp ? undefined : without('capitalGuenstiger');
+      const c = combo(p, S({ etf: 500, ins: 500 }), opts), r = c.parts.ins!, f = c.parts.etf!;
+      const insuranceK = Math.max(0, (r.capR - r.own) * .85 - 1000);
+      const fundLoss = (f.capR - f.own) * .7;
+      expect(fundLoss).toBeLessThan(0);
+      const jointTax = Math.max(0, insuranceK + fundLoss) * .26375;
+      expect(c.capNet).toBeCloseTo(r.capR + f.capR - jointTax, 7);
+      expect(r.kapNet).toBeCloseTo(r.capR - insuranceK * .26375, 7);
+    }
+  });
+});
+
+it('Kostenszenario benennt beide Phasen nur bei geerbten Auszahlkosten; explizite Kosten bleiben erhalten', () => {
+  for (const avdPayCost of [-1, 0, 1.5]) {
+    const p = P({ avdPayCost });
+    const scenario = scenarioList(p).find(s => s.id === 'avdCost')!;
+    expect(scenario.p.avdCost).toBe(.01);
+    expect(scenario.p.avdPayCost).toBe(p.avdPayCost);
+    if (avdPayCost < 0) expect(scenario.label).toBe('AVD-Kosten 1,0 % in Anspar- und Auszahlphase (Szenario)');
+    else expect(scenario.label).toBe('AVD-Ansparkosten 1,0 % (Deckel Standarddepot)');
+  }
 });

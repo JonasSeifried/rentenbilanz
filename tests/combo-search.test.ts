@@ -332,7 +332,7 @@ describe('Ergebnissätze (comboVerdict)', () => {
     const { v } = V({ setAll: 300, cEtf: 110, cAvd: 190, cIns: 0, insOn: false }, true);
     expect(v.headline).toBe('Deine Aufteilung ist unter diesen Annahmen rechnerisch die beste: Ø 1.175 € netto im Monat (67–90).');
     expect(v.lines.some(l => l.startsWith('Rechnerisch am meisten') || l.startsWith('Auf den Euro'))).toBe(false);
-    expect(v.lines.at(-1)).toBe('Aber: In 3 von 11 Szenarien unten ist eine andere Aufteilung rechnerisch vorne, z. B. bei „AVD-Ansparkosten 1,0 % (Deckel Standarddepot)“ (270 € ETF + 30 € AVD).');
+    expect(v.lines.at(-1)).toBe('Aber: In 3 von 11 Szenarien unten ist eine andere Aufteilung rechnerisch vorne, z. B. bei „AVD-Kosten 1,0 % in Anspar- und Auszahlphase (Szenario)“ (270 € ETF + 30 € AVD).');
   });
   it('gleichauf (TIE_REL): 300 € = 150 ETF + 150 AVD, 190/110 nur 285 € vorne', () => {
     const { C, v } = V({ setAll: 300, cEtf: 150, cAvd: 150, cIns: 0, insOn: false });
@@ -384,34 +384,6 @@ describe('Ergebnissätze (comboVerdict)', () => {
       expect(text).not.toMatch(/optimal|empfehl|solltest|lohnt sich für dich/i);
     }
   }, 30_000);
-});
-
-describe('Laufzeit (Node)', () => {
-  const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
-  const time = (f: () => void) => { const t0 = performance.now(); f(); return performance.now() - t0; };
-  // Mit E10 ist das AVD-Raster bis 570 € statt 150 € lang (doppelt so viele Auswertungen), daher < 30 ms.
-  it('beste Aufteilung mit 4 Produkten und 500 € < 30 ms; analyzeCombo < 5 ms; Robustheit je Zeile < 50 ms', () => {
-    const p = P({ fondOn: true });
-    const setup = setupOf({ fondOn: true, setAll: 500, cEtf: 200, cAvd: 150, cIns: 100, cFond: 50 });
-    for (let i = 0; i < 5; i++) bestSplit(p, 500, K4); // Aufwärmen (JIT)
-    const tBest = median(Array.from({ length: 7 }, () => time(() => bestSplit(p, 500, K4))));
-    const best = bestSplit(p, 500, K4)!;
-    const tAna = median(Array.from({ length: 7 }, () => time(() => analyzeCombo(p, setup, best))));
-    const rowTimes: number[] = [];
-    const gen = robustRows(p, setup, best.split);
-    for (;;) { const t0 = performance.now(); const r = gen.next(); if (r.done) break; rowTimes.push(performance.now() - t0); }
-    console.log(`Laufzeit: beste Aufteilung (4 Produkte, 500 €, ${best.evals} Auswertungen) ${tBest.toFixed(1)} ms; analyzeCombo ${tAna.toFixed(2)} ms; Robustheit ${rowTimes.length} Zeilen, Median ${median(rowTimes).toFixed(1)} ms, max ${Math.max(...rowTimes).toFixed(1)} ms`);
-    expect(tBest).toBeLessThan(30);
-    expect(tAna).toBeLessThan(5);
-    expect(median(rowTimes)).toBeLessThan(50);
-  });
-  it('eine Auswertung (ohne Kosten-Lauf) < 0,5 ms', () => {
-    const p = P(); const s = S({ etf: 150, avd: 150, ins: 150 });
-    for (let i = 0; i < 300; i++) evaluate(p, s);
-    const t = time(() => { for (let i = 0; i < 1000; i++) evaluate(p, s); }) / 1000;
-    console.log(`Laufzeit: eine Auswertung ${(t * 1000).toFixed(0)} µs`);
-    expect(t).toBeLessThan(0.5);
-  });
 });
 
 // Typprüfung: Params bleibt frei von Kombi-Schlüsseln (Golden-Test vergleicht Params mit dem Original).

@@ -16,7 +16,8 @@ Dialog hinter „+ Kombi“ in der Zeile „Vergleichen“. Dort zeigt der Rechn
 | `src/lib/engine/comboAnalyze.ts` | `analyzeCombo()` (deine Aufteilung, reine Strategien, beste, Wechselwirkung), `robustRows()` |
 | `src/lib/comboVerdict.ts` | Ergebnissätze `comboVerdict()`, `splitText()` |
 | `tests/combo.test.ts` | Invarianten I1–I8 |
-| `tests/combo-search.test.ts` | Suche (S1–S3), Auswertung, Robustheit, Ergebnissätze, Laufzeit |
+| `tests/combo-search.test.ts` | Suche (S1–S3), Auswertung, Robustheit, Ergebnissätze |
+| `tests/performance.test.ts` | Warme Node-Laufzeitbudgets, separat nach den Funktionstests (`npm test`) |
 
 ---
 
@@ -219,7 +220,10 @@ steht „(in heutiger Kaufkraft)“ dabei. Die Wortwahl ist neutral: nie „opti
 
 ## 5. Laufzeit und Einbindung
 
-Gemessen in Node auf einem Apple-M-Rechner. Die Tests prüfen Obergrenzen.
+Historische Messwerte in Node auf einem Apple-M-Rechner. Die aktuellen Tests prüfen die Obergrenzen
+nach eigenständigem Warm-up in einem separaten Prozess (`npm run test:perf`); aktuelle Messbedingungen
+stehen im [Umsetzungsnachtrag](engine-rest-2026-11.md#nachbesserung-nach-dem-unabhängigen-review-von-882adbe).
+Die historische Median-Grenze von 30 ms für Robustheitszeilen wurde mit R3 auf 50 ms geändert.
 
 | | Zeit |
 |---|---|

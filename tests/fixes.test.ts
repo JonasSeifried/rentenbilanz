@@ -3,7 +3,7 @@
 //    engine_var.ts mit OPT-Schaltern). Fälle mit kvOn wie dort mit kvRate 21,7 (damaliger Standard).
 // 2. Eigenschaften über 200 Zufallsszenarien (mulberry32 wie im Golden-Test).
 // 3. Snapshots der Standardwerte mit ALL_FIXES.
-// 4. Jede Teilmenge der Fixes läuft; Laufzeit.
+// 4. Ausgewählte Teilmengen der Fixes laufen; Laufzeit separat in performance.test.ts.
 import { describe, expect, it } from 'vitest';
 import { readParams, tax, model, type Params, type ProductKey } from '../src/lib/engine/engine';
 import { analyze, scenarios, scenarioList, PRODUCTS, type Analysis } from '../src/lib/engine/analyze';
@@ -371,18 +371,4 @@ describe('Snapshots mit ALL_FIXES (aktuelle Standardwerte)', () => {
   it('High mit KV-Sonderausgabenabzug (R1)', () => {
     expect(snap({ ...HIGH, kvRate: 21.1 })).toEqual({ lead: 'etf', etf: 330961, avd: 316109, ins: 254574 });
   });
-});
-
-describe('Laufzeit', () => {
-  it('analyze + scenarios mit ALL_FIXES höchstens 3,5 × (mehr Sensitivitäten und jährliche Steuerprüfung) so lang wie ohne Fixes', () => {
-    // Messung (MacBook, Node 26, 2026-11-03): siehe Konsole; ohne Fixes entspricht der Pfad dem Original.
-    const cases = [P(), P(DK), P(HIGH), P({ insLump: false, fondOn: true, kvOn: true })];
-    const run = (o: { fixes: ReadonlySet<FixId> }) => { for (const p of cases) { analyze(p, o); scenarios(p, o); } };
-    const time = (o: { fixes: ReadonlySet<FixId> }) => { const t0 = performance.now(); for (let i = 0; i < 20; i++) run(o); return performance.now() - t0; };
-    for (let i = 0; i < 3; i++) { time(NONE); time(ALL); } // Aufwärmen
-    let tn = Infinity, ta = Infinity;
-    for (let i = 0; i < 7; i++) { tn = Math.min(tn, time(NONE)); ta = Math.min(ta, time(ALL)); }
-    console.log(`Laufzeit analyze+scenarios: ohne Fixes ${(tn / 80).toFixed(2)} ms, mit allen ${(ta / 80).toFixed(2)} ms je Fall (× ${(ta / tn).toFixed(2)})`);
-    expect(ta / tn).toBeLessThan(3.5);
-  }, 60_000);
 });

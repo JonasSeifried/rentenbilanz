@@ -255,3 +255,55 @@ Eine Einzelrechnung bleibt <0,5 ms, Suche 4 Produkte/500 € <30 ms, `analyzeCom
 **Abschluss:** `npx vitest run`: **13 Dateien, 257 Tests grün** (einschließlich Golden-, Kombi-, Such- und Fix-Tests).
 `npm run check`: **0 Fehler, 0 Warnungen**. Produktionsbuild erfolgreich; die vorhandenen Vite-Hinweise zum
 klassischen `theme.js` auf den drei HTML-Seiten bleiben unverändert. Keine Browser-/e2e-Prüfung.
+
+## Nachbesserung nach dem unabhängigen Review von 882adbe
+
+Ein unabhängiges Review von 882adbe fand drei fachliche Lücken F1–F3
+und die instabile Laufzeitmessung F4. Korrekturen:
+
+- **F1:** Auch die alternative Kapitalauszahlung eines Vertrags unter zwölf Jahren nutzt den Pauschbetrag.
+  Die anfängliche tatsächliche und alternative Auszahlung stimmen damit überein; ein späterer Vorteil aus
+  KV-Abzug/Günstigerprüfung erhöht weder `kapNet` noch die Wiederanlage der Anfangsauszahlung.
+- **F2:** Die hypothetische Kapitalabrechnung hat ein eigenes Freibetragsbuch. Sie verbraucht bei gewählter
+  Leibrente deren alternative Kapitalleistung zuerst und gibt den Fonds nur den Rest. Die tatsächlich
+  gezahlte Leibrente, ihre Ertragsanteilbesteuerung und die tatsächlichen Fondscashflows bleiben davon
+  unberührt. Bei kurzer Versicherungsleistung berücksichtigt die marginale Fondssteuer die gemeinsame
+  Günstigerprüfung mit dem Versicherungsgewinn. Bei vollständigem Fondsverkauf werden Fondsverluste mit
+  der kurzen, voll steuerpflichtigen Leistung saldiert, bevor bei null abgeschnitten wird (§ 20 Abs. 6 EStG).
+  Die hälftig tarifbesteuerte Leistung bleibt davon getrennt (§ 32d Abs. 2 Nr. 2 EStG).
+  `capNet` bleibt eine Bewertungsrechnung; AVD-Latentsteuer ist weiterhin eine Schätzung, kein sofortiger
+  Auszahlungsanspruch. Spätere zusätzliche KV-/Steuererstattungen der Anfangsversicherung werden nicht
+  als neues Anfangskapital angesetzt. Die Fondssteuer wird marginal zum Versicherungsbetrag bewertet.
+- **F3:** Die frühere Kostensensitivität bleibt numerisch erhalten. Bei −1 (Ansparkosten in der Auszahlung
+  übernehmen) heißt sie jetzt „AVD-Kosten 1,0 % in Anspar- und Auszahlphase (Szenario)“. Bei ausdrücklich
+  gesetzten Auszahlkosten benennt sie nur die geänderten Ansparkosten. Kein Kostendeckel für die
+  Auszahlphase behauptet, keine neue Gebührenannahme eingeführt.
+- **F4:** Die drei bestehenden Laufzeitprüfungen stehen gemeinsam in `tests/performance.test.ts` und
+  laufen über `vitest.perf.config.ts` in einem eigenen Prozess nach den Funktionstests (`npm test`).
+  `npm run test:perf` startet nur diese Prüfungen; `npx vitest run` allein prüft die Funktionstests.
+  Das Warm-up ist von vorherigen Suchtests unabhängig. Robustheitszeiten werden dreimal gemessen und
+  je Zeile als Median ausgewertet; anschließend gilt weiterhin der Median aller Zeilen. Die Budgetgrenzen
+  bleiben 30 ms Suche, 5 ms analyzeCombo, 50 ms Robustheitsmedian, 0,5 ms Einzelrechnung und 3,5×
+  analyze+scenarios. Kein Versprechen für kalten Start, Browser, fremde Hardware oder externe CPU-Last.
+
+Sechs neue Regressionstests decken kurze/lange Versicherungen, vollständigen/teilweisen Freibetragsverbrauch,
+ein/mehrere Fondsdepots, beide Teilfreistellungen, hypothetische Indexierung, gemeinsamen Tarif bei niedrigem
+Einkommen und Fondsverluste bei vollständiger Liquidation ab. Außerdem prüfen sie unveränderte tatsächliche
+Leibrentenbücher und das phasenabhängige Szenariolabel. Neue Rechnung bleibt unter `insuranceAllowance`
+abschaltbar; die historischen Referenzdateien bleiben unverändert. Keine neue Regel für H1/H2/E4/E9/E12/E13.
+
+Die beiden ursprünglichen Reviewproben sind nun auf den erwarteten Kapitalwerten: kurze Versicherung
+34.074,54554460808 € statt 33.810,79554460808 €; gemeinsame alternative Kapitalanzeige
+257.994,5901022547 € statt 258.258,3401022547 €. Die tatsächlichen Default-/DK-/High-Auszahlungssummen
+und die numerischen Ergebnisse der Such-/Robustheitsszenarien ändern sich durch diese
+Kapitalanzeigen-/Beschriftungskorrektur nicht.
+
+Abschlussvalidierung der Nachbesserung: `npm test` besteht mit **260 Funktionstests in 13 Dateien** und
+anschließend **3 Laufzeitprüfungen in einer separaten Datei** (insgesamt 263 Tests). Golden-/I1-,
+Kombi-, Such-, Fix- und Default-/DK-/High-Prüfungen bleiben grün. `npm run check`: 0 Fehler/0 Warnungen;
+Produktionsbuild erfolgreich mit den unveränderten theme.js-Hinweisen.
+
+Die zusätzliche isolierte Laufzeitgegenprobe mit Node 26.7.0 bestand ebenfalls: Suche 20,1 ms,
+analyzeCombo 0,54 ms, Robustheitsmedian 25,6 ms (größter Zeilenmedian 45,7 ms), Einzelrechnung 89 µs;
+analyze+scenarios 2,47× gegenüber NO_FIXES. Die zuvor weiterhin roten Messungen bei paralleler Testlast
+werden dadurch nicht rückwirkend grün; sie waren der Anlass für die getrennte Ausführung.

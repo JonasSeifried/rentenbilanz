@@ -331,9 +331,14 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     kv[n] += kvLa;
   }
   // Versicherung: Steuer auf die Kapitalauszahlung (gemeinsam im Jahr n) bzw. für die Anzeige allein (Leibrente).
+  // Die hypothetische Kapitalwahl hat einen eigenen Freibetrag. Er verändert weder den
+  // Pauschbetrag der tatsächlich gewählten Leibrente noch deren Steuer-/KV-Jahresbuch.
+  const capitalInsGain = ins ? ins.gain * .85 * (ins.halb ? .5 : 1) : 0;
+  const capitalInsFree = F.insAllowance && ins ? (p.insLump ? insuranceFree[n] : Math.min(allowance(n), capitalInsGain)) : 0;
+  const capitalInsIncome = ins?.halb ? (p.insLump ? xIns[n] : Math.max(0, capitalInsGain - capitalInsFree)) : 0;
   let kapTax = 0, kapNet = 0, kvLi = 0;
   if (ins) {
-    kapTax = p.insLump ? (ins.halb ? taxIns[n] : kapTaxFlat) : (ins.halb ? taxAdd(p.incRet, Math.max(0, ins.gain * 0.85 * 0.5 - (F.insAllowance ? allowance(n) : 0)), n) : ins.gain * 0.85 * 0.26375);
+    kapTax = p.insLump ? (ins.halb ? taxIns[n] : kapTaxFlat) : (ins.halb ? taxAdd(p.incRet, capitalInsIncome, n) : Math.max(0, capitalInsGain - capitalInsFree) * 0.26375);
     // Ohne kvLumpSpread (Original): KV auf die Kapitalauszahlung sofort, eigener Topf 10 × Spielraum(n).
     if (!F.kvSpread) kvLi = kvLump(ins.C, n);
     kapNet = F.kvSpread ? ins.C - kapTax : ins.C - kapTax - kvLi;
@@ -468,7 +473,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     return { vals: sum(a.vals, b.vals), bases: sum(a.bases, b.bases), net: sum(a.net, b.net), abg: sum(a.abg, b.abg), kvInline: sum(a.kvInline, b.kvInline), own: a.own + b.own, ownReal: a.ownReal + b.ownReal, members: [a, b] };
   };
   /** Verkauf aller Fonds der Liste zum Zeitpunkt idx mit einem Sparer-Pauschbetrag; Gewinne je Teilfreistellung. */
-  const liquidation = (fs: readonly Fund[], idx: number, income = p.incHeir, X = 0, free = allowance(idx)) => {
+  const liquidation = (fs: readonly Fund[], idx: number, income = p.incHeir, X = 0, free = allowance(idx), otherCapital = 0) => {
     let value = 0, gain = 0;
     for (const f of fs) {
       const pending = F.nextVP ? f.pendingAt[idx] : 0;
@@ -481,7 +486,19 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     const flat = taxable * .26375;
     const base = income * I(idx) + X;
     const tariff = taxNom(base + taxable, idx) - taxNom(base, idx);
-    return { value, tax: F.gp ? Math.min(flat, tariff) : flat };
+    if (!(otherCapital > 0)) return { value, tax: F.gp ? Math.min(flat, tariff) : flat };
+    // Kapitalanzeige: kurze Versicherungsleistung und Fonds nehmen gemeinsam an R3 teil.
+    // Nur die marginale Fondssteuer zuordnen; eine spätere Erstattung der Versicherung
+    // erhöht auch hier nicht deren anfängliche Kapitalauszahlung.
+    // Bei vollständiger Liquidation können Fondsverluste die kurze Versicherungsleistung
+    // mindern. Erst nach dieser Saldierung bei null abschneiden (§ 20 Abs. 6 EStG).
+    const jointCapital = Math.max(0, otherCapital + gain - free);
+    const jointFlat = jointCapital * .26375, priorFlat = otherCapital * .26375;
+    if (!F.gp) return { value, tax: jointFlat - priorFlat };
+    const priorTariff = taxNom(base + otherCapital, idx) - taxNom(base, idx);
+    const priorTax = Math.min(priorFlat, priorTariff);
+    const jointTariff = taxNom(base + jointCapital, idx) - taxNom(base, idx);
+    return { value, tax: Math.min(jointFlat, jointTariff) - priorTax };
   };
   const sellFunds = (fs: readonly Fund[], idx: number, income = p.incHeir) => {
     if (F.gp || F.nextVP || p.indexAllowance) {
@@ -668,9 +685,10 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   // Kapital nach Steuern gesamt: Fonds bei Rentenbeginn gemeinsam verkauft (ein Pauschbetrag)
   const capDepots = [dEtf, dFond, dSide].filter((d): d is Depot => !!d);
   let capNet = sum(r => r.capNet);
-  if (capDepots.length > 1 || (F.insAllowance && ins && p.insLump && capDepots.length > 0)) {
+  if (capDepots.length > 1 || (F.insAllowance && ins && capDepots.length > 0)) {
     const fs = capDepots.flatMap(d => d.members);
-    const l = liquidation(fs, n, p.incRet, xIns[n], Math.max(0, allowance(n) - insuranceFree[n]));
+    const otherCapital = ins && !ins.halb ? Math.max(0, capitalInsGain - capitalInsFree) : 0;
+    const l = liquidation(fs, n, p.incRet, capitalInsIncome, Math.max(0, allowance(n) - capitalInsFree), otherCapital);
     const joint = F.insAllowance ? l.value - l.tax : sellFunds(fs, n, p.incRet);
     capNet += joint - capDepots.reduce((a, d) => a + sellFunds(d.members, n, p.incRet), 0);
   }

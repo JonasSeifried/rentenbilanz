@@ -6,7 +6,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
-    "test": "vitest run",
+    "test": "vitest run && npm run test:perf",
+    "test:perf": "vitest run --config vitest.perf.config.ts",
     "test:e2e": "playwright test",
     "test:all": "npm run check && npm test && npm run build && npm run test:e2e"
   },
