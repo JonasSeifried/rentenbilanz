@@ -423,10 +423,25 @@ teuren Fonds. Beste Aufteilung bei 450 € (Default): ohne Umschichtung 170 € 
 **Vereinfachungen / offen.**
 - Gesetzliche Höchstanteile, Stufen zu Jahresbeginn statt eines gleitenden Verfahrens; Anbieter dürfen weniger Aktien
   halten und die Beitragsaufteilung schon vorher anpassen (Buchst. c). Wer selbst umschichtet, kann anders vorgehen.
-- **FIFO:** Tatsächlich gelten die zuerst angeschafften Anteile als zuerst verkauft (§ 20 Abs. 4 S. 7 EStG über § 19
-  Abs. 1 InvStG); gerechnet ist der Durchschnitt. Bei steigenden Kursen ist der echte Gewinn höher, die Steuer also
-  eher unterschätzt.
-- **Verluste** beim Umschichten werden nicht verrechnet (wie bei Entnahmen); Ordergebühren und Spreads fehlen.
+- **FIFO (bewusst nicht umgesetzt):** Tatsächlich gelten die zuerst angeschafften Anteile als zuerst verkauft (§ 20
+  Abs. 4 S. 7 EStG über § 19 Abs. 1 InvStG); gerechnet ist der Durchschnitt, bei Umschichtung und Entnahmen (Letzteres
+  wie im Original). Bei steigenden Kursen fällt die Steuer mit FIFO früher an; der Gesamtgewinn bleibt gleich, es
+  kostet nur den Zins auf die vorgezogene Steuer und eine andere Verteilung des Pauschbetrags. Beispiel erster
+  Umschichtungsverkauf mit 62 (Standardwerte): Steuer 18.310 € gerechnet, 21.458 € mit FIFO. Über die ganze Laufzeit
+  (Summe 67–90, heutige Kaufkraft, Prüfrechnung `scripts/fifo-check.mjs`, ohne Vorabpauschale):
+
+  | ETF 150 €/Monat | Durchschnitt | FIFO | Unterschied |
+  |---|---|---|---|
+  | ohne Umschichtung | 154.959 € | 154.515 € | −444 € (−0,3 %) |
+  | mit Umschichtung | 132.561 € | 131.780 € | −781 € (−0,6 %) |
+
+  Das ändert keinen Vergleich (AVD bei Standardwerten rund 21.000 € vorne) und kaum die Kosten der Umschichtung. Den
+  Aufwand (Kaufposten je Monat in jedem Depot) lohnt das nicht.
+- **Verluste (bewusst nicht umgesetzt):** Ein Verkauf unter den Anschaffungskosten ergibt Gewinn 0, der Verlust wird
+  nicht verrechnet oder vorgetragen (wie bei Entnahmen im Original). Die Steuer ist dadurch höchstens zu hoch, nie zu
+  niedrig. Bei Standardwerten ist beim Umschichten kein Depot im Minus (Wirkung 0); vorkommen kann es bei Rendite unter
+  den Kosten, sehr kurzer Laufzeit oder beim aktiven Fonds kurz nach dem Kauf (Ausgabeaufschlag).
+- Ordergebühren und Spreads fehlen.
 - Die Aufteilung in der Auszahlphase regelt das Gesetz nicht; gerechnet wird mit `gPay` für alle.
 
 **Tests.** `tests/shift.test.ts` (aus = bitgleich, Anteile, steuerfreie Verträge, Nullrendite, Steuer im ersten

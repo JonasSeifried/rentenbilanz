@@ -195,7 +195,7 @@ export const GLOSSARY = {
     text: [
       'Eingeschaltet schichten alle Produkte wie das Standarddepot um: ab 5 Jahre vor Rentenbeginn 50 %, ab 2 Jahren 30 % in Aktien, der Rest in einer sicheren Anlage mit der angegebenen Rendite (§ 1 Abs. 1c Nr. 5 AltZertG). Neue Beiträge werden ebenso aufgeteilt; zu Beginn jedes Jahres wird auf diese Anteile zurückgesetzt. Ab Rentenbeginn rechnen alle Produkte mit der Rendite in der Auszahlphase, die Aufteilung bleibt.',
       'Altersvorsorgedepot und Versicherung schichten innerhalb des Vertrags um, ohne Steuer. ETF-Depot, aktiver Fonds und das AVD-Nebendepot verkaufen dafür Anteile: Der Gewinn wird mit Abgeltungsteuer versteuert, 30 % sind frei (Teilfreistellung für Aktienfonds), der Sparer-Pauschbetrag von 1.000 € gilt im Jahr für alle Depots zusammen. Der sichere Teil liegt in einem Anleihe- oder Geldmarkt-ETF ohne Teilfreistellung; seine Vorabpauschale und Gewinne sind voll steuerpflichtig, bei freiwillig Versicherten auch voll beitragspflichtig.',
-      'Gerechnet ist der Gewinn je Verkauf anteilig nach den Anschaffungskosten (tatsächlich gilt: zuerst gekaufte Anteile zuerst verkauft, dann ist der Gewinn oft höher). Verluste beim Umschichten werden nicht verrechnet.',
+      'Vereinfacht: Der Gewinn je Verkauf ist anteilig nach den durchschnittlichen Anschaffungskosten gerechnet. Gesetzlich gelten die zuerst gekauften Anteile als zuerst verkauft; dann fällt die Steuer etwas früher an, bei Standardwerten macht das unter 1 % der Summe aus. Verluste beim Umschichten werden nicht verrechnet, die Steuer ist dann eher zu hoch.',
     ],
   },
   erbfallKombi: {
