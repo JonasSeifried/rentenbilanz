@@ -602,10 +602,9 @@ Bilanzprüfungen, Default/DK/High-Messungen und Prüfung der offenen H1/H2/E4/E9
 
 Aktuell cumH in heutiger Kaufkraft, 21,1 % KV/PV: Default **153.289 / 174.856 / 127.694 €**,
 DK **140.713 / 140.903 / 105.292 €** (ETF / AVD / Versicherung). DK ist mit 190 € Abstand kein robuster Sieger.
-High aus DEFAULTS mit unverändertem neuen KV-Bruttostandard 20.000 €: **330.961 / 316.109 / 254.574 €**;
-mit ausdrücklich 45.000 € KV-Brutto wie der früheren belegten BBG: Versicherung **264.449 €**, ETF/AVD gleich.
-`incRet` wird nicht mehr als Bruttobasis verwendet oder automatisch umgerechnet; alte Links ohne neues Feld
-erhalten den unabhängigen Standardwert, alle früheren Eingabewerte bleiben lesbar.
+High mit KV-Brutto wie `incRet` (Standard `kvGrossRet = −1`): **330.961 / 316.109 / 264.449 €**;
+mit fest 20.000 € KV-Brutto wäre die Versicherung 254.574 €. Ein eigener Bruttowert ist unter Weitere Einstellungen
+eintragbar; ohne Eingabe gilt `incRet` als Untergrenze. Alle früheren Eingabewerte bleiben lesbar.
 
 Wählbar sind Restprofil für offene Depots, einjähriger Förderverzug als Sensitivität, hypothetische
 Pauschbetragsindexierung und getrennte Auszahlkosten. Standardpauschbetrag bleibt nominal fest.

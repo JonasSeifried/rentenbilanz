@@ -84,10 +84,14 @@ Grundlage: [`§ 240 SGB V`](https://www.gesetze-im-internet.de/sgb_5/__240.html)
 Die beitragsrechtliche Bruttobasis ist von der steuerlichen Behandlung unabhängig.
 
 **Kompatibilität:** Linkversion 1 und Speicherversion 2 bleiben lesbar. Neue Felder sind angehängt, alte Werte
-nicht umkodiert. Alte Links/Speicher ohne `kvGrossRet` erhalten den eigenständigen Standard 20.000 €;
-der Hinweis am Feld fordert die unabhängige Angabe. Ein alter Link mit `incRet=45.000` ist somit nicht automatisch
-eine Behauptung von 45.000 € Brutto. Das kann bei ausgeschöpfter BBG Ergebnisse verändern und wird ausdrücklich
-als Änderung des Eingabemodells ausgewiesen. Alle neuen Optionen werden gespeichert und geteilt.
+nicht umkodiert. Alle neuen Optionen werden gespeichert und geteilt.
+
+**Nachtrag (Standardwert):** `kvGrossRet = −1` (Standard, auch für alte Links/Speicher) übernimmt `incRet`,
+bis ein eigener Bruttowert eingetragen wird. Ein fester Standard von 20.000 € hätte bei höherem `incRet` eine
+KV-Bruttobasis unter dem zvE unterstellt, was praktisch kaum vorkommt (das Brutto liegt vor Werbungskosten und
+KV-Abzug meist darüber) und produktbedingte KV überschätzt. `incRet` ist damit eine Untergrenze, keine Schätzung;
+der Hinweis am Feld nennt das. Die High-Zeilen „Brutto-Standard 20.000“ unten sind Messungen mit dem früheren
+festen Standard; mit dem neuen Standard entspricht High dem Fall „KV-Brutto ausdrücklich 45.000“.
 
 ## R7: Versicherung und Fonds teilen den Pauschbetrag
 

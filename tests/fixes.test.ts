@@ -369,7 +369,7 @@ describe('Snapshots mit ALL_FIXES (aktuelle Standardwerte)', () => {
     expect(snap({ kvOn: true })).toEqual({ lead: 'avd', etf: 140713, avd: 140903, ins: 105292 });
   });
   it('High mit KV-Sonderausgabenabzug (R1)', () => {
-    expect(snap({ ...HIGH, kvRate: 21.1 })).toEqual({ lead: 'etf', etf: 330961, avd: 316109, ins: 254574 });
+    expect(snap({ ...HIGH, kvRate: 21.1 })).toEqual({ lead: 'etf', etf: 330961, avd: 316109, ins: 264449 });
   });
 });
 

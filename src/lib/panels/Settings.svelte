@@ -93,8 +93,8 @@
     </div>
     <div class="grp" role="group" aria-labelledby="s-kv">
       <h3 id="s-kv">Krankenversicherung</h3>
-      <NumberField id="f-kvGrossRet" layout="row" label="Sonstige KV-beitragspflichtige Bruttoeinnahmen im Alter" value={i.kvGrossRet} onchange={v => setInput('kvGrossRet', v)} min={0} step={1000} unit="€/Jahr" limits={LIMITS.kvGrossRet}
-        hint="Heutiges Geld, ohne die verglichenen Produkte. Unabhängig vom sonstigen zu versteuernden Einkommen eingeben; keine Brutto-Schätzung. Auch bei alten Links zunächst eigener Standardwert 20.000 €." />
+      <NumberField id="f-kvGrossRet" layout="row" label="Sonstige KV-beitragspflichtige Bruttoeinnahmen im Alter" value={i.kvGrossRet} onchange={v => setInput('kvGrossRet', v)} min={-1} step={1000} unit="€/Jahr" limits={LIMITS.kvGrossRet} effective={p.kvGrossRet}
+        hint="Heutiges Geld, ohne die verglichenen Produkte. −1 übernimmt das sonstige zu versteuernde Einkommen als Untergrenze; das Brutto (volle Rente vor Abzügen) ist meist höher und lässt sich hier eintragen." />
       <NumberField id="f-kvRate" layout="row" label="Beitragssatz KV + PV bei freiwilliger Versicherung" value={i.kvRate} onchange={v => setInput('kvRate', v)} step={0.1} min={0} max={40} unit="%" info="kvRate"
         limits={LIMITS.kvRate} effective={pc(p.kvRate)}
         hint={i.kvOn ? 'Gilt, weil oben „Freiwillig gesetzlich“ gewählt ist.' : 'Wirkt nur, wenn oben bei „Krankenversicherung als Rentner“ „Freiwillig gesetzlich“ gewählt ist.'} />

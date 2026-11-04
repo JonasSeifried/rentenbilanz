@@ -67,7 +67,7 @@ export const DEFAULTS: Readonly<Inputs> = Object.freeze({
   fondM: 150, fondAA: 5, fondTer: 1.6,
   shift: false, safeRate: 2,
   kvKind: 0,
-  kvGrossRet: 20000, payResidual: false, fundingDelay: false, indexAllowance: false,
+  kvGrossRet: -1, payResidual: false, fundingDelay: false, indexAllowance: false,
   avdPayCost: -1, etfPayTer: -1, fondPayTer: -1,
   real: true,
   combo: false, cEtf: 0, cAvd: 0, cIns: 0, cFond: 0,
@@ -91,7 +91,7 @@ export const NUMERIC_KEYS = INPUT_KEYS.filter(k => typeof DEFAULTS[k] === 'numbe
  */
 export const LIMITS: Readonly<Record<NumericKey, readonly [number, number]>> = Object.freeze({
   a0: [0, 150], R: [0, 150], H: [0, 150], deathAge: [0, 150], studyEnd: [0, 150], kidsFrom: [0, 150],
-  kvGrossRet: [0, 1e8], avdPayCost: [-1, 10], etfPayTer: [-1, 10], fondPayTer: [-1, 10],
+  kvGrossRet: [-1, 1e8], avdPayCost: [-1, 10], etfPayTer: [-1, 10], fondPayTer: [-1, 10],
   incWork: [0, 1e8], incRet: [0, 1e8], incStudy: [0, 1e8], incHeir: [0, 1e8],
   setAll: [0, 1e6], etfM: [0, 1e6], avdM: [0, 1e6], insM: [0, 1e6], fondM: [0, 1e6],
   cEtf: [0, 1e6], cAvd: [0, 1e6], cIns: [0, 1e6], cFond: [0, 1e6],

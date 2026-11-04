@@ -45,7 +45,7 @@ der Fassung **mit allen Korrekturen** (`docs/abweichungen-vom-original.md`). Gem
 Die Reihenfolge hat keine Zyklen. Das vorläufige Steuerbuch hängt noch nicht an den Fonds. Die abschließende KV/PV-Steuerentlastung berücksichtigt dagegen auch deren Beiträge. Deshalb laufen erst der AVD-Vertrag und die Ansparphase der Versicherung, dann das
 vorläufige Steuerbuch, dann alle Depots im Gleichschritt, das KV-Buch und abschließend die KV/PV-Steuerentlastung. Diese wird als Zahlung desselben Jahres gezählt und nicht wiederangelegt.
 
-Zulagen und bisherige AVD-Erstattung hängen am AVD-Teil (I3). Die zusätzliche Kapitalertrags-Günstigerprüfung nach R3 wird anschließend gemeinsam nach KV/AVD-Sonderausgaben durchgeführt, auch beim Ansparen und im Erbfall. Der Vorteil zählt als gleichjähriges Cash ohne Wiederanlage. Der Sparer-Pauschbetrag bleibt im Standard nominal fest; hypothetische Indexierung ist wählbar. `latentTax` bleibt eine grobe Schätzung. Die sonstige KV-Bruttobasis (`kvGrossRet`) ist unabhängig vom zvE (`incRet`).
+Zulagen und bisherige AVD-Erstattung hängen am AVD-Teil (I3). Die zusätzliche Kapitalertrags-Günstigerprüfung nach R3 wird anschließend gemeinsam nach KV/AVD-Sonderausgaben durchgeführt, auch beim Ansparen und im Erbfall. Der Vorteil zählt als gleichjähriges Cash ohne Wiederanlage. Der Sparer-Pauschbetrag bleibt im Standard nominal fest; hypothetische Indexierung ist wählbar. `latentTax` bleibt eine grobe Schätzung. Die sonstige KV-Bruttobasis (`kvGrossRet`) ist getrennt eingebbar; ohne Eingabe (−1) gilt das zvE (`incRet`) als Untergrenze.
 
 ### Aufteilung gemeinsamer Abzüge (Konvention)
 

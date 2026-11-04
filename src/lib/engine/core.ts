@@ -90,7 +90,7 @@ export function readParams(inp: Inputs): Params {
   const p: Params = {
     a0: clamp(Math.round(num('a0')), 16, 60), studyEnd: Math.round(num('studyEnd')), incStudy: Math.max(0, num('incStudy')), eligStudy: chk('eligStudy'),
     incWork: Math.max(0, num('incWork')), incRet: Math.max(0, num('incRet')), R: clamp(Math.round(num('R')), 65, 70), H: Math.round(num('H')),
-    kvGrossRet: Math.max(0, num('kvGrossRet')), payResidual: chk('payResidual'), fundingDelay: chk('fundingDelay'), indexAllowance: chk('indexAllowance'),
+    kvGrossRet: num('kvGrossRet') < 0 ? Math.max(0, num('incRet')) : num('kvGrossRet'), payResidual: chk('payResidual'), fundingDelay: chk('fundingDelay'), indexAllowance: chk('indexAllowance'),
     avdPayCost: num('avdPayCost') < 0 ? -1 : pct('avdPayCost', 0, 10),
     etfPayTer: num('etfPayTer') < 0 ? -1 : pct('etfPayTer', 0, 10),
     fondPayTer: num('fondPayTer') < 0 ? -1 : pct('fondPayTer', 0, 10),

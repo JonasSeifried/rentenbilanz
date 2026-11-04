@@ -89,7 +89,7 @@ describe('R4 – unabhängige Jahresbilanz eines thesaurierenden Depots', () => 
 
 describe('R5/R7 – getrennte Eingaben und ein Pauschbetrag', () => {
   it('KV-Brutto ändert keine Tarifbasis und wird niemals aus incRet geschätzt', () => {
-    expect(P({ incRet: 45000 }).kvGrossRet).toBe(20000);
+    expect(P({ incRet: 45000 }).kvGrossRet).toBe(45000);
     const p = P({ kvOn: true, incRet: 45000, kvGrossRet: 69750 });
     const c = combo(p, S({ avd: 500, ins: 500, etf: 500 }));
     expect(c.kv.every(x => x === 0)).toBe(true);
@@ -110,7 +110,7 @@ describe('R5/R7 – getrennte Eingaben und ein Pauschbetrag', () => {
     const inputs = { ...DEFAULTS, kvGrossRet: 54000, payResidual: true, fundingDelay: true, indexAllowance: true, avdPayCost: 1.2, etfPayTer: .5, fondPayTer: .8 };
     expect(decodeState(encodeState(inputs, 'settings')).inputs).toEqual(inputs);
     expect(sanitize(inputs)).toEqual(inputs);
-    expect(decodeState('v=1&incRet=45000').inputs!.kvGrossRet).toBe(20000);
+    expect(readParams(decodeState('v=1&incRet=45000').inputs!).kvGrossRet).toBe(45000);
   });
 });
 
