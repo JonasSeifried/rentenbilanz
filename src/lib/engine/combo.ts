@@ -18,7 +18,7 @@
 // also mit ALL_FIXES. Ohne kvSharedRoom wird (wie im Original) jeder KV-Strom einzeln bis zur BBG begrenzt.
 
 import { eur } from '../format';
-import { tax, contractGrowth, riskyShare, AVD_MAX, AVD_SUB_MAX, ERTRAG, KV_BBG, numOf, type HeirValue, type Params, type ProductKey, type ProductResult } from './core';
+import { tax, tax2026, contractGrowth, riskyShare, AVD_MAX, AVD_SUB_MAX, ERTRAG, KV_BBG, numOf, type HeirValue, type Params, type ProductKey, type ProductResult } from './core';
 import { fixesOf, type EngineOptions } from './fixes';
 import type { Inputs } from './inputs';
 
@@ -35,9 +35,9 @@ export interface ComboPart extends ProductResult {
   vals: (number | null)[]; net: number[];
   own: number; ownReal: number; capR: number; capNet: number; cost: number;
   foerder: number; foerderReal: number; payEnd: number; lumpNet: number;
-  /** Anteil an den gemeinsamen Abzügen je Jahr (nominal): Einkommensteuer im Alter, Abgeltungsteuer, KV/PV. */
+  /** Gemeinsame Abzüge anteilig, nominal. incTax nach KV/PV-Abzug, ggf. negativ (Entlastung übriger Rente). */
   incTax: number[]; abgTax: number[]; kv: number[];
-  /** Einkommensteuerpflichtiger Betrag je Jahr (nominal), Grundlage der gemeinsamen Steuer (Fonds: 0). */
+  /** Einkommensteuerpflichtiger Betrag vor KV/PV-Sonderausgaben (nominal; Fonds: 0). */
   taxBase: number[];
   /** Erbwert bei Tod zu Beginn von Jahr idx (nominal), dieser Teil für sich versteuert (wie model()). */
   heir: (idx: number) => HeirValue;
@@ -179,13 +179,21 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     kvSpread: fx.has('kvLumpSpread'), // E8
     unsub: fx.has('avdUnsubsidized'), // E10
     heir: fx.has('heirTax'),          // E2
+    kvDeduct: fx.has('kvDeductible'), // R1
+    small: fx.has('avdSmallContribution'), // R6
+    round: fx.has('taxRounding'),    // R8
   };
   const T = 100 - p.a0, n = p.R - p.a0, tH = p.H - p.a0;
   const I = (t: number) => Math.pow(1 + p.infl, t);
   const Rn = (x: number, t: number) => p.real ? x / I(t) : x; // für Beträge in Hinweistexten (gleiche Basis wie die Anzeige)
   const incAt = (t: number) => (p.a0 + t < p.studyEnd ? p.incStudy : p.incWork);
-  const taxAdd = (incReal: number, addNom: number, t: number) => addNom <= 0 ? 0 : (tax(incReal + addNom / I(t)) - tax(incReal)) * I(t);
-  const taxSave = (incReal: number, dedNom: number, t: number) => (tax(incReal) - tax(Math.max(0, incReal - dedNom / I(t)))) * I(t);
+  const taxNom = (incomeNom: number, t: number) => F.round ? tax2026(incomeNom, I(t)) : tax(incomeNom / I(t)) * I(t);
+  const taxAdd = (incReal: number, addNom: number, t: number) => addNom <= 0 ? 0 : F.round
+    ? taxNom(incReal * I(t) + addNom, t) - taxNom(incReal * I(t), t)
+    : (tax(incReal + addNom / I(t)) - tax(incReal)) * I(t);
+  const taxSave = (incReal: number, dedNom: number, t: number) => F.round
+    ? taxNom(incReal * I(t), t) - taxNom(Math.max(0, incReal * I(t) - dedNom), t)
+    : (tax(incReal) - tax(Math.max(0, incReal - dedNom / I(t)))) * I(t);
   const kvRoom = (t: number) => Math.max(0, (KV_BBG - p.incRet) * I(t));
   const kvAdd = (addNom: number, t: number) => p.kvOn && addNom > 0 ? p.kvRate * Math.min(addNom, kvRoom(t)) : 0;
   const kvLump = (addNom: number, t: number) => p.kvOn && addNom > 0 ? p.kvRate * Math.min(addNom, 10 * kvRoom(t)) : 0;
@@ -245,11 +253,12 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
         V *= 1 + rm; Vu *= 1 + rm;
       }
       ownReal += E / I(t); ownUReal += U / I(t);
-      if (elig && E >= 120) {
-        const grund = 0.5 * Math.min(E, 360) + 0.25 * Math.max(0, Math.min(E, 1800) - 360);
+      if (elig && (E >= 120 || (F.small && E > 0))) {
+        const hasAllowance = E >= 120;
+        const grund = hasAllowance ? 0.5 * Math.min(E, 360) + 0.25 * Math.max(0, Math.min(E, 1800) - 360) : 0;
         const kidActive = age >= p.kidsFrom && age < p.kidsFrom + p.kidsYears;
-        const kind = kidActive ? p.kids * 300 * Math.min(1, E / 300) : 0;
-        let bon = 0; if (p.bonus && !bonusUsed && age < 25) { bon = 200; bonusUsed = true; }
+        const kind = hasAllowance && kidActive ? p.kids * 300 * Math.min(1, E / 300) : 0;
+        let bon = 0; if (hasAllowance && p.bonus && !bonusUsed && age < 25) { bon = 200; bonusUsed = true; }
         const z = grund + kind + bon;
         const zSA = F.bonus ? grund + kind : z; // Günstigerprüfung ohne Bonus (E3); hängt nur am AVD-Teil
         V += z; zul += z; zulReal += z / I(t);
@@ -538,6 +547,28 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
 
   // ---------- 7) Summen ----------
   const list = SPLIT_KEYS.filter(k => parts[k]).map(k => parts[k]!);
+  // R1: zusätzliche selbst getragene Basis-KV/PV als Sonderausgaben (§ 10 Abs. 1 Nr. 3 EStG).
+  // incRet ist das sonstige zvE vor diesen zusätzlichen Beiträgen. Entlastung im Steuerjahr verfügbar,
+  // nicht wiederangelegt; negativ ausgewiesene Einkommensteuer ist eine Entlastung auf die übrige Rente.
+  if (F.kvDeduct && p.kvOn) for (let t = n; t < T; t++) {
+    if (!(kv[t] > 0)) continue;
+    const X = list.reduce((s, r) => s + r.taxBase[t], 0), base = p.incRet * I(t);
+    const relief = F.round
+      ? taxNom(base + X, t) - taxNom(Math.max(0, base + X - kv[t]), t)
+      : (tax(p.incRet + X / I(t)) - tax(Math.max(0, p.incRet + (X - kv[t]) / I(t)))) * I(t);
+    incTax[t] -= relief;
+    for (const r of list) {
+      const share = relief * (r.kv[t] / kv[t]);
+      r.incTax[t] -= share; r.net[t] += share;
+    }
+    // Die Teilauszahlung separat mit ihrer marginalen Steuer nach KV-Abzug ausweisen.
+    if (t === n && avd && avd.L[n] + avd.Lu[n] > 0) {
+      const L = avd.L[n] + avd.Lu[n], xL = avd.tb[n] - (avd.W[n] + avd.xW[n]);
+      const income = base + X - kv[t];
+      lumpNet = L - (taxNom(Math.max(0, income), t) - taxNom(Math.max(0, income - xL + kvLa), t)) - kvLa;
+      parts.avd!.lumpNet = lumpNet;
+    }
+  }
   const net = list.length ? list[0].net.slice() : zero();
   for (let i = 1; i < list.length; i++) { const x = list[i].net; for (let t = 0; t < T; t++) net[t] += x[t]; }
   const sum = (f: (r: ComboPart) => number) => list.reduce((a, r) => a + f(r), 0);

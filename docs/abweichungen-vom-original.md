@@ -1,11 +1,14 @@
 # Abweichungen vom Original
 
-`src/lib/engine/engine.ts` (`model()`) ist ein 1:1-Port von `legacy/index.html`. Darauf liegen sieben Korrekturen.
+`src/lib/engine/engine.ts` (`model()`) ist ein 1:1-Port von `legacy/index.html`. Die sieben historischen Korrekturen E1–E10 sind dort ebenfalls enthalten.
 Jede hängt an einem eigenen Schalter (`src/lib/engine/fixes.ts`). Die App rechnet seit dem Umbau „eine Engine“ mit
 `combo.ts`: Ein Einzelprodukt ist eine Kombi mit nur diesem Teil (`single()` in `analyze.ts`). `combo.ts` enthält jede
-Korrektur ebenfalls schaltbar und ist mit einem Teil bitgenau gleich `model()`, für jede Teilmenge der Fixes, inklusive
+Korrektur schaltbar. Mit ausschließlich den historischen E-Fixes ist sie mit einem Teil bitgenau gleich `model()`, inklusive
 Erbfall und Hinweistexten (I1, `tests/combo.test.ts`). `engine.ts` bleibt als Referenz; die Abschnitte „Code“ unten
 nennen die Stelle in `engine.ts`, in `combo.ts` steht sie im gleichnamigen Block.
+
+Die neuen R-Fixes werden nur in `combo.ts` umgesetzt; `engine.ts` bleibt unverändert. Zahlen in den historischen
+E-Abschnitten gelten vor den R-Korrekturen; aktuelle Werte stehen im neuen Abschnitt am Ende.
 
 ```ts
 model(p, { fixes })    analyze(p, { fixes })    scenarios(p, { fixes })
@@ -459,7 +462,7 @@ Erbfall, Szenario-Zeile, Migration der alten Schlüssel); e2e „Umschichtung vo
 - **`latentTax`:** Die spätere Einkommensteuer auf AVD-Kapital ist grob geschätzt, gleichmäßig über den
   restlichen Auszahlplan verteilt. Verwendet wird sie für `capNet` und `heirMarried`.
 - **Tarif 2026 fortgeschrieben:** Einkommensteuer-Tarif, Soli-Freigrenze und BBG wachsen mit der angenommenen
-  Inflation. Gerechnet wird mit dem Grundtarif, ohne Abrundung auf volle Euro.
+  Inflation. Gerechnet wird mit dem Grundtarif; seit R8 werden Einkommen und Steuer nominal auf volle Euro abgerundet.
 
 ## Offene Punkte (nicht umgesetzt)
 
@@ -503,3 +506,48 @@ Erbfall, Szenario-Zeile, Migration der alten Schlüssel); e2e „Umschichtung vo
 - **E2 und E6 für das AVD:** Ein AVD-spezifisches BMF-Schreiben gibt es noch nicht. Übertragen sind die Aussagen
   zur Riester-Rente, weil die Normen dieselben sind. Ob Kassen die Vorabpauschale bei Rentnern tatsächlich
   erheben, ist in der Praxis uneinheitlich.
+
+
+## Korrekturen aus dem Review November 2026
+
+### R1 – `kvDeductible`: zusätzliche KV/PV als Sonderausgaben
+
+Nach dem gemeinsamen KV-Buch wird die Tarifsteuer auf das gesamte Alterseinkommen einschließlich der Produkte um
+die tatsächlich selbst gezahlten zusätzlichen Basis-KV/PV-Beiträge vermindert (§ 10 Abs. 1 Nr. 3 EStG,
+https://www.gesetze-im-internet.de/estg/__10.html). `incRet` ist das sonstige zvE **vor diesen zusätzlichen Beiträgen**;
+die Beiträge auf das bereits bestehende Einkommen müssen darin schon abgezogen sein.
+
+Die Entlastung zählt als verfügbare Zahlung im selben Steuerjahr, ohne Wiederanlage. Sie wird nach den tatsächlichen
+KV-Anteilen auf die Teile verteilt; `incTax` kann negativ sein, weil auch Steuer auf die sonstige Rente entfällt.
+Summe der Teil-Steuern und -Nettozahlungen bleibt exakt das gemeinsame Ergebnis. Die 30-%-Teilauszahlung wird mit
+ihrer marginalen Steuer nach dem Abzug ausgewiesen. `capNet`/`kapNet` der Versicherung sind weiterhin die anfängliche
+Kapitalauszahlung nach Steuer vor späterer KV/PV-Entlastung; die Entlastung wird nicht nochmals im Folge-ETF angelegt.
+Keine Annahme über den rechtlich offenen AVD-Beitragsumfang E9 geändert.
+
+### R6 – `avdSmallContribution`: Sonderausgabenabzug auch unter 120 €
+
+Die Zulagenschwelle (§ 86 n. F.) wird vom Sonderausgabenabzug (§ 10a) getrennt.
+Unter 120 € im Jahr: keine Grund-/Kinderzulage und kein Bonus, aber gegebenenfalls eine Steuererstattung.
+Ab 120 € ist dieser Fix wirkungslos. Quelle: Art. 2 Nr. 1 und 9 AVRG,
+https://www.buzer.de/gesetz/17547/a339399.htm. Bei null Beitrag weiterhin null Förderung.
+
+### R8 – `taxRounding`: nominale Rundung nach indexiertem Tarif
+
+`core.ts` enthält zusätzlich `tax2026(incomeNom, index)`: nominales Einkommen auf volle Euro abrunden,
+indexierten Tarif anwenden, nominale ESt auf volle Euro abrunden, danach Soli berechnen (§ 32a Abs. 1,
+https://www.gesetze-im-internet.de/estg/__32a.html). `est()`/`tax()` bleiben für den Referenzpfad unverändert.
+Die Review-Probe hatte den Steuerbetrag noch in heutigen Euro gerundet; deshalb stimmen deren isolierte
+R8-Eurobeträge nicht mit dieser genaueren Umsetzung überein. Rundungsstufen können die strikte Konvexität des
+Tarifs um wenige nominale Euro verletzen; die Invariantentests berücksichtigen nur diesen begrenzten Effekt.
+
+**Erstes Paket R1/R6/R8, cumH heutige Kaufkraft, KV/PV 21,1 %:**
+
+| Fall | ETF | AVD | Versicherung | vorne |
+|---|---:|---:|---:|---|
+| Default | 153.730 € | 174.868 € | 127.324 € | AVD |
+| DK | 141.550 € | 140.953 € | 104.873 € | ETF, rund 597 € Vorsprung |
+| High | 334.909 € | 316.366 € | 264.856 € | ETF |
+
+Gezielte Tests: nominale Rundung und Indexierung, Beiträge 0/108/120 €, verspäteter Bonus nach Dynamik,
+gemeinsamer KV-Abzug mit ETF/AVD/Versicherung, BBG, kein Einkommen und Teilauszahlung; außerdem Golden-Test
+und historischer I1-Abgleich ohne neue R-Fixes. Die Suche gegen erschöpfende Suche bleibt geprüft.

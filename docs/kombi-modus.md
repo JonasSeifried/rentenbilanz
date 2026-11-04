@@ -28,7 +28,7 @@ der Fassung **mit allen Korrekturen** (`docs/abweichungen-vom-original.md`). Gem
 
 1. **Einkommensteuer im Alter.** Steuerpflichtig sind der AVD-Auszahlplan einschließlich der 30-%-Auszahlung, der
    Ertragsanteil der Leibrente und die hälftig steuerpflichtige Kapitalauszahlung der Versicherung (nach 12 Jahren).
-   Pro Jahr gibt es **eine** Steuer: `taxAdd(Rente, Σ, t)`.
+   Pro Jahr gibt es **eine** Tarifsteuer auf die Summe. Nach dem KV-Buch werden die zusätzlichen selbst gezahlten KV/PV-Beiträge als Sonderausgaben abgezogen (R1).
    - Die 30-%-Auszahlung des AVD bekommt netto die Grenzsteuer über allen anderen Einkünften des Jahres.
    - Die Kapitalauszahlung vor 12 Jahren bleibt pauschal mit Abgeltungsteuer und ohne Pauschbetrag belastet
      (Vereinfachung des Originals).
@@ -44,7 +44,7 @@ der Fassung **mit allen Korrekturen** (`docs/abweichungen-vom-original.md`). Gem
 
 Die Reihenfolge hat keine Zyklen. Die Einkommensteuer hängt nicht an den Fonds, weil Fondserträge der
 Abgeltungsteuer unterliegen. Deshalb laufen erst der AVD-Vertrag und die Ansparphase der Versicherung, dann das
-Steuerbuch, dann alle Depots im Gleichschritt und zuletzt das KV-Buch.
+vorläufige Steuerbuch, dann alle Depots im Gleichschritt, das KV-Buch und abschließend die KV/PV-Steuerentlastung. Diese wird als Zahlung desselben Jahres gezählt und nicht wiederangelegt.
 
 Unverändert aus der Einzelrechnung übernommen sind die Günstigerprüfung und die Zulagen. Sie hängen nur am AVD-Teil
 (I3). Auch der Sparer-Pauschbetrag bleibt nominal fest, und `latentTax` bleibt eine grobe Schätzung.
@@ -53,7 +53,7 @@ Unverändert aus der Einzelrechnung übernommen sind die Günstigerprüfung und 
 
 Gemeinsame Steuern, Freibeträge und KV werden **anteilig nach der Bemessungsgrundlage** auf die Teile verteilt:
 
-- Einkommensteuer: `tot · x_i/Σx`
+- Einkommensteuer vor KV-Abzug: `tot · x_i/Σx`; die KV/PV-Steuerentlastung danach anteilig nach tatsächlich gezahlter KV. Negative Steuer bedeutet Entlastung auf die übrige Rente.
 - Pauschbetrag: `x_i − f · x_i/Σx`
 - KV: `kv · c_i/Σc`
 
@@ -73,7 +73,7 @@ jedem Fix allein und mit allen Fixes außer einem. Die Option `fixes` von `combo
 `combo()` immer ohne Optionen auf, also mit allen Fixes.
 
 I1 vergleicht außerdem `heir(idx)` und `heirMarried(idx)` für jedes Todesjahr (Wert bitgenau, Hinweistext gleich)
-und `analyze()` selbst gegen `model()`. Neue Rechnung kommt nur noch in `combo.ts`; abgeschaltet muss sie bitgleich
+und `analyze()` selbst gegen `model()`. Neue R-Fixes werden unabhängig in `tests/review-fixes.test.ts` geprüft. Neue Rechnung kommt nur noch in `combo.ts`; abgeschaltet muss sie bitgleich
 bleiben.
 
 ### Ausgaben

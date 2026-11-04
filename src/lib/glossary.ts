@@ -15,7 +15,7 @@ export const GLOSSARY = {
     title: 'Einkommen im Alter',
     text: [
       'Steuerpflichtiges Einkommen im Ruhestand ohne die hier verglichenen Produkte, zum Beispiel gesetzliche Rente, Betriebsrente oder Mieteinnahmen. Bei Rentenbeginn ab 2058 ist die gesetzliche Rente voll steuerpflichtig.',
-      'Dieser Wert bestimmt den Steuersatz auf die Auszahlungen im Alter. Betrag in heutigem Geld.',
+      'Dieser Wert ist das zu versteuernde Einkommen ohne die verglichenen Produkte. Beiträge zur Kranken- und Pflegeversicherung auf dieses bisherige Einkommen sind darin bereits abgezogen. Zusätzliche Beiträge auf die verglichenen Produkte zieht der Rechner gesondert ab. Betrag in heutigem Geld.',
       'Die voraussichtliche gesetzliche Rente steht in der jährlichen Renteninformation (Monatsbetrag × 12).',
     ],
   },

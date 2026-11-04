@@ -1,14 +1,16 @@
 // Kombi-Engine (src/lib/engine/combo.ts): Invarianten I1–I8 aus dem Kombi-Design §5.
 // I1 ist der „zweite Golden-Test“: Eine Kombination mit nur einem Produkt muss bitgenau model()/analyze() ergeben.
-// Er läuft mit ALL_FIXES (Standard), NO_FIXES (Original) und jedem Fix allein, damit Drift zwischen engine.ts
-// und combo.ts auf jedem Pfad sofort auffällt.
+// engine.ts wird auf seinen historischen E-Fixes geprüft; neue R-Fixes haben unabhängige Recht-/Bilanztests.
 import { describe, expect, it } from 'vitest';
-import { readParams, model, tax, type HeirValue, type Params, type ProductKey } from '../src/lib/engine/engine';
+import { readParams, model, tax, tax2026, type HeirValue, type Params, type ProductKey } from '../src/lib/engine/engine';
 import { analyze } from '../src/lib/engine/analyze';
-import { ALL_FIXES, FIX_IDS, NO_FIXES, type FixId } from '../src/lib/engine/fixes';
+import { ALL_FIXES, FIX_IDS, FIXES, NO_FIXES, type FixId } from '../src/lib/engine/fixes';
 import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
 import { combo, comboStats, emptySplit, partStats, readCombo, shareAllowance, SPLIT_KEYS, type ComboResult, type Split } from '../src/lib/engine/combo';
 
+// engine.ts bleibt Referenz für E1–E10; neue R-Fixes werden ausschließlich in combo.ts gerechnet.
+const REFERENCE_IDS = FIX_IDS.filter(f => FIXES[f].finding.startsWith('E'));
+const REFERENCE_FIXES = new Set(REFERENCE_IDS);
 const M: Record<ProductKey, keyof Params> = { etf: 'etfM', avd: 'avdM', ins: 'insM', fond: 'fondM' };
 const ALL_ON = { etf: true, avd: true, ins: true, fond: true };
 const only = (k: ProductKey) => ({ etf: false, avd: false, ins: false, fond: false, [k]: true });
@@ -157,19 +159,19 @@ function oneProductInvariant(inputs: Inputs[], fixes: ReadonlySet<FixId>) {
 }
 
 describe('I1 – ein Produkt = Einzelrechnung (bitgenau, toBe/Object.is)', () => {
-  it('ALL_FIXES: 32 benannte + 300 Zufallsszenarien × 4 Produkte', () => {
-    const r = oneProductInvariant(SCENARIOS, ALL_FIXES);
+  it('E1–E10: 32 benannte + 300 Zufallsszenarien × 4 Produkte', () => {
+    const r = oneProductInvariant(SCENARIOS, REFERENCE_FIXES);
     console.log(`I1 ALL_FIXES: ${r.cases} Fälle, ${r.numbers.toLocaleString('de-DE')} Zahlen bitgleich`);
     expect(r.cases).toBeGreaterThan(1200);
   });
   it('NO_FIXES (Original): dieselben Szenarien', () => {
     expect(oneProductInvariant(SCENARIOS, NO_FIXES).cases).toBeGreaterThan(1200);
   });
-  for (const f of FIX_IDS) it(`nur ${f}: benannte + 100 Zufallsszenarien`, () => {
+  for (const f of REFERENCE_IDS) it(`nur ${f}: benannte + 100 Zufallsszenarien`, () => {
     expect(oneProductInvariant(SCENARIOS.slice(0, NAMED.length + 100), new Set([f])).cases).toBeGreaterThan(450);
   });
   it('alle Fixes außer einem: benannte Szenarien', () => {
-    for (const f of FIX_IDS) oneProductInvariant(SCENARIOS.slice(0, NAMED.length), new Set(FIX_IDS.filter(x => x !== f)));
+    for (const f of REFERENCE_IDS) oneProductInvariant(SCENARIOS.slice(0, NAMED.length), new Set(REFERENCE_IDS.filter(x => x !== f)));
   });
 });
 
@@ -221,7 +223,15 @@ describe('I4 – gemeinsam gegen getrennt', () => {
       const c = combo(p, MIX);
       const sep = SPLIT_KEYS.map(k => combo(p, S({ [k]: MIX[k] })));
       const joint = comboStats(p, c).cumHReal, sepSum = sep.reduce((a, x) => a + comboStats(p, x).cumHReal, 0);
-      if (!p.kvOn) expect(joint, JSON.stringify(inp)).toBeLessThanOrEqual(sepSum + 1e-6 + Math.abs(sepSum) * 1e-12);
+      if (!p.kvOn) {
+        // Rundung von Einkommen/ESt kann die Konvexität um wenige nominale Euro pro Jahr verletzen.
+        const roundingBound = 4 * c.net.slice(c.n, c.tH).reduce((s, _, i) => s + 1 / c.I(c.n + i), 0);
+        expect(joint, JSON.stringify(inp)).toBeLessThanOrEqual(sepSum + roundingBound + 1e-6);
+        const opts = { fixes: new Set([...ALL_FIXES].filter(f => f !== 'taxRounding')) };
+        const exact = comboStats(p, combo(p, MIX, opts)).cumHReal;
+        const separate = SPLIT_KEYS.reduce((s, k) => s + comboStats(p, combo(p, S({ [k]: MIX[k] }), opts)).cumHReal, 0);
+        expect(exact).toBeLessThanOrEqual(separate + 1e-6 + Math.abs(separate) * 1e-12);
+      }
       else {
         let kvJ = 0, kvS = 0;
         for (let t = 0; t < c.T; t++) { kvJ += c.kv[t] / c.I(t); for (const x of sep) kvS += x.kv[t] / x.I(t); }
@@ -266,19 +276,21 @@ describe('I5 – ein Sparer-Pauschbetrag über alle Depots', () => {
 });
 
 describe('I6 – gemeinsames Einkommensteuer-Buch', () => {
-  it('incTax[t] = taxAdd(Rente, Σ steuerpflichtige Beträge, t), anteilig verteilt; AVD-Bemessung unabhängig von der Versicherung', () => {
+  it('incTax nach gemeinsamen KV-Sonderausgaben; AVD-Bemessung unabhängig von der Versicherung', () => {
     for (const inp of SCENARIOS.slice(0, 200)) {
       const p = readParams(inp);
       const c = combo(p, MIX), avdOnly = combo(p, S({ avd: MIX.avd }));
-      const taxAdd = (inc: number, add: number, t: number) => add <= 0 ? 0 : (tax(inc + add / c.I(t)) - tax(inc)) * c.I(t);
       for (let t = 0; t < c.T; t++) {
         const xa = c.parts.avd!.taxBase[t], xi = c.parts.ins!.taxBase[t];
         expect(xa).toBe(avdOnly.parts.avd!.taxBase[t]);
-        const X = xa + xi;
-        expect(relClose(c.incTax[t], taxAdd(p.incRet, X, t), 1e-12, 1e-9), JSON.stringify(inp) + ' t=' + t).toBe(true);
-        if (X > 0) {
-          expect(relClose(c.parts.avd!.incTax[t], c.incTax[t] * xa / X, 1e-12, 1e-9)).toBe(true);
-          expect(relClose(c.parts.ins!.incTax[t], c.incTax[t] * xi / X, 1e-12, 1e-9)).toBe(true);
+        const X = xa + xi, I = c.I(t), base = p.incRet * I;
+        const gross = tax2026(base + X, I) - tax2026(base, I);
+        const net = tax2026(Math.max(0, base + X - c.kv[t]), I) - tax2026(base, I);
+        expect(relClose(c.incTax[t], net, 1e-12, 1e-7)).toBe(true);
+        for (const r of Object.values(c.parts)) {
+          const expected = (X > 0 ? gross * r.taxBase[t] / X : 0)
+            - (c.kv[t] > 0 ? (gross - net) * r.kv[t] / c.kv[t] : 0);
+          expect(relClose(r.incTax[t], expected, 1e-12, 1e-7)).toBe(true);
         }
       }
     }
@@ -388,7 +400,7 @@ describe('I9 – Erbfall gemeinsam versteuert', () => {
         // Kosten: Die Steuer auf die Vorabpauschale senkt Wert und Anschaffungskosten anteilig, danach steigen diese um die
         // volle Vorabpauschale. Solche Jahre auslassen.
         if (c.heir(i).detail!.minDepotGain < 0) continue;
-        const tol = 1e-6;
+        const tol = 4; // Rundung der vier Tarifauswertungen im Todesjahr, nominal.
         if (joint > sep + tol || jm > sm + tol) expect.fail(`${JSON.stringify(inp)} idx ${i}: gemeinsam ${joint}/${jm} > einzeln ${sep}/${sm}`);
         if (joint < sep - 1) less++;
       }

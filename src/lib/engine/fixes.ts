@@ -2,11 +2,14 @@
 // Standard überall: ALL_FIXES. Mit NO_FIXES rechnet die Engine bitgleich zum Original (tests/golden.test.ts).
 // Herleitung, Rechtsquellen und Wirkung je Korrektur: docs/abweichungen-vom-original.md.
 
-export type FixId = 'rankReal' | 'heirTax' | 'bonusOutsideSA' | 'kvInvestBase' | 'kvSharedRoom' | 'kvLumpSpread' | 'avdUnsubsidized';
+export type FixId = 'rankReal' | 'heirTax' | 'bonusOutsideSA' | 'kvInvestBase' | 'kvSharedRoom' | 'kvLumpSpread' | 'avdUnsubsidized' | 'kvDeductible' | 'avdSmallContribution' | 'taxRounding';
 
-export type FindingId = 'E1' | 'E2' | 'E3' | 'E6' | 'E7' | 'E8' | 'E10';
+export type FindingId = 'E1' | 'E2' | 'E3' | 'E6' | 'E7' | 'E8' | 'E10' | 'R1' | 'R6' | 'R8';
 
 export const FIXES: Readonly<Record<FixId, { finding: FindingId; title: string }>> = Object.freeze({
+  kvDeductible: { finding: 'R1', title: 'Zusätzliche KV/PV im Alter als Sonderausgaben abziehen' },
+  avdSmallContribution: { finding: 'R6', title: 'AVD: Sonderausgabenabzug auch unter 120 € Jahresbeitrag, ohne Zulagen' },
+  taxRounding: { finding: 'R8', title: 'Einkommen und Einkommensteuer im nominalen Steuerjahr auf volle Euro abrunden' },
   rankReal: { finding: 'E1', title: 'Rangfolge und fairer Vergleich immer in heutiger Kaufkraft, unabhängig von der Anzeige' },
   heirTax: { finding: 'E2', title: 'AVD-Erbfall: Erben versteuern die Erträge mit ihrem eigenen Einkommen; hälftig nur, wenn der Erbe mindestens 62 ist' },
   bonusOutsideSA: { finding: 'E3', title: 'Berufseinsteigerbonus zählt nicht in der Günstigerprüfung' },

@@ -151,24 +151,24 @@ describe('S2 – Eigenschaften der besten Aufteilung', () => {
 });
 
 describe('S3 – Snapshot Standardwerte (ALL_FIXES, Kaufkraft)', () => {
-  // Herkunft: bestSplit/exhaustive mit den aktuellen DEFAULTS (Fixes E1–E8 und E10, kvRate 21,1 %, kvOn aus).
-  // Die Werte für 150 € stimmen mit dem Einzel-Snapshot in fixes.test.ts überein (AVD real 174.891).
+  // Aktuelle Snapshots inklusive R1/R6/R8, kvRate 21,1 %, kvOn aus.
+  // Die Werte für 150 € stimmen mit dem Einzel-Snapshot in fixes.test.ts überein (AVD real 174.868).
   // Mit E10 (ungeförderte Beiträge im AVD-Vertrag) bleibt rund 170 € im ETF, dessen Gewinne der Sparer-Pauschbetrag
   // weitgehend freistellt; der Rest geht ins AVD (hälftig versteuerter Gewinn). Ohne E10 war es 150 € AVD + Rest ETF
-  // (325.453 / 469.616 / 517.304). Bei 300 € liegt 160 € AVD + 140 € ETF nur 6 € (< 0,1 %, TIE_REL) vorne; genannt wird
+  // (325.453 / 469.616 / 517.304). Bei 300 € liegt 160 € AVD + 140 € ETF nur 7 € (< 0,1 %, TIE_REL) vorne; genannt wird
   // deshalb 150 € + 150 € (mehr ETF), das Maximum steht in `top`. Bewusst anpassen, wenn sich das Modell ändert.
   const SNAP: [number, Split, number, number][] = [
-    [150, S({ avd: 150 }), 174891, 633.66],
-    [300, S({ etf: 150, avd: 150 }), 325453, 1179.18],
-    [450, S({ etf: 170, avd: 280 }), 470886, 1706.11],
-    [500, S({ etf: 170, avd: 330 }), 519224, 1881.25],
+    [150, S({ avd: 150 }), 174868, 633.58],
+    [300, S({ etf: 150, avd: 150 }), 325432, 1179.10],
+    [450, S({ etf: 170, avd: 280 }), 470867, 1706.04],
+    [500, S({ etf: 170, avd: 330 }), 519205, 1881.18],
   ];
   for (const keys of [K3, K4]) for (const [B, split, cumHReal, avg] of SNAP) it(`${keys.length} Produkte, ${B} € → ${splitText(split)}`, () => {
     const r = bestSplit(P({ fondOn: keys.length === 4 }), B, keys)!;
     expect(r.split).toEqual(split);
     expect(Math.abs(r.value - cumHReal)).toBeLessThan(1);
     expect(Math.abs(r.stats.avgMonthly - avg)).toBeLessThan(0.01);
-    if (B === 300) { expect(r.top!.split).toEqual(S({ etf: 140, avd: 160 })); expect(Math.round(r.top!.value)).toBe(325459); }
+    if (B === 300) { expect(r.top!.split).toEqual(S({ etf: 140, avd: 160 })); expect(Math.round(r.top!.value)).toBe(325439); }
     else expect(r.top).toBeNull();
   });
   it('1.000 €: 570 € AVD + 430 € ETF bleibt (7.622 € = 0,8 % vor 150 € + 850 €), nicht „alles ins AVD“ mit Nebendepot', () => {
@@ -181,12 +181,12 @@ describe('S3 – Snapshot Standardwerte (ALL_FIXES, Kaufkraft)', () => {
   });
   it('reine Strategien bei 500 €: ETF 488.459, AVD (150 gefördert + 350 ungefördert) 513.031, Versicherung 406.049', () => {
     const pure = pureStrategies(P(), 500, K3);
-    expect(pure.map(x => Math.round(x.value))).toEqual([488459, 513031, 406049]);
+    expect(pure.map(x => Math.round(x.value))).toEqual([488459, 513009, 406049]);
     expect(pure[1].label).toBe('Alles ins Altersvorsorgedepot (150 € gefördert + 350 € ungefördert)');
     expect(pureStrategies(P(), 700, ['avd'])[0].label).toBe('Alles ins Altersvorsorgedepot (150 € gefördert + 420 € ungefördert + 130 € Nebendepot)');
     // ohne E10 wie bisher: AVD 150 € + Nebendepot = 150 € AVD + Rest im ETF
     const old = pureStrategies(P(), 500, K3, NO_UNSUB);
-    expect(Math.round(old[1].value)).toBe(517304);
+    expect(Math.round(old[1].value)).toBe(517284);
     expect(old[1].label).toBe('Alles ins Altersvorsorgedepot (150 € gefördert + 350 € Nebendepot)');
   });
 });
@@ -270,7 +270,7 @@ describe('Robustheit', () => {
     // Mit E10 verschiebt sich die beste Mischung (ETF bis zum Pauschbetrag, Rest AVD) mit jeder Steuerannahme.
     // „shift“: Mit Umschichtung zahlt das ETF-Depot beim Verkauf Steuern, das AVD nicht; die beste Mischung verschiebt sich.
     expect(sum.flips.map(r => r.id)).toEqual(['kv', 'avdCost', 'g', 'incRetLow', 'incRetHigh', 'shift']);
-    expect(sum.flips[0].best.split).toEqual(S({ etf: 420, avd: 30 }));
+    expect(sum.flips[0].best.split).toEqual(S({ etf: 300, avd: 150 }));
     expect(sum.flips.find(r => r.id === 'incRetHigh')!.best.split).toEqual(S({ etf: 300, avd: 150 }));
     expect(sum.flips.find(r => r.id === 'incRetLow')!.best.split.avd).toBeGreaterThan(280);
     expect(sum.level).toBe('fragile'); expect(sum.held).toBe(ids.length - 6);
@@ -328,21 +328,21 @@ describe('Ergebnissätze (comboVerdict)', () => {
     expect(v.lines[1]).toBe('Davon sind 130 € im Monat ungefördert im Altersvorsorgedepot (keine Zulage, aber keine Steuer bis zur Auszahlung). Mit 150 € im AVD (voll gefördert) und 300 € ETF-Depot wären es bis zum Alter von 90 rund 1.270 € (0,3 %) weniger. Dieser Vorteil hängt an niedrigen AVD-Kosten (gerechnet: 0,5 % im Jahr), und das Geld ist bis zur Rente gebunden.');
     expect(v.lines[2]).toMatch(/^Die rechnerisch beste Aufteilung ist eine Mischung: bis zum Alter von 90 rund [\d.]+ € mehr netto als „Alles ins Altersvorsorgedepot \(150 € gefördert \+ 300 € ungefördert\)“\.$/);
     expect(v.lines[3]).toMatch(/^Gemeinsam gerechnet zahlt deine Aufteilung bis zum Alter von 90 rund [\d.]+ € mehr Steuern und Abgaben, als wenn jedes Produkt allein gerechnet würde \(ein Sparer-Pauschbetrag für alle Depots, progressiver Steuertarif\)\.$/);
-    expect(v.lines[4]).toBe('Die beste Aufteilung hängt hier stark von den Annahmen ab: In 6 von 9 Szenarien unten ist eine andere Aufteilung rechnerisch vorne, z. B. bei „Als Rentner freiwillig gesetzlich versichert“ (420 € ETF + 30 € AVD).');
+    expect(v.lines[4]).toBe('Die beste Aufteilung hängt hier stark von den Annahmen ab: In 6 von 9 Szenarien unten ist eine andere Aufteilung rechnerisch vorne, z. B. bei „Als Rentner freiwillig gesetzlich versichert“ (300 € ETF + 150 € AVD).');
     expect(v.note).toContain('keine Anlageberatung');
   });
   it('ok, deine Aufteilung ist auf den Euro die beste (300 € = 140 ETF + 160 AVD); 4 von 7 Szenarien verschieben sie ⇒ „hängt stark ab“', () => {
     const { v } = V({ setAll: 300, cEtf: 140, cAvd: 160, cIns: 0, insOn: false }, true);
     expect(v.headline).toBe('Deine Aufteilung ist unter diesen Annahmen rechnerisch die beste: Ø 1.179 € netto im Monat (67–90).');
     expect(v.lines.some(l => l.startsWith('Rechnerisch am meisten') || l.startsWith('Auf den Euro'))).toBe(false);
-    expect(v.lines.at(-1)).toBe('Die beste Aufteilung hängt hier stark von den Annahmen ab: In 4 von 7 Szenarien unten ist eine andere Aufteilung rechnerisch vorne, z. B. bei „Als Rentner freiwillig gesetzlich versichert“ (270 € ETF + 30 € AVD).');
+    expect(v.lines.at(-1)).toBe('Die beste Aufteilung hängt hier stark von den Annahmen ab: In 3 von 7 Szenarien unten ist eine andere Aufteilung rechnerisch vorne, z. B. bei „AVD kostet 1,0 % (Deckel Standarddepot)“ (270 € ETF + 30 € AVD).');
   });
   it('gleichauf (TIE_REL): 300 € = 150 ETF + 150 AVD, 160/140 nur 6 € vorne', () => {
     const { C, v } = V({ setAll: 300, cEtf: 150, cAvd: 150, cIns: 0, insOn: false });
     expect(bestOf(C).split).toEqual(S({ etf: 150, avd: 150 }));
     expect(bestOf(C).userIsBest).toBe(true);
     expect(v.headline).toBe('Deine Aufteilung ist unter diesen Annahmen rechnerisch gleichauf mit der besten (weniger als 0,1 % Unterschied): Ø 1.179 € netto im Monat (67–90).');
-    expect(v.lines[0]).toBe('Auf den Euro gerechnet liegt 160 € Altersvorsorgedepot + 140 € ETF-Depot bis zum Alter von 90 rund 6 € vorne. Das sind weniger als 0,1 % und weit unter der Unsicherheit der Annahmen. Bei so kleinen Unterschieden zählt der Rechner die Aufteilung mit mehr ETF als beste, weil das Geld dort jederzeit verfügbar ist.');
+    expect(v.lines[0]).toBe('Auf den Euro gerechnet liegt 160 € Altersvorsorgedepot + 140 € ETF-Depot bis zum Alter von 90 rund 7 € vorne. Das sind weniger als 0,1 % und weit unter der Unsicherheit der Annahmen. Bei so kleinen Unterschieden zählt der Rechner die Aufteilung mit mehr ETF als beste, weil das Geld dort jederzeit verfügbar ist.');
     expect(v.lines.some(l => l.includes('ungefördert im Altersvorsorgedepot (keine'))).toBe(false);
   });
   it('AVD über 150 €: Abstand zu „150 € + Rest“ beziffert (1.000 €, deine Aufteilung = beste)', () => {

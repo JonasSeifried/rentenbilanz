@@ -79,9 +79,12 @@ const forRandom = (fn: (p: Params, i: number) => void) => RANDOM.forEach((v, i) 
 });
 
 describe('Fix-Katalog', () => {
-  it('sieben Fixes, Befund-IDs eindeutig, ALL/NO vollständig', () => {
-    expect(FIX_IDS).toEqual(['rankReal', 'heirTax', 'bonusOutsideSA', 'kvInvestBase', 'kvSharedRoom', 'kvLumpSpread', 'avdUnsubsidized']);
-    expect(new Set(FIX_IDS.map(f => FIXES[f].finding)).size).toBe(7);
+  it('Fix- und Befund-IDs eindeutig, ALL/NO vollständig', () => {
+    expect(FIX_IDS).toContain('kvDeductible');
+    expect(FIX_IDS).toContain('avdSmallContribution');
+    expect(FIX_IDS).toContain('taxRounding');
+    expect(new Set(FIX_IDS).size).toBe(FIX_IDS.length);
+    expect(new Set(FIX_IDS.map(f => FIXES[f].finding)).size).toBe(FIX_IDS.length);
     expect([...ALL_FIXES]).toEqual(FIX_IDS);
     expect(NO_FIXES.size).toBe(0);
   });
@@ -197,7 +200,7 @@ describe('Wirkung je Fix (gegen das Original, Zahlen aus Wave 1)', () => {
 });
 
 describe('Eigenschaften über 200 Zufallsszenarien', () => {
-  const KV: FixId[] = ['kvInvestBase', 'kvSharedRoom', 'kvLumpSpread'];
+  const KV: FixId[] = ['kvInvestBase', 'kvSharedRoom', 'kvLumpSpread', 'kvDeductible'];
 
   it('kvOn = false ⇒ die KV-Fixes ändern nichts', () => {
     let hits = 0;
@@ -318,7 +321,7 @@ describe('Eigenschaften über 200 Zufallsszenarien', () => {
 });
 
 describe('jede Teilmenge der Fixes', () => {
-  it('alle 128 Teilmengen laufen auf Default, DK und High (inkl. Szenarien)', () => {
+  it('alle Teilmengen laufen auf Default, DK und High (inkl. Szenarien)', () => {
     const cases = [P(), P(DK), P(HIGH), P({ ...HIGH, incRet: 60000, einmal: true, real: false, deathAge: 75, heirHalf: true })];
     for (let mask = 0; mask < 1 << FIX_IDS.length; mask++) {
       const fixes = new Set(FIX_IDS.filter((_, i) => mask & (1 << i)));
@@ -328,7 +331,7 @@ describe('jede Teilmenge der Fixes', () => {
         expect(scenarios(p, { fixes }).length).toBe(scenarioList(p, null, { fixes }).length);
       }
     }
-  });
+  }, 60_000);
 });
 
 describe('Szenarien', () => {
@@ -352,21 +355,14 @@ describe('Snapshots mit ALL_FIXES (aktuelle Standardwerte)', () => {
     const a = analyze(P(patch));
     return { lead: a.lead?.key, ...Object.fromEntries(a.active.map(pr => [pr.key, Math.round(a.stats[pr.key]!.cumH)])) };
   };
-  it('Default: ETF 153.730, AVD 174.891, Vers. 127.324 (nur E3 wirkt)', () => {
-    // kvOn aus (E6–E8 ohne Wirkung), real an (E1 ohne Wirkung), Tod mit 50 vor Rentenbeginn mit gleichem Einkommen (E2 ohne Wirkung).
-    expect(snap({})).toEqual({ lead: 'avd', etf: 153730, avd: 174891, ins: 127324 });
+  it('Default mit nominaler Tarifrundung (R8)', () => {
+    expect(snap({})).toEqual({ lead: 'avd', etf: 153730, avd: 174868, ins: 127324 });
   });
-  it('DK (Default + kvOn, kvRate 21,1)', () => {
-    // Herkunft: diese Implementierung, 2026-11-03. Original mit kvRate 21,1: ETF 137.705, AVD 127.377, Vers. 95.558.
-    // Unterschied = E3 (AVD) + E6 (alle) + E8 (Versicherung); E7 ohne Wirkung (Rente weit unter der BBG), E1/E2 ohne Wirkung.
-    expect(snap({ kvOn: true })).toEqual({ lead: 'etf', etf: 137576, avd: 128027, ins: 97162 });
+  it('DK mit KV-Sonderausgabenabzug (R1)', () => {
+    expect(snap({ kvOn: true })).toEqual({ lead: 'etf', etf: 141550, avd: 140953, ins: 104873 });
   });
-  it('High (a0 30, zvE 110.000, Rente 45.000, 500 €/Monat, kvOn, kvRate 21,1)', () => {
-    // Herkunft: diese Implementierung, 2026-11-03. Original mit kvRate 21,1: ETF 324.245, AVD 326.776, Vers. 239.587.
-    // a0 30 ⇒ kein Bonus (E3 ohne Wirkung); E6 und E8 wirken, E7 ohne Wirkung (Rente weit unter der BBG).
-    // E10 (2026-11-04): 350 € ungefördert im AVD-Vertrag statt im Nebendepot. Mit kvOn zählt die ganze Auszahlung
-    // für die KV (nicht nur der Gewinn wie beim ETF), daher AVD 325.856 → 281.639 und der ETF vorne.
-    expect(snap({ ...HIGH, kvRate: 21.1 })).toEqual({ lead: 'etf', etf: 323094, avd: 281639, ins: 245025 });
+  it('High mit KV-Sonderausgabenabzug (R1)', () => {
+    expect(snap({ ...HIGH, kvRate: 21.1 })).toEqual({ lead: 'etf', etf: 334909, avd: 316366, ins: 264856 });
   });
 });
 

@@ -6,8 +6,7 @@ import type { Inputs } from './inputs';
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 // --- Steuer (Tarif 2026, Grundtarif) ---
-export function est(x: number): number {
-  x = Math.floor(Math.max(0, x));
+function tariff(x: number): number {
   let t: number;
   if (x <= 12348) t = 0;
   else if (x <= 17799) { const y = (x - 12348) / 1e4; t = (914.51 * y + 1400) * y; }
@@ -16,8 +15,16 @@ export function est(x: number): number {
   else t = 0.45 * x - 19470.38;
   return Math.max(0, t);
 }
+/** Referenz des Originals: Einkommen abgerundet, Steuerbetrag noch ungerundet. */
+export function est(x: number): number { return tariff(Math.floor(Math.max(0, x))); }
 export function soli(t: number): number { const fg = 20350; return t <= fg ? 0 : Math.min(0.055 * t, 0.119 * (t - fg)); }
 export function tax(x: number): number { const t = est(x); return t + soli(t); }
+/** Indexierter Tarif; Einkommen und ESt im nominalen Steuerjahr auf volle Euro abgerundet (§ 32a). */
+export function tax2026(incomeNom: number, index = 1): number {
+  const income = Math.floor(Math.max(0, incomeNom));
+  const t = Math.floor(tariff(income / index) * index);
+  return t + soli(t / index) * index;
+}
 export const ERTRAG: Record<number, number> = { 60: 22, 61: 22, 62: 21, 63: 20, 64: 19, 65: 18, 66: 18, 67: 17, 68: 16, 69: 15, 70: 15 };
 export const KV_BBG = 69750; // Beitragsbemessungsgrenze KV/PV 2026, €/Jahr
 /** AVD: geförderte Eigenbeiträge höchstens 1.800 €/Jahr; Eigenbeiträge insgesamt höchstens 6.840 €/Jahr (AVRG). */
