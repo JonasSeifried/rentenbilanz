@@ -98,11 +98,13 @@ describe('Gehaltsentwicklung – Szenarien', () => {
     expect(scenarioList(P(), null, { fixes: NO_FIXES }).some(s => s.id === 'incPath')).toBe(false);
     const up = scenarioList(P()).find(s => s.id === 'incPath')!;
     expect(up.label).toBe('Gehalt steigt bis 45 real um 30 % (auf 49.400 €)');
-    expect([up.p.incPeak, up.p.incPeakAge]).toEqual([38000 * 1.3, 45]);
+    expect([up.p.incPeak, up.p.incPeakAge]).toEqual([49400, 45]);
     const flat = scenarioList(P({ incPeak: 52000, incPeakAge: 40 })).find(s => s.id === 'incPath')!;
     expect(flat.label).toBe('Gehalt bleibt konstant bei 38.000 €');
     expect(flat.p.incPeak).toBe(-1);
-    expect(scenarioList(P({ a0: 50 })).some(s => s.id === 'incPath')).toBe(false); // Zielalter schon erreicht
+    const older = scenarioList(P({ a0: 50 })).find(s => s.id === 'incPath')!; // mindestens 10 Jahre Verlauf
+    expect([older.label, older.p.incPeakAge]).toEqual(['Gehalt steigt bis 60 real um 30 % (auf 49.400 €)', 60]);
+    expect(scenarioList(P({ a0: 58 })).some(s => s.id === 'incPath')).toBe(false); // vor der Rente nicht erreichbar
   });
   it('„Gehalt 30 % niedriger“ senkt mit Gehaltsentwicklung den ganzen Verlauf, ohne sie wie im Original', () => {
     const w = scenarioList(P({ incPeak: 52000 })).find(s => s.id === 'incWork')!;
@@ -143,9 +145,10 @@ describe('Gehaltsentwicklung – Randfälle in Texten und Eingaben (Review)', ()
   });
   it('Rechenweg beschreibt Verlauf, sofortiges Zielgehalt und Zielalter nach Rentenbeginn so, wie gerechnet wird', () => {
     const md = (patch: Partial<Inputs>) => { const inp = { ...DEFAULTS, ...patch }; return rechenweg(inp, analyze(readParams(inp)), 'u', new Date(2026, 10, 5)); };
-    expect(md({ incPeak: 60000, incPeakAge: 40 })).toMatch(/ab Berufsbeginn \(Alter 22\) 38\.000 €, bis Alter 40 mit konstantem realem Wachstum \(2,57\d* % p\. a\.\) auf 60\.000 €, danach konstant/);
+    expect(md({ incPeak: 60000, incPeakAge: 40 })).toMatch(/ab heute \(Alter 22\) 38\.000 €, bis Alter 40 mit konstantem realem Wachstum \(2,57\d* % p\. a\.\) auf 60\.000 €, danach konstant/);
     const now = md({ a0: 40, incPeak: 55000, incPeakAge: 30 });
-    expect(now).toContain('durchgehend mit dem Zielgehalt 55.000 €, das Gehalt 38.000 € wirkt nicht');
+    expect(now).toContain('gerechnet wird ab heute (Alter 40) durchgehend mit dem Zielgehalt 55.000 €, das Gehalt 38.000 € wirkt nicht');
+    expect(md({ ...STUDY, incPeak: 50000 })).toContain('ab Berufsbeginn (Alter 25) 38.000 €');
     expect(now).toContain('| 0 | 40 | 55.000 |');
     const late = md({ incPeak: 80000, incPeakAge: 80 });
     expect(late).toContain('das Zielalter liegt nach Rentenbeginn, zuletzt (Alter 66) ' + Math.round(incomeAt(P({ incPeak: 80000, incPeakAge: 80 }), 66)).toLocaleString('de-DE') + ' €');
@@ -154,7 +157,7 @@ describe('Gehaltsentwicklung – Randfälle in Texten und Eingaben (Review)', ()
   it('Einstellungs-Badge zählt die Gehaltsentwicklung, das Alter nur, wenn sie an ist', () => {
     expect(changedSettings({ ...DEFAULTS, incPeakAge: 40 })).toEqual([]);
     expect(changedSettings({ ...DEFAULTS, incPeak: 60000 })).toEqual(['incPeak']);
-    expect(changedSettings({ ...DEFAULTS, incPeak: 60000, incPeakAge: 40 })).toEqual(['incPeak', 'incPeakAge']);
+    expect(changedSettings({ ...DEFAULTS, incPeak: 60000, incPeakAge: 40 })).toEqual(['incPeak']); // eine Angabe
   });
   it('Zielalter nach Rentenbeginn: „30 % niedriger“ sagt „steigend Richtung“; ohne Berufsphase vor der Rente: ohne Wirkung', () => {
     const late = scenarioList(P({ incWork: 40000, incPeak: 100000, incPeakAge: 70 })).find(s => s.id === 'incWork')!;

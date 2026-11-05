@@ -46,7 +46,9 @@ werden mit dem Einkommen des jeweiligen Jahres gerechnet, wie bisher mit dem kon
 
 Unter „Was die Empfehlung kippen würde“ (nur außerhalb des Originalpfads, wie `shift`):
 
-- ohne Gehaltsentwicklung: **„Gehalt steigt bis 45 real um 30 %“**, nur wenn der Berufsbeginn vor 45 liegt und ein Gehalt eingetragen ist,
+- ohne Gehaltsentwicklung: **„Gehalt steigt bis 45 real um 30 %“** (`suggestedPath` in `core.ts`: Ziel auf 100 € gerundet,
+  erreicht frühestens mit 45 und mindestens 10 Jahre nach Berufsbeginn; derselbe Vorschlag wie beim Einschalten in den
+  Einstellungen). Nur mit eingetragenem Gehalt und wenn das Zielalter vor dem Rentenbeginn liegt,
 - mit Gehaltsentwicklung: **„Gehalt bleibt konstant“** (zurück auf `incWork`). Gilt das Zielgehalt sofort (Zielalter nicht nach
   Berufsbeginn), gibt es keinen Verlauf und keine solche Zeile; `incWork` wirkt dann nicht.
 

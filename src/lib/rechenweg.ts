@@ -2,7 +2,7 @@
 // durch Menschen oder eine KI (einzelne Jahre prüfen statt das Endergebnis „auf Sicht“ beurteilen).
 // Reine Funktion, liest nur, was die Engine ohnehin liefert; keine eigene Rechnung außer dem Beitrag laut Eingabe.
 import { INPUT_KEYS, type Inputs, type InputKey } from './engine/inputs';
-import { incomeAt, incomeGrowth, incomePathKind, type Params, type ProductKey } from './engine/core';
+import { incomeAt, incomeGrowth, incomePathKind, incomeStartText, type Params, type ProductKey } from './engine/core';
 import { AMOUNT, type Analysis, type ContenderKey } from './engine/analyze';
 import { splitSum } from './engine/combo';
 import { SITE } from './site';
@@ -61,10 +61,10 @@ function salaryText(p: Params): string {
   const tail = ' (heutiges Geld). Werte je Jahr unter „Einkommen vor Rentenbeginn“. Beiträge folgen dem Gehalt nicht (nur der Dynamik).';
   if (kind === 'off') return 'Das Einkommen im Beruf bleibt real gleich (keine Gehaltsentwicklung), abgesehen von einer Ausbildungsphase.';
   if (kind === 'noWork') return 'Gehaltsentwicklung eingetragen, aber ohne Wirkung: Die Ausbildung dauert bis zum Rentenbeginn (Alter ' + p.studyEnd + '), gerechnet wird durchgehend mit dem Einkommen in der Ausbildung ' + n0(p.incStudy) + ' €.';
-  if (kind === 'now') return 'Gehaltsentwicklung: Das Zielalter ' + p.incPeakAge + ' liegt nicht nach dem Berufsbeginn (Alter ' + p.studyEnd + '); gerechnet wird ab Berufsbeginn durchgehend mit dem Zielgehalt ' + n0(p.incPeak) + ' €, das Gehalt ' + n0(p.incWork) + ' € wirkt nicht' + tail;
+  if (kind === 'now') return 'Gehaltsentwicklung: Das Zielalter ' + p.incPeakAge + ' liegt nicht nach dem Beginn des Verlaufs (' + incomeStartText(p) + '); gerechnet wird ' + incomeStartText(p) + ' durchgehend mit dem Zielgehalt ' + n0(p.incPeak) + ' €, das Gehalt ' + n0(p.incWork) + ' € wirkt nicht' + tail;
   const growth = (gr != null ? ' mit konstantem realem Wachstum (' + pct(gr) + ' % p. a.)' : ' linear');
-  if (kind === 'late') return 'Gehaltsentwicklung: ab Berufsbeginn (Alter ' + p.studyEnd + ') ' + n0(p.incWork) + ' €,' + growth + ' Richtung ' + n0(p.incPeak) + ' € mit Alter ' + p.incPeakAge + '; das Zielalter liegt nach Rentenbeginn, zuletzt (Alter ' + (p.R - 1) + ') ' + n0(incomeAt(p, p.R - 1)) + ' €' + tail;
-  return 'Gehaltsentwicklung: ab Berufsbeginn (Alter ' + p.studyEnd + ') ' + n0(p.incWork) + ' €, bis Alter ' + p.incPeakAge + growth + ' auf ' + n0(p.incPeak) + ' €, danach konstant' + tail;
+  if (kind === 'late') return 'Gehaltsentwicklung: ' + incomeStartText(p) + ' ' + n0(p.incWork) + ' €,' + growth + ' Richtung ' + n0(p.incPeak) + ' € mit Alter ' + p.incPeakAge + '; das Zielalter liegt nach Rentenbeginn, zuletzt (Alter ' + (p.R - 1) + ') ' + n0(incomeAt(p, p.R - 1)) + ' €' + tail;
+  return 'Gehaltsentwicklung: ' + incomeStartText(p) + ' ' + n0(p.incWork) + ' €, bis Alter ' + p.incPeakAge + growth + ' auf ' + n0(p.incPeak) + ' €, danach konstant' + tail;
 }
 
 const pct = (x: number) => String(+(x * 100).toFixed(4)).replace('.', ',');

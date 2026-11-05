@@ -21,7 +21,7 @@ export function changedSettings(i: Inputs): InputKey[] {
     if (k === 'studyEnd') return inStudy !== (DEFAULTS.studyEnd > DEFAULTS.a0) || (inStudy && i.studyEnd !== DEFAULTS.studyEnd);
     if ((k === 'incStudy' || k === 'eligStudy') && !inStudy) return false;
     if ((k === 'kidsFrom' || k === 'kidsYears') && !(i.kids > 0)) return false;
-    if (k === 'incPeakAge' && !(i.incPeak >= 0)) return false; // ohne Gehaltsentwicklung wirkungslos
+    if (k === 'incPeakAge') return false; // zählt mit incPeak als eine Angabe (eine Zeile im Annahmen-Check)
     return i[k] !== DEFAULTS[k];
   });
 }

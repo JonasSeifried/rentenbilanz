@@ -15,7 +15,7 @@ export const GLOSSARY = {
     title: 'Gehaltsentwicklung',
     text: [
       'Das Gehalt bestimmt den Steuersatz in der Sparphase und damit vor allem die Steuererstattung beim Altersvorsorgedepot: Je höher das Gehalt, desto mehr bringt der Sonderausgabenabzug über die Zulagen hinaus.',
-      'Ohne diese Angabe bleibt das Gehalt das ganze Berufsleben real gleich. Mit ihr steigt (oder sinkt) es ab Berufsbeginn jedes Jahr um denselben Prozentsatz bis zum Zielgehalt und bleibt danach gleich. Beträge in heutigem Geld, also ohne Inflationsausgleich.',
+      'Ohne diese Angabe bleibt das Gehalt das ganze Berufsleben real gleich. Mit ihr steigt (oder sinkt) es ab Berufsbeginn (ohne Ausbildung: ab heute) jedes Jahr um denselben Prozentsatz bis zum Zielgehalt und bleibt danach gleich. Ist Start- oder Zielgehalt 0 €, steigt es stattdessen jedes Jahr um denselben Betrag. Beträge in heutigem Geld, also ohne Inflationsausgleich.',
       'Die Monatsbeiträge steigen dadurch nicht automatisch mit. Dafür gibt es die Beitragsdynamik bei den Produkten.',
     ],
   },

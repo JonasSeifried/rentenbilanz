@@ -150,6 +150,16 @@ export function incomePathKind(p: Params): 'off' | 'noWork' | 'now' | 'late' | '
   return p.incPeakAge >= p.R ? 'late' : 'path';
 }
 
+/** Beginn des Verlaufs in Worten: „ab Berufsbeginn (Alter 25)“ nach einer Ausbildung, sonst „ab heute (Alter 40)“. */
+export function incomeStartText(p: Params): string {
+  return (p.studyEnd > p.a0 ? 'ab Berufsbeginn' : 'ab heute') + ' (Alter ' + p.studyEnd + ')';
+}
+
+/** Vorschlag beim Einschalten und im Szenario: +30 % real, auf 100 € gerundet, erreicht nach mindestens 10 Jahren, frühestens mit 45. */
+export function suggestedPath(p: Params): { incPeak: number; incPeakAge: number } {
+  return { incPeak: Math.round(p.incWork * 1.3 / 100) * 100, incPeakAge: Math.max(45, p.studyEnd + 10) };
+}
+
 /** Reales Wachstum des Gehalts in % p. a. bis zum Zielalter (null ohne Gehaltsentwicklung oder ohne Übergang). */
 export function incomeGrowth(p: Params): number | null {
   if (!(p.incPeak >= 0) || p.incPeakAge <= p.studyEnd || !(p.incWork > 0) || !(p.incPeak > 0)) return null;

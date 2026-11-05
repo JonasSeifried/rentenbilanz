@@ -8,7 +8,7 @@
   // (wird auch im Kombi-Modus verwendet). Im Druck als „Unterstellte Annahmen“ ohne Links.
   import { tick } from 'svelte';
   import { DEFAULTS } from '../engine/inputs';
-  import { incomePathKind, readParams } from '../engine/core';
+  import { incomePathKind, incomeStartText, readParams } from '../engine/core';
   import { app, focusField, setTab } from '../state.svelte';
   import type { Tab } from '../link';
   import { KV_KINDS, kvShown } from './KvQuestion.svelte';
@@ -19,9 +19,9 @@
   /** Gehaltsentwicklung mit den Werten, mit denen die Engine rechnet (nach Grenzen, mit Randfällen). */
   function pathValue(): string {
     const p = readParams(i), kind = incomePathKind(p);
-    if (!(p.incPeak >= 0)) return 'keine (real gleich)';
+    if (kind === 'off') return 'keine (real gleich)';
     if (kind === 'noWork') return 'ohne Wirkung (keine Berufsphase vor der Rente)';
-    if (kind === 'now') return de(p.incPeak) + ' € ab Berufsbeginn';
+    if (kind === 'now') return de(p.incPeak) + ' € ' + incomeStartText(p);
     return 'auf ' + de(p.incPeak) + ' € mit ' + de(p.incPeakAge) + ' Jahren' + (kind === 'late' ? ' (nach Rentenbeginn, nicht erreicht)' : '');
   }
 
