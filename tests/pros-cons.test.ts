@@ -44,10 +44,14 @@ describe('prosCons', () => {
 
 describe('faqs', () => {
   it('AVD-Fragen nur mit AVD, „150 € + Rest“ nur mit AVD und ETF; keine leeren Antworten', () => {
-    expect(faqs(P(), ['etf', 'avd']).map(f => f.id)).toEqual(['avd150', 'early', 'crash', 'etfSwitch', 'mix']);
-    expect(faqs(P(), ['etf', 'ins']).map(f => f.id)).toEqual(['early', 'crash', 'etfSwitch']);
-    expect(faqs(P(), ['avd']).map(f => f.id)).toEqual(['avd150', 'early', 'crash']);
+    expect(faqs(P(), ['etf', 'avd']).map(f => f.id)).toEqual(['avd150', 'early', 'crash', 'etfSwitch', 'mix', 'bav']);
+    expect(faqs(P(), ['etf', 'ins']).map(f => f.id)).toEqual(['early', 'crash', 'etfSwitch', 'bav']);
+    expect(faqs(P(), ['avd']).map(f => f.id)).toEqual(['avd150', 'early', 'crash', 'bav']);
     for (const f of faqs(P(), [...ALL])) for (const a of f.a) expect(a.length).toBeGreaterThan(20);
+    // Betriebsrente: nicht im Vergleich, mit Fundstellen, ohne Empfehlung
+    const bav = faqs(P(), ['etf']).find(f => f.id === 'bav')!.a.join(' ');
+    for (const src of ['§ 1a Abs. 1a BetrAVG', '§ 3 Nr. 63 EStG', '§ 22 Nr. 5 EStG', '§ 226 Abs. 2 SGB V']) expect(bav).toContain(src);
+    expect(bav).not.toMatch(/empfehl|lohnt sich|solltest/i);
     expect(faqs(P({ g: 5, gPay: 3 }), ['etf']).find(f => f.id === 'crash')!.a[0]).toContain('(5 % bis zur Rente, 3 % danach)');
     expect(faqs(P(), ['etf']).find(f => f.id === 'crash')!.a[2]).toContain('„Alle schichten vor der Rente um“');
     expect(faqs(P({ shift: true }), ['etf']).find(f => f.id === 'crash')!.a[2]).toContain('„Niemand schichtet vor der Rente um“');

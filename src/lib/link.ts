@@ -37,6 +37,8 @@ const BASES: Record<string, Inputs & { avdStd: boolean; avdSafe: number }> = {
     incPeak: -1, incPeakAge: 45,
     // Später angehängt: keine Kirchensteuer, ledig (bisheriges Verhalten: Grundtarif ohne Kirchensteuer).
     kist: 0, married: false, incSpouse: 38000, incSpouseRet: 20000,
+    // Später angehängt: ganzer Sparer-Pauschbetrag frei (bisheriges Verhalten).
+    allowanceUsed: 0,
   },
 };
 /** Die eingefrorene Basis von Version 1 (Tests und Speicher-Migration). */

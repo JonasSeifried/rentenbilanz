@@ -667,3 +667,42 @@ Wirkung cumH real (ETF / AVD / Versicherung): Default 153.289 / 174.856 / 127.69
 176.707 / 199.696 / 138.223 € (AVD-Erstattung 8.017 → 1.246 €). DK mit KiSt 9 %: 139.342 / 138.680 / 104.734 €
 (knappe Reihenfolge dreht, 662 € Abstand). Herleitung, Quellen, alle Messungen und offene Punkte:
 [kirchensteuer-splitting.md](kirchensteuer-splitting.md). Tests: `tests/kirchensteuer-splitting.test.ts`.
+### Eingabe „Sparer-Pauschbetrag schon genutzt“ (`allowanceUsed`)
+
+Keine Korrektur des Originals, sondern eine neue Eingabe (Standard 0 ⇒ bitgleich, Test `tests/allowance-used.test.ts`).
+Der Sparer-Pauschbetrag von 1.000 € gilt je Person einmal für alle Kapitalerträge (§ 20 Abs. 9 EStG,
+https://www.gesetze-im-internet.de/estg/__20.html). Bisher stand er voll den verglichenen Produkten zu. Wer schon
+Tagesgeldzinsen oder Erträge aus anderen Depots hat, trägt den dafür verbrauchten Betrag ein (€/Jahr, 0 … 1.000).
+
+- Rechnung (nur `combo.ts`): eigener Pauschbetrag je Jahr `max(0, 1.000 € [× I(t) bei indexAllowance] − allowanceUsed × I(t))`.
+  Der Betrag ist wie alle Eingaben in heutigem Geld und wächst mit der Inflation, der Pauschbetrag bleibt nominal fest.
+  Bei 2 % Inflation sind 500 € heute nach 35 Jahren rund 1.000 € nominal, der Pauschbetrag ist dann ganz verbraucht.
+- Gilt überall, wo die Person selbst Kapitalerträge hat: Vorabpauschale und Umschichtung in der Ansparphase,
+  Entnahmen, Versicherungsleistung (R7), Kapital nach Steuer bei Rentenbeginn. In der Günstigerprüfung (R3) ist das
+  exakt, solange `allowanceUsed × I(t) ≤ 1.000 €` (bzw. ≤ indexierter Pauschbetrag): Die anderen Erträge liegen dann
+  ganz im Pauschbetrag, also gilt `andere + eigene − 1.000 = eigene − (1.000 − andere)` auch im Tarif (§ 32d Abs. 6 EStG).
+  Wächst der Betrag nominal darüber (600 € bei 2 % Inflation nach etwa 26 Jahren), stünde der Überschuss der anderen
+  Erträge in der Günstigerprüfung mit im Tarif; das ist nicht modelliert.
+- **Erbfall nicht betroffen:** Verkaufen die Erben, nutzen sie ihren eigenen Pauschbetrag; ihre sonstigen
+  Kapitalerträge sind unbekannt. Gerechnet wird dort wie bisher mit vollen 1.000 €. Ohne „verheiratet“
+  (`married`) gilt das auch für einen erbenden Ehepartner; erbt dieser ein gemeinsames Tagesgeld mit, ist sein
+  Pauschbetrag in Wirklichkeit ebenfalls teilweise verbraucht, der Erbwert der Depots ist dann leicht zu hoch.
+- **Zusammen mit `married`** (Merge mit dem Steuerprofil): `allowanceUsed` wird vom gemeinsamen Pauschbetrag
+  2.000 € abgezogen (Eingabe bis 2.000 €; ledig wirkt höchstens 1.000 €), überall, wo der eigene Haushalt verkauft
+  oder versteuert, einschließlich des Todesjahrs, wenn der Partner erbt (gemeinsame Veranlagung, die anderen
+  Kapitalerträge laufen im Haushalt weiter). Die R3-Grenze oben liegt dann bei 2.000 € statt 1.000 €. Test:
+  `tests/allowance-used.test.ts` (verheiratet).
+- Nicht modelliert: andere Kapitalerträge über 1.000 € (sie würden in der Günstigerprüfung mit im Tarif stehen),
+  Verluste aus anderen Depots.
+
+Wirkung cumH (heutige Kaufkraft), ETF / AVD / Versicherung, bei 0 / 250 / 500 / 1.000 € genutzt:
+
+| Fall | 0 € | 250 € | 500 € | 1.000 € |
+|---|---|---|---|---|
+| Default | 153.289 / 174.856 / 127.694 | 148.561 / 173.397 / 126.121 | 144.153 / 172.030 / 125.576 | 140.356 / 171.141 / 125.576 |
+| DK (KV 21,7 %) | 140.356 / 139.932 / 104.650 | 135.946 / 138.479 / 103.137 | 131.895 / 137.194 / 102.623 | 128.445 / 136.384 / 102.623 |
+| High | 330.246 / 310.722 / 263.311 | 325.475 / 308.985 / 261.680 | 321.046 / 307.100 / 260.741 | 317.295 / 305.755 / 260.741 |
+
+Das ETF-Depot verliert bis 8 % (Default −12.933 €), das AVD nur über sein Nebendepot (−2 %). Im DK-Fall kippt die
+knappe Rangfolge schon bei 250 € von ETF (424 € vorne) zum AVD (2.533 € vorne). Die Versicherung ist ab 500 € gleich,
+weil der Betrag bis zum Auszahljahr über 1.000 € nominal gewachsen ist.

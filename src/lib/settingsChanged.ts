@@ -6,7 +6,7 @@ import { CONTRIB_KEYS, DEFAULTS, type InputKey, type Inputs } from './engine/inp
 export const SETTINGS_KEYS: readonly InputKey[] = [
   'studyEnd', 'incStudy', 'eligStudy', 'incPeak', 'incPeakAge', 'kids', 'kidsFrom', 'kidsYears', 'bonus', 'kvRate',
   'etfM', 'etfTer', 'avdM', 'avdCost', 'reinvest', 'insM', 'insEff', 'fondM', 'fondAA', 'fondTer',
-  'infl', 'dyn', 'basis', 'kist', 'married', 'incSpouse', 'incSpouseRet',
+  'infl', 'dyn', 'basis', 'kist', 'married', 'incSpouse', 'incSpouseRet', 'allowanceUsed',
 ];
 
 /**

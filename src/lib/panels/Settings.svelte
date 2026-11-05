@@ -143,8 +143,14 @@
         <NumberField layout="row" label="Partner: zu versteuerndes Einkommen bis zu deinem Rentenbeginn" value={i.incSpouse} onchange={v => setInput('incSpouse', v)} min={0} step={1000} unit="€/Jahr" info="zve" testid="incSpouse"
           limits={LIMITS.incSpouse} effective={p.incSpouse} />
         <NumberField layout="row" label="… ab deinem Rentenbeginn" value={i.incSpouseRet} onchange={v => setInput('incSpouseRet', v)} min={0} step={1000} unit="€/Jahr" testid="incSpouseRet"
-          limits={LIMITS.incSpouseRet} effective={p.incSpouseRet} hint="Heutiges Geld, ohne die verglichenen Produkte. Gerechnet wird angenommen, dass der Partner keinen eigenen geförderten Vertrag und keine eigenen Kapitalerträge hat." />
+          limits={LIMITS.incSpouseRet} effective={p.incSpouseRet} hint="Heutiges Geld, ohne die verglichenen Produkte. Gerechnet wird angenommen, dass der Partner keinen eigenen geförderten Vertrag und keine eigenen Kapitalerträge außer dem unter „Andere Kapitalerträge“ eingetragenen Verbrauch hat." />
       {/if}
+    </div>
+    <div class="grp" role="group" aria-labelledby="s-cap">
+      <h3 id="s-cap">Andere Kapitalerträge</h3>
+      <NumberField id="f-allowanceUsed" layout="row" label="Sparer-Pauschbetrag schon genutzt" value={i.allowanceUsed} onchange={v => setInput('allowanceUsed', v)} min={0} max={i.married ? 2000 : 1000} step={100} unit="€/Jahr" info="sparerGenutzt" testid="allowanceUsed"
+        limits={LIMITS.allowanceUsed} effective={p.allowanceUsed}
+        hint={'Zinsen und Erträge außerhalb der verglichenen Produkte, z. B. Tagesgeld. Heutiges Geld; 0 = ganzer Pauschbetrag frei (1.000 €, zusammen veranlagt 2.000 €).' + (!i.married && p.allowanceUsed > 1000 ? ' Mehr als 1.000 € ledig: Pauschbetrag ganz verbraucht.' : '')} />
     </div>
     <div class="grp" role="group" aria-labelledby="s-kv">
       <h3 id="s-kv">Krankenversicherung</h3>
@@ -266,7 +272,7 @@
   </details>
   <details>
     <summary>Kapitalerträge</summary>
-    <p>Ein gemeinsamer Sparer-Pauschbetrag für Versicherungsleistung und alle Fondsdepots: zunächst Versicherung, dann zugeflossene Vorabpauschalen, danach Entnahmen/Umschichtungen. Vorabpauschalen gelten am ersten Werktag des Folgejahres als zugeflossen. Die jährliche Kapitalertrags-Günstigerprüfung vergleicht die gesamte Abgeltungsteuer mit dem persönlichen Tarif nach Sonderausgaben. Erstattungen zählen im selben Steuerjahr als verfügbares Geld ohne Wiederanlage, auch beim Ansparen. Diese Zahlungen vor Rentenbeginn gehen nicht in die Summe der Rentenauszahlungen ein. Nicht modellierte Kapitalerträge oder schon verbrauchte Freibeträge müssen gesondert betrachtet werden.</p>
+    <p>Ein gemeinsamer Sparer-Pauschbetrag für Versicherungsleistung und alle Fondsdepots: zunächst Versicherung, dann zugeflossene Vorabpauschalen, danach Entnahmen/Umschichtungen. Vorabpauschalen gelten am ersten Werktag des Folgejahres als zugeflossen. Die jährliche Kapitalertrags-Günstigerprüfung vergleicht die gesamte Abgeltungsteuer mit dem persönlichen Tarif nach Sonderausgaben. Erstattungen zählen im selben Steuerjahr als verfügbares Geld ohne Wiederanlage, auch beim Ansparen. Diese Zahlungen vor Rentenbeginn gehen nicht in die Summe der Rentenauszahlungen ein. Andere Kapitalerträge (z. B. Tagesgeld) gehen nur so weit ein, wie sie den Sparer-Pauschbetrag verbrauchen (unter „Andere Kapitalerträge“); der Betrag wächst mit der Inflation, der Pauschbetrag nicht. Die Erben haben ihren eigenen vollen Pauschbetrag.</p>
   </details>
   <details>
     <summary>Versicherung</summary>

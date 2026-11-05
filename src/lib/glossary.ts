@@ -24,7 +24,24 @@ export const GLOSSARY = {
     text: [
       'Steuerpflichtiges Einkommen im Ruhestand ohne die hier verglichenen Produkte, zum Beispiel gesetzliche Rente, Betriebsrente oder Mieteinnahmen. Bei Rentenbeginn ab 2058 ist die gesetzliche Rente voll steuerpflichtig.',
       'Dieser Wert ist das zu versteuernde Einkommen ohne die verglichenen Produkte. Beiträge zur Kranken- und Pflegeversicherung auf dieses bisherige Einkommen sind darin bereits abgezogen. Zusätzliche Beiträge auf die verglichenen Produkte zieht der Rechner gesondert ab. Betrag in heutigem Geld.',
-      'Die Renteninformation nennt eine Bruttorente, kein zu versteuerndes Einkommen. Sonstige KV-beitragspflichtige Bruttoeinnahmen werden unter Weitere Einstellungen getrennt eingegeben.',
+      'Die Renteninformation nennt eine Bruttorente, kein zu versteuerndes Einkommen. Unter dem Feld lässt es sich aus der Bruttorente berechnen („Einkommen im Alter aus der Bruttorente berechnen“). Sonstige KV-beitragspflichtige Bruttoeinnahmen werden unter Weitere Einstellungen getrennt eingegeben.',
+    ],
+  },
+  renteZve: {
+    title: 'Von der Bruttorente zum zu versteuernden Einkommen',
+    text: [
+      'Steuerpflichtig ist nur der Besteuerungsanteil der Rente; er hängt vom Jahr des Rentenbeginns ab: 2026 84 %, danach jedes Jahr 0,5 Prozentpunkte mehr, ab 2058 100 % (§ 22 Nr. 1 S. 3 Buchst. a Doppelbuchst. aa EStG). Der Rest ist der Rentenfreibetrag. Er bleibt für die ganze Rentenzeit in Euro gleich; Rentenerhöhungen sind voll steuerpflichtig.',
+      'Abgezogen werden 102 € Werbungskosten-Pauschbetrag (§ 9a S. 1 Nr. 3 EStG), 36 € Sonderausgaben-Pauschbetrag (§ 10c EStG) und die Kranken- und Pflegeversicherung auf die Rente (§ 10 Abs. 1 Nr. 3 EStG). Gesetzlich Versicherte tragen die Hälfte von 14,6 % und vom Zusatzbeitrag (§ 249a SGB V), die Pflegeversicherung allein (§ 59 Abs. 1 SGB XI).',
+      'In heutigem Geld wächst die Rente mit der Inflation. Feste Euro-Beträge (Freibetrag, Pauschbeträge) werden dadurch real kleiner, das zu versteuernde Einkommen steigt über die Rentenjahre. Vorgeschlagen wird der Durchschnitt bis zum Ende des Auszahlplans, auf 100 € gerundet.',
+      'Nicht berücksichtigt: tatsächliche Rentenerhöhungen über der Inflation, Abschläge oder Zuschläge bei einem Rentenbeginn vor oder nach der Regelaltersgrenze (die Renteninformation nennt die Rente zur Regelaltersgrenze), Steuerermäßigungen, Ehegattensplitting.',
+    ],
+  },
+  sparerGenutzt: {
+    title: 'Sparer-Pauschbetrag schon genutzt',
+    text: [
+      'Kapitalerträge bis 1.000 € im Jahr sind steuerfrei (§ 20 Abs. 9 EStG), aber nur einmal für alle Konten und Depots zusammen. Zinsen auf Tagesgeld, Dividenden oder Gewinne aus anderen Depots verbrauchen ihn zuerst; für die hier verglichenen Depots bleibt dann weniger.',
+      'Einzutragen ist, wie viel davon andere Kapitalerträge im Jahr verbrauchen (nach Teilfreistellung), höchstens 1.000 €; zusammen veranlagt gilt der gemeinsame Pauschbetrag von 2.000 €, dann bis 2.000 € für beide zusammen. Die Jahressteuerbescheinigung jeder Bank nennt den „in Anspruch genommenen Sparer-Pauschbetrag“; die Summe über alle Banken ist der Wert.',
+      'Betrag in heutigem Geld: Er wächst im Modell mit der Inflation, der Pauschbetrag bleibt nominal 1.000 €. Dadurch ist er später stärker verbraucht als heute. Gilt in Anspar- und Auszahlphase. Die Erben haben im Modell ihren eigenen vollen Pauschbetrag. Ist „Verheiratet, zusammen veranlagt“ eingeschaltet und erbt der Partner, gilt im Todesjahr der gemeinsame Pauschbetrag abzüglich des hier eingetragenen Betrags; ohne diesen Schalter rechnet auch ein erbender Ehepartner mit vollen 1.000 €, obwohl sein Pauschbetrag durch ein mitgeerbtes Tagesgeld in Wirklichkeit teilweise verbraucht sein kann.',
     ],
   },
   rendite: {
@@ -243,7 +260,7 @@ export const GLOSSARY = {
     title: 'Verheiratet, zusammen veranlagt',
     text: [
       'Ehepaare zahlen die Einkommensteuer gemeinsam auf beide Einkommen (Splittingtarif): Steuer auf die Hälfte, mal zwei. Verdient der Partner weniger, sinkt der Steuersatz, bei der Steuererstattung des Altersvorsorgedepots in der Ansparphase wie auf die Auszahlungen im Alter. Dazu gibt es 2.000 € Sparerpauschbetrag statt 1.000 € und eine doppelte Freigrenze beim Solidaritätszuschlag.',
-      'Gerechnet wird mit dem zu versteuernden Einkommen des Partners vor und ab deinem Rentenbeginn, in heutigem Geld. Angenommen: Der Partner hat keine eigenen Kapitalerträge und keinen eigenen geförderten Vertrag. Hat er einen, bekäme er unter Umständen selbst eine Zulage (als mittelbar Berechtigter bis 175 € im Jahr, ab 120 € eigenem Beitrag) und die Günstigerprüfung umfasst beide Verträge. Das ist nicht gerechnet.',
+      'Gerechnet wird mit dem zu versteuernden Einkommen des Partners vor und ab deinem Rentenbeginn, in heutigem Geld. Angenommen: Der Partner hat keine eigenen Kapitalerträge außer dem unter „Sparer-Pauschbetrag schon genutzt“ eingetragenen gemeinsamen Verbrauch und keinen eigenen geförderten Vertrag. Hat er einen, bekäme er unter Umständen selbst eine Zulage (als mittelbar Berechtigter bis 175 € im Jahr, ab 120 € eigenem Beitrag) und die Günstigerprüfung umfasst beide Verträge. Das ist nicht gerechnet.',
       'Die Krankenversicherung bleibt je Person. Andere Erben versteuern im Grundtarif mit ihrem eigenen Einkommen. Erbt der Partner, ist das Todesjahr noch gemeinsam veranlagt (Splitting, 2.000 €, mit seinem Einkommen); die spätere Steuer auf ein übernommenes Altersvorsorgedepot ist mit seinem Einkommen im Alter im Grundtarif geschätzt.',
     ],
   },

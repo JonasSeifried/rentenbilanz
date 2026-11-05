@@ -38,6 +38,7 @@ const LABELS: Readonly<Record<InputKey, readonly [string, string]>> = Object.fre
   kvGrossRet: ['Sonstige KV-Bruttoeinnahmen im Alter (−1 = wie Einkommen im Alter)', '€/Jahr'],
   payResidual: ['Auszahlung aller Depots als Restkapital ÷ Restjahre', ''], fundingDelay: ['AVD-Förderung ein Jahr später', ''],
   indexAllowance: ['Sparer-Pauschbetrag wächst mit der Inflation (hypothetisch)', ''],
+  allowanceUsed: ['Sparer-Pauschbetrag schon anderweitig genutzt (heutiges Geld)', '€/Jahr'],
   avdPayCost: ['AVD: Kosten in der Auszahlphase (−1 = wie Ansparphase)', '% p. a.'],
   etfPayTer: ['ETF: Kosten in der Auszahlphase (−1 = wie Ansparphase)', '% p. a.'],
   fondPayTer: ['Aktiver Fonds: Kosten in der Auszahlphase (−1 = wie Ansparphase)', '% p. a.'],
@@ -51,12 +52,15 @@ const limitsText = (p: Params) => [
   taxText(p),
   salaryText(p),
   'Abgeltungsteuer ' + (p.kist > 0 ? pct((1.055 + p.kist) / (4 + p.kist)) + ' % einschließlich Soli und Kirchensteuer (§ 32d Abs. 1 S. 4 EStG: 25 % ermäßigt auf e/(4 + k))' : '26,375 %') +
-    ', Teilfreistellung 30 % (Aktienfonds), Sparer-Pauschbetrag ' + (p.married ? '2.000 € (zusammen veranlagt; Partner ohne eigene Kapitalerträge angenommen) ' : '1.000 € ') +
-    (p.indexAllowance ? 'wächst mit der Inflation (hypothetisch, Schalter indexAllowance)' : 'nominal fest') + ', Vorabpauschale mit Zufluss im Folgejahr.',
+    ', Teilfreistellung 30 % (Aktienfonds), Sparer-Pauschbetrag ' + (p.married ? '2.000 € (zusammen veranlagt; Partner ohne eigene Kapitalerträge außer den unten genannten angenommen) ' : '1.000 € ') +
+    (p.indexAllowance ? 'wächst mit der Inflation (hypothetisch, Schalter indexAllowance)' : 'nominal fest') +
+    (p.allowanceUsed > 0 ? '; davon ' + n0(p.allowanceUsed) + ' €/Jahr (heutiges Geld, wächst mit der Inflation) schon durch andere Kapitalerträge genutzt, für die eigenen Depots bleibt nominal ' + (p.married ? '2.000 €' : '1.000 €') + (p.indexAllowance ? ' × Inflationsfaktor' : '') + ' minus dieser Betrag, mindestens 0. Die Erben haben ihren eigenen vollen Pauschbetrag' + (p.married ? '; erbt der Partner, gilt im Todesjahr der gemeinsame Betrag abzüglich des genutzten' : '') : '') +
+    ', Vorabpauschale mit Zufluss im Folgejahr.',
   'Jahresmodell: Beiträge monatlich, Entnahmen jährlich am Jahresanfang; offene Depots ' +
     (p.payResidual ? 'zahlen Restkapital ÷ Restjahre aus.' : 'zahlen eine nominal konstante Annuität aus, das AVD Restkapital ÷ Restjahre.'),
   p.shift ? 'Alle Produkte schichten vor Rentenbeginn um: ab 5 Jahre vorher 50 %, ab 2 Jahren 30 % Aktien, Rest mit safeRate.' : 'Keine Umschichtung vor Rentenbeginn.',
-  'Nicht berücksichtigt: Erbschaftsteuer, Ordergebühren und Spreads, Betriebsrente, andere Kapitalerträge außerhalb der verglichenen Produkte.',
+  'Nicht berücksichtigt: Erbschaftsteuer, Ordergebühren und Spreads, Betriebsrente (auch mit Arbeitgeberzuschuss), ' +
+    (p.allowanceUsed > 0 ? 'andere Kapitalerträge außerhalb der verglichenen Produkte (nur ihr Verbrauch des Sparer-Pauschbetrags).' : 'andere Kapitalerträge außerhalb der verglichenen Produkte (Sparer-Pauschbetrag voll frei angenommen).'),
 ];
 
 /** Steuertarif und Steuerprofil in Worten (Kirchensteuer, Zusammenveranlagung), passend zu assess() in combo.ts. */

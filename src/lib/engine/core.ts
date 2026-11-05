@@ -69,6 +69,8 @@ export interface Params {
   kvOn: boolean; kvRate: number;
   /** −1: wie incRet (auch in Szenarien, die incRet ändern); sonst eigene KV-Bruttobasis. */
   kvGrossRet: number; payResidual: boolean; fundingDelay: boolean; indexAllowance: boolean;
+  /** Sparer-Pauschbetrag, der schon anderweitig genutzt wird (€/Jahr, heutiges Geld, 0 … 2.000; verheiratet vom gemeinsamen Pauschbetrag). Neu, nicht im Original; 0 = bisheriges Verhalten. */
+  allowanceUsed: number;
   /** -1: Kosten der Ansparphase weiterverwenden, sonst separater Satz. */
   avdPayCost: number; etfPayTer: number; fondPayTer: number;
   g: number; gPay: number; infl: number; dyn: number; basis: number;
@@ -111,6 +113,7 @@ export function readParams(inp: Inputs): Params {
     a0: clamp(Math.round(num('a0')), 16, 60), studyEnd: Math.round(num('studyEnd')), incStudy: Math.max(0, num('incStudy')), eligStudy: chk('eligStudy'),
     incWork: Math.max(0, num('incWork')), incPeak: inp.incPeak == null || num('incPeak') < 0 ? -1 : num('incPeak'), incPeakAge: inp.incPeakAge == null ? 45 : clamp(Math.round(num('incPeakAge')), 16, 100), incRet: Math.max(0, num('incRet')), R: clamp(Math.round(num('R')), 65, 70), H: Math.round(num('H')),
     kvGrossRet: num('kvGrossRet') < 0 ? -1 : num('kvGrossRet'), payResidual: chk('payResidual'), fundingDelay: chk('fundingDelay'), indexAllowance: chk('indexAllowance'),
+    allowanceUsed: clamp(num('allowanceUsed'), 0, 2000), // bis 2.000 € (zusammen veranlagt); combo.ts kappt auf den Pauschbetrag
     avdPayCost: num('avdPayCost') < 0 ? -1 : pct('avdPayCost', 0, 10),
     etfPayTer: num('etfPayTer') < 0 ? -1 : pct('etfPayTer', 0, 10),
     fondPayTer: num('fondPayTer') < 0 ? -1 : pct('fondPayTer', 0, 10),

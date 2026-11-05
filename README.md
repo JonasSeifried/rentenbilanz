@@ -34,6 +34,7 @@ Für die Browser-Tests einmalig: `npx playwright install chromium webkit`.
 | `src/lib/engine/` | Eine Rechen-Engine für Einzelprodukte und Kombi (`combo.ts`; ein Einzelprodukt ist eine Kombi mit einem Teil), Auswertung (`analyze.ts`), Tarif, Konstanten und Eingaben (`core.ts`, `inputs.ts`). `engine.ts` ist der unveränderte Port des Originals und nur noch Referenz für die Tests. |
 | `src/lib/link.ts`, `storage.ts`, `state.svelte.ts` | Link-Format, Speichern im Browser, App-Zustand |
 | `src/lib/glossary.ts` | Erklärtexte zu Fachbegriffen |
+| `src/lib/pensionTax.ts` | Hilfsrechnung Bruttorente → zu versteuerndes Einkommen im Alter (nur Oberfläche, Besteuerungsanteil § 22 EStG, Pauschbeträge, KV/PV des Rentners) |
 | `src/lib/rechenweg.ts` | „Rechenweg kopieren“: Eingaben, Modellgrenzen, Ergebnisse und Jahreswerte als Markdown zum Nachrechnen (auch durch eine KI) |
 | `src/lib/panels/`, `src/lib/components/` | Oberfläche (Svelte 5) |
 | `impressum.html`, `datenschutz.html` | Rechtliche Seiten |
@@ -55,7 +56,8 @@ Die Rechnung nutzt Werte, die sich jedes Jahr ändern. Nach jeder Änderung: `np
 - [ ] **Kirchensteuer und Splitting:** Kirchensteuersätze (8 % BY/BW, 9 % sonst; Auswahl in `Settings.svelte`, Glossar `kirchensteuer`), Abgeltungsformel § 32d Abs. 1 (`ABG` in `combo.ts`, Prozentangaben in Glossar `abgeltung` und Annahmen), Sonderausgaben-Pauschbetrag 36/72 € (§ 10c), Soli-Freigrenze bei Splitting (40.700 €, `assess` in `combo.ts`), gemeinsamer Sparer-Pauschbetrag 2.000 € (`SPB`), mittelbare Zulage § 79 S. 2 (offen, `docs/kirchensteuer-splitting.md`).
 - [ ] **Beitragsbemessungsgrenze KV/PV** (`KV_BBG` in `core.ts`), **Versicherungspflichtgrenze** und **Zusatzbeitrag/Pflegesatz** (Standard `kvRate`, Texte `kvFreiwillig`/`kvRate` im Glossar).
 - [ ] **Altersvorsorgedepot:** Zulagen, Höchstbeträge, Bonus, Auszahlregeln gegen das aktuelle Gesetz/BMF-Schreiben prüfen; Hinweis zum Start (`avdStart`) entfällt ab 2027 automatisch. Standarddepot: Umschichtungsanteile (`AVD_STD_GLIDE` in `core.ts`, § 1 Abs. 1c Nr. 5 AltZertG; gelten mit dem Schalter „Umschichtung vor Rentenbeginn“ für alle Produkte) und Kostendeckel (§ 2a Abs. 2) mit Glossar (`standarddepot`, `umschichtung`, `avdKosten`) und `src/lib/prosCons.ts` abgleichen. Teilfreistellung (§ 20 InvStG, 30 % Aktienfonds, 0 % sicherer Teil) in `combo.ts` prüfen.
-- [ ] **„Was die Zahlen nicht zeigen“** (`src/lib/prosCons.ts`): Rechtsaussagen mit Fundstelle (§ 12 SGB II, § 93 EStG, AltZertG) gegen den aktuellen Stand prüfen.
+- [ ] **„Was die Zahlen nicht zeigen“** (`src/lib/prosCons.ts`): Rechtsaussagen mit Fundstelle (§ 12 SGB II, § 93 EStG, AltZertG; Betriebsrente: § 1a BetrAVG, § 3 Nr. 63 EStG, SvEV, §§ 226/248/250 SGB V) gegen den aktuellen Stand prüfen.
+- [ ] **Hilfsrechnung Bruttorente** (`src/lib/pensionTax.ts`): PV-Satz, Ø-Zusatzbeitrag (`ZUSATZ_AVG`), Besteuerungsanteil-Tabelle (§ 22 EStG) prüfen.
 - [ ] Änderungen an der Rechnung bewusst machen: Golden-Tests vergleichen mit `legacy/index.html` (Korrekturen aus), `tests/fixes.test.ts` und `tests/combo*.test.ts` prüfen die aktuelle Rechnung. Abweichungen von der ersten Fassung in `docs/korrekturen.md` dokumentieren.
 - [ ] Standardwerte ändern sich nur in `DEFAULTS`; die Link-Basis in `link.ts` nie ändern (sonst neue `LINK_VERSION`).
 

@@ -250,8 +250,12 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   const kvRoom = (t: number) => Math.max(0, (KV_BBG - (F.grossKV ? kvGross(p) : p.incRet)) * I(t));
   const kvAdd = (addNom: number, t: number) => p.kvOn && addNom > 0 ? p.kvRate * Math.min(addNom, kvRoom(t)) : 0;
   const kvLump = (addNom: number, t: number) => p.kvOn && addNom > 0 ? p.kvRate * Math.min(addNom, 10 * kvRoom(t)) : 0;
-  const allowance = (t: number) => SPB * (p.indexAllowance ? I(t) : 1);
-  const heirAllowance = (t: number) => 1000 * (p.indexAllowance ? I(t) : 1); // Erben: eigener Pauschbetrag
+  // Sparer-Pauschbetrag (§ 20 Abs. 9 EStG) des eigenen Haushalts (verheiratet 2.000 €); allowanceUsed (heutiges Geld)
+  // ist anderweitig verbraucht (bei Paaren: vom gemeinsamen Betrag). Die Erben haben ihren eigenen Pauschbetrag
+  // (heirAllowance), unabhängig davon; erbt der Partner, gilt im Todesjahr der gemeinsame Betrag (allowance).
+  const heirAllowance = (t: number) => 1000 * (p.indexAllowance ? I(t) : 1);
+  const allowanceFull = (t: number) => SPB * (p.indexAllowance ? I(t) : 1);
+  const allowance = (t: number) => p.allowanceUsed > 0 ? Math.max(0, allowanceFull(t) - p.allowanceUsed * I(t)) : allowanceFull(t);
   const saDed = new Array<number>(T).fill(0), saZ = new Array<number>(T).fill(0);
   // E4: § 10a prüft die tarifliche ESt, danach § 2 Abs. 6 EStG / § 3 Abs. 2 SolZG.
   // Nominale ESt separat benötigt; core.ts und seine historische Rechnung bleiben unverändert.
@@ -599,7 +603,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     if (F.gp || F.nextVP || p.indexAllowance) {
       const l = liquidation(fs, idx, income, own); return l.value - l.tax;
     }
-    const spb = own ? SPB : 1000;
+    const spb = own ? allowance(idx) : 1000; // ohne indexAllowance: SPB abzüglich allowanceUsed
     if (fs.length === 1) { const V = fs[0].vals[idx], B = fs[0].bases[idx], tf = fs[0].tf; return V - Math.max(0, (V - B) * tf - spb) * ABG; }
     let V = 0, G = 0, X = 0, mixed = false;
     for (const f of fs) { const g = f.vals[idx] - f.bases[idx]; V += f.vals[idx]; G += g; X += g * f.tf; if (f.tf !== 0.7) mixed = true; }
