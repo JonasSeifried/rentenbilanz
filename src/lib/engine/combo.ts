@@ -204,7 +204,10 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   const kvRoom = (t: number) => Math.max(0, (KV_BBG - (F.grossKV ? kvGross(p) : p.incRet)) * I(t));
   const kvAdd = (addNom: number, t: number) => p.kvOn && addNom > 0 ? p.kvRate * Math.min(addNom, kvRoom(t)) : 0;
   const kvLump = (addNom: number, t: number) => p.kvOn && addNom > 0 ? p.kvRate * Math.min(addNom, 10 * kvRoom(t)) : 0;
-  const allowance = (t: number) => 1000 * (p.indexAllowance ? I(t) : 1);
+  // Sparer-Pauschbetrag (§ 20 Abs. 9 EStG) der Person; allowanceUsed (heutiges Geld) ist anderweitig verbraucht.
+  // Die Erben haben ihren eigenen Pauschbetrag (heirAllowance), unabhängig davon.
+  const heirAllowance = (t: number) => 1000 * (p.indexAllowance ? I(t) : 1);
+  const allowance = (t: number) => p.allowanceUsed > 0 ? Math.max(0, heirAllowance(t) - p.allowanceUsed * I(t)) : heirAllowance(t);
   const saDed = new Array<number>(T).fill(0), saZ = new Array<number>(T).fill(0);
   // E4: § 10a prüft die tarifliche ESt, danach § 2 Abs. 6 EStG / § 3 Abs. 2 SolZG.
   // Nominale ESt separat benötigt; core.ts und seine historische Rechnung bleiben unverändert.
@@ -511,7 +514,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     return { vals: sum(a.vals, b.vals), bases: sum(a.bases, b.bases), net: sum(a.net, b.net), abg: sum(a.abg, b.abg), kvInline: sum(a.kvInline, b.kvInline), own: a.own + b.own, ownReal: a.ownReal + b.ownReal, members: [a, b] };
   };
   /** Verkauf aller Fonds der Liste zum Zeitpunkt idx mit einem Sparer-Pauschbetrag; Gewinne je Teilfreistellung. */
-  const liquidation = (fs: readonly Fund[], idx: number, income = p.incHeir, X = 0, free = allowance(idx), otherCapital = 0) => {
+  const liquidation = (fs: readonly Fund[], idx: number, income = p.incHeir, X = 0, free = heirAllowance(idx), otherCapital = 0) => {
     let value = 0, gain = 0;
     for (const f of fs) {
       const pending = F.nextVP ? f.pendingAt[idx] : 0;
@@ -538,14 +541,15 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     const jointTariff = taxNom(base + jointCapital, idx) - taxNom(base, idx);
     return { value, tax: Math.min(jointFlat, jointTariff) - priorTax };
   };
-  const sellFunds = (fs: readonly Fund[], idx: number, income = p.incHeir) => {
+  // free: Pauschbetrag des Verkäufers (Standard: Erben; eigener Verkauf bei Rentenbeginn mit allowance(n)).
+  const sellFunds = (fs: readonly Fund[], idx: number, income = p.incHeir, free = heirAllowance(idx)) => {
     if (F.gp || F.nextVP || p.indexAllowance) {
-      const l = liquidation(fs, idx, income); return l.value - l.tax;
+      const l = liquidation(fs, idx, income, 0, free); return l.value - l.tax;
     }
-    if (fs.length === 1) { const V = fs[0].vals[idx], B = fs[0].bases[idx], tf = fs[0].tf; return V - Math.max(0, (V - B) * tf - 1000) * 0.26375; }
+    if (fs.length === 1) { const V = fs[0].vals[idx], B = fs[0].bases[idx], tf = fs[0].tf; return V - Math.max(0, (V - B) * tf - free) * 0.26375; }
     let V = 0, G = 0, X = 0, mixed = false;
     for (const f of fs) { const g = f.vals[idx] - f.bases[idx]; V += f.vals[idx]; G += g; X += g * f.tf; if (f.tf !== 0.7) mixed = true; }
-    return V - Math.max(0, (mixed ? X : G * 0.7) - 1000) * 0.26375; // nur Aktienfonds: wie bisher G · 0,7
+    return V - Math.max(0, (mixed ? X : G * 0.7) - free) * 0.26375; // nur Aktienfonds: wie bisher G · 0,7
   };
   const sellNet = (d: Depot, idx: number) => sellFunds(d.members, idx);
 
@@ -553,7 +557,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   const parts: ComboResult['parts'] = {};
   const fundNote = 'Nach Steuer bei Verkauf. Behalten die Erben, übernehmen sie den Gewinn steuerlich.';
   const fundPart = (k: ProductKey, f: Depot): ComboPart => ({
-    key: k, vals: f.vals, net: f.net, own: f.own, ownReal: f.ownReal, capR: f.vals[n], capNet: sellFunds(f.members, n, p.incRet), cost: 0,
+    key: k, vals: f.vals, net: f.net, own: f.own, ownReal: f.ownReal, capR: f.vals[n], capNet: sellFunds(f.members, n, p.incRet, allowance(n)), cost: 0,
     foerder: 0, foerderReal: 0, payEnd: p.H, lumpNet: 0, incTax: zero(), abgTax: f.abg, kv: f.kvInline, taxBase: zero(),
     heir: idx => ({ val: sellNet(f, idx), note: fundNote }),
   });
@@ -577,7 +581,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       own: (avd.own + avd.ownU) + side.own, ownReal: (avd.ownReal + avd.ownUReal) + side.ownReal, sideOwn: side.own, sideOwnReal: side.ownReal,
       ...(F.unsub ? { unsubOwn: avd.ownU, unsubOwnReal: avd.ownUReal } : {}),
       capR: (avd.vals[n] + Vu) + side.vals[n], capAVD: avd.vals[n] + Vu, sideR: side.vals[n],
-      capNet: (avd.vals[n] + Vu) - latentTax(avd.vals[n] + gU, n) + sellFunds(side.members, n, p.incRet),
+      capNet: (avd.vals[n] + Vu) - latentTax(avd.vals[n] + gU, n) + sellFunds(side.members, n, p.incRet, allowance(n)),
       zul: avd.zul, zulReal: avd.zulReal, ref: avd.ref, refReal: avd.refReal,
       foerder: avd.zul + avd.ref, foerderReal: avd.zulReal + avd.refReal, cost: 0, payEnd: p.H, noElig: avd.noElig, lumpNet,
       incTax: taxAvd, abgTax: side.abg, kv: aKv, taxBase: avd.tb,
@@ -727,8 +731,8 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     const fs = capDepots.flatMap(d => d.members);
     const otherCapital = ins && !ins.halb ? Math.max(0, capitalInsGain - capitalInsFree) : 0;
     const l = liquidation(fs, n, p.incRet, capitalInsIncome, Math.max(0, allowance(n) - capitalInsFree), otherCapital);
-    const joint = F.insAllowance ? l.value - l.tax : sellFunds(fs, n, p.incRet);
-    capNet += joint - capDepots.reduce((a, d) => a + sellFunds(d.members, n, p.incRet), 0);
+    const joint = F.insAllowance ? l.value - l.tax : sellFunds(fs, n, p.incRet, allowance(n));
+    capNet += joint - capDepots.reduce((a, d) => a + sellFunds(d.members, n, p.incRet, allowance(n)), 0);
   }
   // ---------- 8) Erbfall gemeinsam (docs/kombi-modus.md, Abschnitt „Erbfall“) ----------
   // Tod zu Beginn von Jahr idx; die Erben (eine Person, Einkommen p.incHeir) bekommen alles im selben Jahr.

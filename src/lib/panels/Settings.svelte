@@ -118,6 +118,12 @@
       {/if}
       <Switch checked={i.bonus} onchange={v => setInput('bonus', v)} label="Berufseinsteigerbonus 200 € (unter 25)" info="bonus" />
     </div>
+    <div class="grp" role="group" aria-labelledby="s-cap">
+      <h3 id="s-cap">Andere Kapitalerträge</h3>
+      <NumberField id="f-allowanceUsed" layout="row" label="Sparer-Pauschbetrag schon genutzt" value={i.allowanceUsed} onchange={v => setInput('allowanceUsed', v)} min={0} max={1000} step={100} unit="€/Jahr" info="sparerGenutzt" testid="allowanceUsed"
+        limits={LIMITS.allowanceUsed} effective={p.allowanceUsed}
+        hint="Zinsen und Erträge außerhalb der verglichenen Produkte, z. B. Tagesgeld. Heutiges Geld; 0 = ganzer Pauschbetrag (1.000 €) frei." />
+    </div>
     <div class="grp" role="group" aria-labelledby="s-kv">
       <h3 id="s-kv">Krankenversicherung</h3>
       <NumberField id="f-kvGrossRet" layout="row" label="Sonstige KV-beitragspflichtige Bruttoeinnahmen im Alter" value={i.kvGrossRet} onchange={v => setInput('kvGrossRet', v)} min={-1} step={1000} unit="€/Jahr" limits={LIMITS.kvGrossRet} effective={kvGross(p)}
@@ -238,7 +244,7 @@
   </details>
   <details>
     <summary>Kapitalerträge</summary>
-    <p>Ein gemeinsamer Sparer-Pauschbetrag für Versicherungsleistung und alle Fondsdepots: zunächst Versicherung, dann zugeflossene Vorabpauschalen, danach Entnahmen/Umschichtungen. Vorabpauschalen gelten am ersten Werktag des Folgejahres als zugeflossen. Die jährliche Kapitalertrags-Günstigerprüfung vergleicht die gesamte Abgeltungsteuer mit dem persönlichen Tarif nach Sonderausgaben. Erstattungen zählen im selben Steuerjahr als verfügbares Geld ohne Wiederanlage, auch beim Ansparen. Diese Zahlungen vor Rentenbeginn gehen nicht in die Summe der Rentenauszahlungen ein. Nicht modellierte Kapitalerträge oder schon verbrauchte Freibeträge müssen gesondert betrachtet werden.</p>
+    <p>Ein gemeinsamer Sparer-Pauschbetrag für Versicherungsleistung und alle Fondsdepots: zunächst Versicherung, dann zugeflossene Vorabpauschalen, danach Entnahmen/Umschichtungen. Vorabpauschalen gelten am ersten Werktag des Folgejahres als zugeflossen. Die jährliche Kapitalertrags-Günstigerprüfung vergleicht die gesamte Abgeltungsteuer mit dem persönlichen Tarif nach Sonderausgaben. Erstattungen zählen im selben Steuerjahr als verfügbares Geld ohne Wiederanlage, auch beim Ansparen. Diese Zahlungen vor Rentenbeginn gehen nicht in die Summe der Rentenauszahlungen ein. Andere Kapitalerträge (z. B. Tagesgeld) gehen nur so weit ein, wie sie den Sparer-Pauschbetrag verbrauchen (unter „Andere Kapitalerträge“); der Betrag wächst mit der Inflation, der Pauschbetrag nicht. Die Erben haben ihren eigenen vollen Pauschbetrag.</p>
   </details>
   <details>
     <summary>Versicherung</summary>

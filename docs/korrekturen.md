@@ -640,3 +640,34 @@ mit dem Standard 0,9 % also auf etwa 1 % genau, überschätzt aber das Guthaben 
 Jahr 5 +12 %, Jahr 10 +26 %, Jahr 20 +14 %, Jahr 27 +9 %), weil die Kosten dort überwiegend am Beitrag hängen.
 Ein Modell „Kosten am Beitrag“ ist erst sinnvoll, wenn es an weiteren Tarifen (Nettotarif, kurze Laufzeit,
 ohne Dynamik) geprüft ist.
+
+### Eingabe „Sparer-Pauschbetrag schon genutzt“ (`allowanceUsed`)
+
+Keine Korrektur des Originals, sondern eine neue Eingabe (Standard 0 ⇒ bitgleich, Test `tests/allowance-used.test.ts`).
+Der Sparer-Pauschbetrag von 1.000 € gilt je Person einmal für alle Kapitalerträge (§ 20 Abs. 9 EStG,
+https://www.gesetze-im-internet.de/estg/__20.html). Bisher stand er voll den verglichenen Produkten zu. Wer schon
+Tagesgeldzinsen oder Erträge aus anderen Depots hat, trägt den dafür verbrauchten Betrag ein (€/Jahr, 0 … 1.000).
+
+- Rechnung (nur `combo.ts`): eigener Pauschbetrag je Jahr `max(0, 1.000 € [× I(t) bei indexAllowance] − allowanceUsed × I(t))`.
+  Der Betrag ist wie alle Eingaben in heutigem Geld und wächst mit der Inflation, der Pauschbetrag bleibt nominal fest.
+  Bei 2 % Inflation sind 500 € heute nach 35 Jahren rund 1.000 € nominal, der Pauschbetrag ist dann ganz verbraucht.
+- Gilt überall, wo die Person selbst Kapitalerträge hat: Vorabpauschale und Umschichtung in der Ansparphase,
+  Entnahmen, Versicherungsleistung (R7), Kapital nach Steuer bei Rentenbeginn. In der Günstigerprüfung (R3) ist das
+  exakt: Die anderen Erträge liegen ganz im Pauschbetrag (Obergrenze 1.000 €), also gilt
+  `andere + eigene − 1.000 = eigene − (1.000 − andere)` auch im Tarif (§ 32d Abs. 6 EStG).
+- **Erbfall nicht betroffen:** Verkaufen die Erben, nutzen sie ihren eigenen Pauschbetrag; ihre sonstigen
+  Kapitalerträge sind unbekannt. Gerechnet wird dort wie bisher mit vollen 1.000 €.
+- Nicht modelliert: andere Kapitalerträge über 1.000 € (sie würden in der Günstigerprüfung mit im Tarif stehen),
+  Verluste aus anderen Depots.
+
+Wirkung cumH (heutige Kaufkraft), ETF / AVD / Versicherung, bei 0 / 250 / 500 / 1.000 € genutzt:
+
+| Fall | 0 € | 250 € | 500 € | 1.000 € |
+|---|---|---|---|---|
+| Default | 153.289 / 174.856 / 127.694 | 148.561 / 173.397 / 126.121 | 144.153 / 172.030 / 125.576 | 140.356 / 171.141 / 125.576 |
+| DK (KV 21,7 %) | 140.356 / 139.932 / 104.650 | 135.946 / 138.479 / 103.137 | 131.895 / 137.194 / 102.623 | 128.445 / 136.384 / 102.623 |
+| High | 330.246 / 310.722 / 263.311 | 325.475 / 308.985 / 261.680 | 321.046 / 307.100 / 260.741 | 317.295 / 305.755 / 260.741 |
+
+Das ETF-Depot verliert bis 8 % (Default −12.933 €), das AVD nur über sein Nebendepot (−2 %). Im DK-Fall kippt die
+knappe Rangfolge schon bei 250 € von ETF (424 € vorne) zum AVD (2.533 € vorne). Die Versicherung ist ab 500 € gleich,
+weil der Betrag bis zum Auszahljahr über 1.000 € nominal gewachsen ist.

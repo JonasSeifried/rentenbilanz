@@ -27,6 +27,14 @@ export const GLOSSARY = {
       'Die Renteninformation nennt eine Bruttorente, kein zu versteuerndes Einkommen. Sonstige KV-beitragspflichtige Bruttoeinnahmen werden unter Weitere Einstellungen getrennt eingegeben.',
     ],
   },
+  sparerGenutzt: {
+    title: 'Sparer-Pauschbetrag schon genutzt',
+    text: [
+      'Kapitalerträge bis 1.000 € im Jahr sind steuerfrei (§ 20 Abs. 9 EStG), aber nur einmal für alle Konten und Depots zusammen. Zinsen auf Tagesgeld, Dividenden oder Gewinne aus anderen Depots verbrauchen ihn zuerst; für die hier verglichenen Depots bleibt dann weniger.',
+      'Einzutragen ist, wie viel davon andere Kapitalerträge im Jahr verbrauchen (nach Teilfreistellung), höchstens 1.000 €. Die Jahressteuerbescheinigung jeder Bank nennt den „in Anspruch genommenen Sparer-Pauschbetrag“; die Summe über alle Banken ist der Wert.',
+      'Betrag in heutigem Geld: Er wächst im Modell mit der Inflation, der Pauschbetrag bleibt nominal 1.000 €. Dadurch ist er später stärker verbraucht als heute. Gilt in Anspar- und Auszahlphase; die Erben haben ihren eigenen Pauschbetrag.',
+    ],
+  },
   rendite: {
     title: 'Rendite',
     text: [

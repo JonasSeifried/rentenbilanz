@@ -35,6 +35,8 @@ const BASES: Record<string, Inputs & { avdStd: boolean; avdSafe: number }> = {
     avdPayCost: -1, etfPayTer: -1, fondPayTer: -1,
     // Später angehängt: Gehaltsentwicklung aus (bisheriges Verhalten: Gehalt bleibt konstant).
     incPeak: -1, incPeakAge: 45,
+    // Später angehängt: ganzer Sparer-Pauschbetrag frei (bisheriges Verhalten).
+    allowanceUsed: 0,
   },
 };
 /** Die eingefrorene Basis von Version 1 (Tests und Speicher-Migration). */
