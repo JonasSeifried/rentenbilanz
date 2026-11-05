@@ -106,7 +106,13 @@
       await navigator.clipboard.writeText(text);
       showToast('Rechenweg kopiert: Eingaben, Annahmen und Jahreswerte als Text, zum Nachrechnen oder Einfügen in eine KI.');
     } catch {
-      showToast('Kopieren hat nicht geklappt. Bitte erneut versuchen.');
+      // Ohne Zwischenablage (z. B. verweigert oder unsicherer Kontext): als Datei speichern.
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([text], { type: 'text/markdown;charset=utf-8' }));
+      a.download = 'rechenweg.md';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      showToast('Kopieren ging nicht, der Rechenweg wurde als Datei rechenweg.md gespeichert.');
     }
   }
   async function share() {

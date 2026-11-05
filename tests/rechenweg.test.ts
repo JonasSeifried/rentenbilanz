@@ -14,7 +14,7 @@ describe('Rechenweg', () => {
     const md = rechenweg(DEFAULTS, analyze(readParams(DEFAULTS)), 'https://x/#s', new Date(2026, 10, 5));
     for (const k of INPUT_KEYS) expect(md).toContain(`| ${k} |`);
     expect(md).toContain('Szenario-Link: https://x/#s');
-    expect(md).toContain('| a0 | Alter heute | 22 | Jahre |');
+    expect(md).toContain('| a0 | Alter heute | 22 |  | Jahre |');
   });
 
   it('Jahreswerte passen zur Engine (ohne Rendite und Kosten: Vermögen = Summe der Beiträge)', () => {
@@ -34,5 +34,30 @@ describe('Rechenweg', () => {
     const md = rechenweg(inp, A, '');
     expect(md).toContain('### Deine Kombi');
     expect(row(md, 'Deine Kombi', 0)[2]).toBe('1.800');
+  });
+});
+
+describe('Rechenweg nach Review', () => {
+  it('zeigt den gerechneten Wert, wenn die Engine eine Eingabe begrenzt', () => {
+    const inp = { ...DEFAULTS, R: 72, H: 80 };
+    const md = rechenweg(inp, analyze(readParams(inp)), '');
+    expect(md).toContain('| R | Rentenbeginn | 72 | 70 | Alter |');
+    expect(md).toContain('| H | Auszahlplan bis | 80 | 85 | Alter |');
+    expect(md).toContain('| g | Rendite vor Kosten, Ansparphase | 6 |  | % p. a. |');
+  });
+
+  it('Kombi: letzte Zeile hat ein Vermögen, Aufteilung wird genannt', () => {
+    const inp = { ...DEFAULTS, combo: true, cEtf: 100, cAvd: 100 };
+    const A = analyze(readParams(inp), undefined, { etf: 75, avd: 75, ins: 0, fond: 0 });
+    const md = rechenweg(inp, A, '');
+    expect(row(md, 'Deine Kombi', A.T - 1)[3]).not.toBe('–');
+    expect(md).toContain('ETF 75 €, AVD 75 €');
+  });
+
+  it('Modellgrenzen folgen den Schaltern, keine „-0“', () => {
+    const inp = { ...DEFAULTS, indexAllowance: true };
+    const md = rechenweg(inp, analyze(readParams(inp)), '');
+    expect(md).toContain('wächst mit der Inflation (hypothetisch');
+    expect(md).not.toMatch(/\| -0 \|/);
   });
 });

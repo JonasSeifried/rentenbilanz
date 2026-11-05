@@ -1,7 +1,8 @@
 // Rechenweg als Markdown: Eingaben, Modellgrenzen, Ergebnisse und Jahreswerte je Teilnehmer. Gedacht zum Nachrechnen
 // durch Menschen oder eine KI (einzelne Jahre prüfen statt das Endergebnis „auf Sicht“ beurteilen).
 // Reine Funktion, liest nur, was die Engine ohnehin liefert; keine eigene Rechnung außer dem Beitrag laut Eingabe.
-import type { Inputs, InputKey } from './engine/inputs';
+import { INPUT_KEYS, type Inputs, type InputKey } from './engine/inputs';
+import type { Params, ProductKey } from './engine/core';
 import { AMOUNT, type Analysis, type ContenderKey } from './engine/analyze';
 import { splitSum } from './engine/combo';
 import { SITE } from './site';
@@ -40,20 +41,37 @@ const LABELS: Readonly<Record<InputKey, readonly [string, string]>> = Object.fre
   combo: ['Kombi im Vergleich', ''], cEtf: ['Kombi: ETF', '€/Monat'], cAvd: ['Kombi: AVD', '€/Monat'], cIns: ['Kombi: Versicherung', '€/Monat'], cFond: ['Kombi: aktiver Fonds', '€/Monat'],
 });
 
-/** Modellgrenzen, die man beim Nachprüfen kennen muss (Stand wie unter „Weitere Einstellungen“). */
-const LIMITS_TEXT = [
+/** Modellgrenzen, die man beim Nachprüfen kennen muss (Stand wie unter „Weitere Einstellungen“), passend zu den Schaltern. */
+const limitsText = (p: Params) => [
   'Konstante Rendite jedes Jahr, keine Schwankungen und kein Sequenzrisiko.',
   'Einkommensteuer Tarif 2026 (§ 32a EStG), Grundtarif ledig, mit Solidaritätszuschlag; Tarifgrenzen wachsen mit der Inflation. Keine Kirchensteuer, kein Ehegattensplitting.',
   'Das Einkommen im Beruf bleibt real gleich (keine Gehaltsentwicklung), abgesehen von einer Ausbildungsphase.',
-  'Abgeltungsteuer 26,375 %, Teilfreistellung 30 % (Aktienfonds), Sparer-Pauschbetrag 1.000 € nominal, Vorabpauschale mit Zufluss im Folgejahr.',
-  'Jahresmodell: Beiträge monatlich, Entnahmen jährlich am Jahresanfang.',
+  'Abgeltungsteuer 26,375 %, Teilfreistellung 30 % (Aktienfonds), Sparer-Pauschbetrag 1.000 € ' +
+    (p.indexAllowance ? 'wächst mit der Inflation (hypothetisch, Schalter indexAllowance)' : 'nominal fest') + ', Vorabpauschale mit Zufluss im Folgejahr.',
+  'Jahresmodell: Beiträge monatlich, Entnahmen jährlich am Jahresanfang; offene Depots ' +
+    (p.payResidual ? 'zahlen Restkapital ÷ Restjahre aus.' : 'zahlen eine nominal konstante Annuität aus, das AVD Restkapital ÷ Restjahre.'),
+  p.shift ? 'Alle Produkte schichten vor Rentenbeginn um: ab 5 Jahre vorher 50 %, ab 2 Jahren 30 % Aktien, Rest mit safeRate.' : 'Keine Umschichtung vor Rentenbeginn.',
   'Nicht berücksichtigt: Erbschaftsteuer, Ordergebühren und Spreads, Betriebsrente, andere Kapitalerträge außerhalb der verglichenen Produkte.',
 ];
 
 const pct = (x: number) => String(+(x * 100).toFixed(4)).replace('.', ',');
-const n0 = (x: number) => Math.round(x).toLocaleString('de-DE');
+const n0 = (x: number) => isFinite(x) ? (Math.round(x) + 0).toLocaleString('de-DE') : '–';
+const n2 = (x: number) => x.toLocaleString('de-DE', { maximumFractionDigits: 2 });
 const n4 = (x: number) => x.toLocaleString('de-DE', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
 const fmtVal = (v: Inputs[InputKey]) => typeof v === 'boolean' ? (v ? 'ja' : 'nein') : String(v).replace('.', ',');
+
+/** Eingaben, die als Prozent eingegeben und in Params als Anteil geführt werden. */
+const PCT = new Set<string>(['g', 'gPay', 'infl', 'dyn', 'basis', 'etfTer', 'avdCost', 'insEff', 'fondAA', 'fondTer', 'kvRate', 'safeRate', 'avdPayCost', 'etfPayTer', 'fondPayTer']);
+
+/** Wert, mit dem die Engine tatsächlich rechnet (nach Grenzen und Rundung in readParams), in der Einheit der Eingabe; null = nicht in Params. */
+function effective(p: Params, key: InputKey): number | boolean | null {
+  const on: Partial<Record<InputKey, ProductKey>> = { etfOn: 'etf', avdOn: 'avd', insOn: 'ins', fondOn: 'fond' };
+  if (on[key]) return p.on[on[key]!];
+  if (!(key in p)) return null;
+  const v = (p as unknown as Record<string, number | boolean>)[key];
+  if (typeof v !== 'number' || !PCT.has(key) || v < 0) return v;
+  return +(v * 100).toFixed(6);
+}
 
 interface Row { own: number; ownReal: number; capR: number; foerder: number; vals: (number | null)[]; net: number[]; incTax: number[]; abgTax: number[]; kv: number[] }
 
@@ -62,7 +80,14 @@ function rowsOf(A: Analysis, k: ContenderKey): { name: string; monthly: number; 
   if (!pr) return null;
   if (k === 'kombi') {
     const kr = A.res.kombi!;
-    return { name: pr.name, monthly: splitSum(kr.split), r: { ...kr, incTax: kr.combo.incTax, abgTax: kr.combo.abgTax, kv: kr.combo.kv } };
+    // kombiResult.vals hat nur T Einträge; hier wie bei den Teilen T + 1 (Index t + 1 = Ende von Jahr t).
+    const parts = Object.values(kr.combo.parts);
+    const vals = Array.from({ length: A.T + 1 }, (_, i) => {
+      let v: number | null = null;
+      for (const r of parts) { const x = r.vals[i]; if (x != null) v = (v ?? 0) + x; }
+      return v;
+    });
+    return { name: pr.name, monthly: splitSum(kr.split), r: { ...kr, vals, incTax: kr.combo.incTax, abgTax: kr.combo.abgTax, kv: kr.combo.kv } };
   }
   const r = A.res[k]!;
   return { name: pr.name, monthly: A.p[AMOUNT[k]], r };
@@ -79,13 +104,21 @@ export function rechenweg(inputs: Inputs, A: Analysis, url: string, today = new 
   out.push('Modellrechnung, keine Anlage-, Steuer- oder Rechtsberatung. Zum Prüfen eignen sich einzelne Jahre der Tabellen unten:',
     'Beitrag, Vermögen, Netto-Auszahlung und die Abzüge eines Jahres lassen sich mit den Eingaben und den Modellgrenzen nachrechnen.', '');
 
-  out.push('## Eingaben', '', '| Schlüssel | Bedeutung | Wert | Einheit |', '|---|---|---:|---|');
-  for (const key of Object.keys(LABELS) as InputKey[]) {
+  out.push('## Eingaben', '', '„Gerechnet“ ist der Wert nach den Grenzen der Engine (z. B. Rentenbeginn 65–70, Auszahlplan bis 85–100); leer = wie eingegeben.', '',
+    '| Schlüssel | Bedeutung | Eingabe | Gerechnet | Einheit |', '|---|---|---:|---:|---|');
+  for (const key of INPUT_KEYS) {
     const [label, unit] = LABELS[key];
-    out.push(`| ${key} | ${label} | ${fmtVal(inputs[key])} | ${unit} |`);
+    const eff = effective(p, key), raw = inputs[key];
+    const differs = eff != null && (typeof eff === 'boolean' ? eff !== raw : Math.abs(eff - Number(raw)) > 1e-9);
+    out.push(`| ${key} | ${label} | ${fmtVal(raw)} | ${differs ? fmtVal(eff!) : ''} | ${unit} |`);
   }
   out.push('');
-  out.push('## Modellgrenzen', '', ...LIMITS_TEXT.map(x => '- ' + x), '');
+  if (A.res.kombi) {
+    const sp = A.res.kombi.split;
+    out.push(`Die Kombi wird mit dieser Aufteilung gerechnet (auf den Monatsbeitrag ${n2(splitSum(sp))} € skaliert): ` +
+      `ETF ${n2(sp.etf)} €, AVD ${n2(sp.avd)} €, Versicherung ${n2(sp.ins)} €, aktiver Fonds ${n2(sp.fond)} € im Monat.`, '');
+  }
+  out.push('## Modellgrenzen', '', ...limitsText(p).map(x => '- ' + x), '');
 
   out.push('## Ergebnis', '');
   out.push(`Zeitraum für den Vergleich: Rentenbeginn mit ${p.R} bis zum Ende des Auszahlplans mit ${p.H} (${tH - n} Jahre). ` +
@@ -99,7 +132,7 @@ export function rechenweg(inputs: Inputs, A: Analysis, url: string, today = new 
   out.push('', `Ø Monat, Summe bis H und Einmalauszahlung in der Anzeige-Einheit (${p.real ? 'heutige Kaufkraft' : 'nominal'}); Rangfolge immer nach heutiger Kaufkraft.`, '');
 
   out.push('## Jahreswerte', '');
-  out.push('Alle Beträge nominal in €. „Jahr“ zählt ab heute (Jahr 0 = erstes Sparjahr). Beitrag = Monatsbeitrag laut Eingabe × 12 × (1 + Dynamik)^Jahr bis vor Rentenbeginn.',
+  out.push('Alle Beträge nominal in €. „Jahr“ zählt ab heute (Jahr 0 = erstes Sparjahr). Beitrag = eigener Beitrag (Monatsbeitrag × 12 × (1 + Dynamik)^Jahr bis vor Rentenbeginn), ohne Zulagen und Steuererstattungen.',
     '„Vermögen“ = Stand am Jahresende vor Steuern bei Verkauf; beim AVD mit Zulagen, ungefördertem Teil und dem Nebendepot der angelegten Steuererstattungen. „Netto“ = Auszahlung im Jahr nach allen Abzügen (vor Rentenbeginn: Erstattungen, die ausgezahlt werden).',
     'ESt = zusätzliche Einkommensteuer auf das Produkt (negativ = Entlastung), Abgeltung = Kapitalertragsteuer nach Günstigerprüfung, KV = zusätzliche KV/PV-Beiträge. Inflationsfaktor = (1 + Inflation)^Jahr.', '');
   for (const pr of A.active) {
