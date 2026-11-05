@@ -44,7 +44,7 @@ werden mit dem Einkommen des jeweiligen Jahres gerechnet, wie bisher mit dem kon
 
 ## Szenariozeile
 
-Unter „Was die Empfehlung kippen würde“ (nur außerhalb des Originalpfads, wie `shift`):
+Unter „Wann sich die Abstände umkehren“ (Szenario-Tabelle) (nur außerhalb des Originalpfads, wie `shift`):
 
 - ohne Gehaltsentwicklung: **„Gehalt steigt bis 45 real um 30 %“** (`suggestedPath` in `core.ts`: Ziel auf 100 € gerundet,
   erreicht frühestens mit 45 und mindestens 10 Jahre nach Berufsbeginn; derselbe Vorschlag wie beim Einschalten in den
