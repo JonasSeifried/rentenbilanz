@@ -50,6 +50,23 @@ export function isFlip(base: Analysis, s: Analysis): boolean {
   return false;
 }
 
+/**
+ * Platzierung je Teilnehmer in einer Rechnung (1 = höchste Summe netto bis H in heutiger Kaufkraft, dieselbe Größe wie
+ * bei `isFlip`). Liegt ein Wert weniger als TIE_EUR unter dem nächsthöheren, teilt er dessen Platz (1, 1, 3).
+ * Ohne fairen Vergleich: leer.
+ */
+export function ranks(a: Analysis): Partial<Record<ContenderKey, number>> {
+  if (!a.canRank) return {};
+  const ks = a.active.map(pr => pr.key).filter(k => !!a.stats[k]);
+  const v = (k: ContenderKey) => a.stats[k]!.cumHReal;
+  const sorted = [...ks].sort((x, y) => v(y) - v(x));
+  const out: Partial<Record<ContenderKey, number>> = {};
+  sorted.forEach((k, i) => {
+    out[k] = i > 0 && v(sorted[i - 1]) - v(k) <= TIE_EUR ? out[sorted[i - 1]]! : i + 1;
+  });
+  return out;
+}
+
 export function robustness(flips: number, total: number): Robustness {
   if (flips <= 0 || total <= 0) return 0;
   return flips * 3 >= total ? 2 : 1;

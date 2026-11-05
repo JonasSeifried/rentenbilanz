@@ -6,7 +6,7 @@ import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
 import { analyze, scenarios, single, PRODUCTS } from '../src/lib/engine/analyze';
 import { emptySplit } from '../src/lib/engine/combo';
 import { costBreakEven, costBreakEvens, COST_TOL, MAX_COST } from '../src/lib/engine/breakEven';
-import { breakEvenText, robustText, verdict } from '../src/lib/verdict';
+import { breakEvenText, ranks, robustText, verdict, TIE_EUR } from '../src/lib/verdict';
 import { rechenweg } from '../src/lib/rechenweg';
 import { faqs } from '../src/lib/prosCons';
 import { GLOSSARY } from '../src/lib/glossary';
@@ -151,5 +151,30 @@ describe('Kosten-Gleichstand des aktiven Fonds mit Umschichtung', () => {
     expect(breakEvenText(A, b!)).toContain('Aktienteil; der sichere Teil nach der Umschichtung mit ETF-Kosten');
     const B = analyze(P({ fondOn: true }));
     expect(breakEvenText(B, costBreakEven(B, 'fond')!)).not.toContain('Aktienteil');
+  });
+});
+
+describe('Reihenfolge je Szenario-Zeile (ranks)', () => {
+  it('ordnet nach Summe bis H in heutiger Kaufkraft, passend zu isFlip', () => {
+    for (const patch of [{}, { fondOn: true }, { real: false }, { incWork: 70000 }] as Partial<Inputs>[]) {
+      const A = analyze(P(patch)), r = ranks(A);
+      const ks = A.active.map(pr => pr.key);
+      expect(Object.keys(r).sort()).toEqual([...ks].sort());
+      for (const x of ks) for (const y of ks) {
+        const d = A.stats[x]!.cumHReal - A.stats[y]!.cumHReal;
+        if (d > TIE_EUR) expect(r[x]!).toBeLessThan(r[y]!);
+      }
+      expect(Math.min(...Object.values(r) as number[])).toBe(1);
+    }
+  });
+  it('Gleichstand unter 1 € teilt den Platz, danach wird weitergezählt (1, 1, 3)', () => {
+    const A = analyze(P());
+    const [a, b, c] = A.active.map(pr => pr.key);
+    const st = (v: number) => ({ ...A.stats[a]!, cumHReal: v });
+    const T = { ...A, stats: { ...A.stats, [a]: st(1000), [b]: st(999.5), [c]: st(500) } };
+    expect(ranks(T)).toEqual({ [a]: 1, [b]: 1, [c]: 3 });
+  });
+  it('ohne fairen Vergleich keine Reihenfolge', () => {
+    expect(ranks(analyze(P({ avdM: 100 })))).toEqual({});
   });
 });

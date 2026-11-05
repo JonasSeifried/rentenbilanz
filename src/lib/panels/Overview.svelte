@@ -5,7 +5,7 @@
   import { eur, eurRound } from '../format';
   import { SITE } from '../site';
   import { rechenweg } from '../rechenweg';
-  import { breakEvenText, isFlip, legendName, robustText, tileName, tileSub, verdict } from '../verdict';
+  import { breakEvenText, isFlip, legendName, ranks, robustText, tileName, tileSub, verdict } from '../verdict';
   import { costBreakEvens } from '../engine/breakEven';
   import { app, focusField, openKombi, setInputs, setTab, shareUrl, showToast } from '../state.svelte';
   import Icon from '../components/Icon.svelte';
@@ -74,15 +74,16 @@
   // --- Szenarien ---
   const ADJUST: Partial<Record<ScenarioId, string>> = { avdCost: 'f-avdCost', insCost: 'f-insEff' };
   const SHORT: Record<string, string> = { etf: 'ETF', avd: 'AVD', ins: 'Vers.', fond: 'Fonds', kombi: 'Kombi' };
-  interface Row { id: ScenarioId | 'base'; label: string; a: Analysis; base: boolean; can: boolean; flip: boolean; unfair: boolean }
+  interface Row { id: ScenarioId | 'base'; label: string; a: Analysis; base: boolean; can: boolean; flip: boolean; unfair: boolean; rank: Partial<Record<ProductKey | 'kombi', number>> }
   const scenRows = $derived.by<Row[]>(() => {
-    const base: Row = { id: 'base', label: 'Eingaben wie oben', a: A, base: true, can: A.canRank, flip: false, unfair: false };
+    const base: Row = { id: 'base', label: 'Eingaben wie oben', a: A, base: true, can: A.canRank, flip: false, unfair: false, rank: ranks(A) };
     return [base, ...scen.map(s => {
       const can = A.canRank && s.a.canRank;
       return {
         id: s.id, label: s.label, a: s.a, base: false, can,
         flip: can && isFlip(A, s.a),
         unfair: !s.a.canRank && s.a.refundSpent,
+        rank: can ? ranks(s.a) : {},
       };
     })];
   });
@@ -194,8 +195,11 @@
 
 <AssumptionCheck />
 
+{#snippet rk(r: number)}<span class="rk" class:r1={r === 1}><span class="sr-only">, Platz </span>{r}</span>{/snippet}
+
 {#snippet scenTable()}
-  <p class="hint">Jede Zeile ändert genau eine Annahme. Gezeigt wird Ø netto pro Monat bis zum Ende des Auszahlplans. {#if A.canRank}<span class="flipkey">Gelb</span>: Dann kehrt sich mindestens ein Abstand um, ein anderes Produkt zahlt mehr aus als oben.{/if}</p>
+  <p class="hint">Jede Zeile ändert genau eine Annahme. Gezeigt wird Ø netto pro Monat bis zum Ende des Auszahlplans. {#if A.canRank}<span class="flipkey">Gelb</span>: Dann kehrt sich mindestens ein Abstand um, ein anderes Produkt zahlt mehr aus als oben.
+    Die Zahl im Kreis ist die Reihenfolge in der Zeile: <span class="rk r1" aria-hidden="true">1</span> und fett = höchste Summe netto bis {p.H} in heutiger Kaufkraft, gleiche Zahl = weniger als 1 € Unterschied.{/if}</p>
   {#if !A.canRank}<p class="hint">Solange der Vergleich oben nicht fair ist, wird hier nichts markiert.</p>{/if}
   <div class="table-scroll scen-desk" {@attach scrollRegion('Tabelle: Wann sich die Abstände umkehren')}>
     <table class="scen" data-testid="scenarios">
@@ -210,7 +214,8 @@
               {#if s.id !== 'base' && ADJUST[s.id]}<button type="button" class="linkish adj noprint" onclick={() => focusField('settings', ADJUST[s.id as ScenarioId]!)} aria-label="Kosten anpassen: {s.label}">anpassen</button>{/if}</td>
             {#each A.active as pr}
               {@const v = s.a.stats[pr.key]}
-              <td data-label={pr.short}>{v ? eur(v.avgMonthly) : '–'}</td>
+              {@const r = s.rank[pr.key]}
+              <td data-label={pr.short} class:top={r === 1}>{v ? eur(v.avgMonthly) : '–'}{#if v && r}{@render rk(r)}{/if}</td>
             {/each}
           </tr>
         {/each}
@@ -224,7 +229,7 @@
         <span class="m-label">{#if s.base}<strong>{s.label}</strong>{:else}{s.label}{/if}{#if s.flip}<span class="sr-only"> (ein Abstand kehrt sich um)</span>{/if}</span>
         {#if s.unfair}<span class="m-chip muted">nicht fair vergleichbar</span>{/if}
       </div>
-      <div class="m-vals">{A.active.map(pr => SHORT[pr.key] + ' ' + (s.a.stats[pr.key] ? eur(s.a.stats[pr.key]!.avgMonthly) : '–')).join(' · ')}
+      <div class="m-vals">{#each A.active as pr, j}{@const v = s.a.stats[pr.key]}{@const r = s.rank[pr.key]}{#if j > 0}{' · '}{/if}<span class="m-v" class:top={r === 1}>{SHORT[pr.key]} {v ? eur(v.avgMonthly) : '–'}{#if v && r}{@render rk(r)}{/if}</span>{/each}
         {#if s.id !== 'base' && ADJUST[s.id]}<button type="button" class="linkish adj" onclick={() => focusField('settings', ADJUST[s.id as ScenarioId]!)} aria-label="Kosten anpassen: {s.label}">anpassen</button>{/if}</div>
     </li>
   {/snippet}
@@ -315,6 +320,15 @@
   .scen tr.flip td { background: var(--flip-bg); }
   .scen tr.base td { background: var(--surface-2); }
   .scen th:first-child, .scen td:first-child { padding-left: 8px; }
+  /* Reihenfolge je Zeile: Zahl im Kreis, Platz 1 fett und gefüllt */
+  .scen td.top, .m-v.top { font-weight: 700; color: var(--text); }
+  .rk {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 1.35em; height: 1.35em;
+    margin-left: 5px; padding: 0 3px; border-radius: 999px; border: 1px solid var(--border);
+    font-size: .68rem; font-weight: 600; line-height: 1; color: var(--text-2); vertical-align: 1px;
+    font-variant-numeric: tabular-nums; box-sizing: border-box;
+  }
+  .rk.r1 { background: var(--accent); border-color: var(--accent); color: var(--on-accent, #fff); }
   .adj { margin-left: 8px; font-size: .8rem; }
   .small { font-size: .8rem; }
   .collapsed summary { cursor: pointer; color: var(--text-2); font-size: .9rem; padding: 2px 0 6px; }
