@@ -127,8 +127,8 @@ export const GLOSSARY = {
   abgeltung: {
     title: 'Abgeltungsteuer, Teilfreistellung, Sparerpauschbetrag',
     text: [
-      'Gewinne aus Fonds werden pauschal mit 25 % plus Solidaritätszuschlag besteuert, zusammen 26,375 % (ohne Kirchensteuer).',
-      'Bei Aktienfonds sind 30 % der Erträge steuerfrei (Teilfreistellung). Dazu sind 1.000 € Kapitalerträge pro Jahr steuerfrei (Sparerpauschbetrag), im Rechner je Produkt.',
+      'Gewinne aus Fonds werden pauschal mit 25 % plus Solidaritätszuschlag besteuert, zusammen 26,375 %. Mit Kirchensteuer sinkt die 25-%-Steuer etwas, dafür kommt die Kirchensteuer dazu: zusammen 27,995 % bei 9 % und 27,819 % bei 8 % (§ 32d Abs. 1 EStG).',
+      'Bei Aktienfonds sind 30 % der Erträge steuerfrei (Teilfreistellung). Dazu sind 1.000 € Kapitalerträge pro Jahr steuerfrei (Sparerpauschbetrag; zusammen veranlagte Ehepaare 2.000 €), im Rechner je Produkt.',
     ],
   },
   ter: {
@@ -211,7 +211,7 @@ export const GLOSSARY = {
     title: 'Umschichtung vor Rentenbeginn',
     text: [
       'Eingeschaltet schichten alle Produkte wie das Standarddepot um: ab 5 Jahre vor Rentenbeginn 50 %, ab 2 Jahren 30 % in Aktien, der Rest in einer sicheren Anlage mit der angegebenen Rendite (§ 1 Abs. 1c Nr. 5 AltZertG). Neue Beiträge werden ebenso aufgeteilt; zu Beginn jedes Jahres wird auf diese Anteile zurückgesetzt. Ab Rentenbeginn rechnen alle Produkte mit der Rendite in der Auszahlphase, die Aufteilung bleibt.',
-      'Altersvorsorgedepot und Versicherung schichten innerhalb des Vertrags um, ohne Steuer. ETF-Depot, aktiver Fonds und das AVD-Nebendepot verkaufen dafür Anteile: Der Gewinn wird mit Abgeltungsteuer versteuert, 30 % sind frei (Teilfreistellung für Aktienfonds), der Sparer-Pauschbetrag von 1.000 € gilt im Jahr für alle Depots zusammen. Der sichere Teil liegt in einem Anleihe- oder Geldmarkt-ETF ohne Teilfreistellung; seine Vorabpauschale und Gewinne sind voll steuerpflichtig, bei freiwillig Versicherten auch voll beitragspflichtig.',
+      'Altersvorsorgedepot und Versicherung schichten innerhalb des Vertrags um, ohne Steuer. ETF-Depot, aktiver Fonds und das AVD-Nebendepot verkaufen dafür Anteile: Der Gewinn wird mit Abgeltungsteuer versteuert, 30 % sind frei (Teilfreistellung für Aktienfonds), der Sparer-Pauschbetrag von 1.000 € (zusammen veranlagt 2.000 €) gilt im Jahr für alle Depots zusammen. Der sichere Teil liegt in einem Anleihe- oder Geldmarkt-ETF ohne Teilfreistellung; seine Vorabpauschale und Gewinne sind voll steuerpflichtig, bei freiwillig Versicherten auch voll beitragspflichtig.',
       'Vereinfacht: Der Gewinn je Verkauf ist anteilig nach den durchschnittlichen Anschaffungskosten gerechnet. Gesetzlich gelten die zuerst gekauften Anteile als zuerst verkauft; dann fällt die Steuer etwas früher an, bei Standardwerten macht das unter 1 % der Summe aus. Verluste beim Umschichten werden nicht verrechnet, die Steuer ist dann eher zu hoch.',
     ],
   },
@@ -219,7 +219,7 @@ export const GLOSSARY = {
     title: 'Erbfall bei einer Kombi',
     text: [
       'Die Erben bekommen alle Teile zusammen und versteuern sie gemeinsam: AVD-Erträge, der Gewinn des ungeförderten AVD-Teils und die erste Restrente der Versicherung zählen im Todesjahr in einem Steuertarif. Das kann mehr Steuer kosten als bei jedem Teil für sich.',
-      'Die Depots (ETF, aktiver Fonds, AVD-Nebendepot) übernehmen die Erben mit den ursprünglichen Anschaffungskosten (§ 20 Abs. 4 S. 6 EStG, § 19 Abs. 1 InvStG). Gerechnet ist ein Verkauf im Todesjahr mit einem Sparer-Pauschbetrag von 1.000 € für alle Depots zusammen. Gerechnet ist eine Person als Erbe; mehrere Erben hätten jeder einen eigenen Tarif und Pauschbetrag.',
+      'Die Depots (ETF, aktiver Fonds, AVD-Nebendepot) übernehmen die Erben mit den ursprünglichen Anschaffungskosten (§ 20 Abs. 4 S. 6 EStG, § 19 Abs. 1 InvStG). Gerechnet ist ein Verkauf im Todesjahr mit einem Sparer-Pauschbetrag von 1.000 € für alle Depots zusammen (erbt der zusammen veranlagte Ehepartner: 2.000 € und Splittingtarif im Todesjahr). Gerechnet ist eine Person als Erbe; mehrere Erben hätten jeder einen eigenen Tarif und Pauschbetrag.',
       'Die Versicherung zahlt vor Rentenbeginn das Fondsguthaben aus, ohne Einkommensteuer (§ 20 Abs. 1 Nr. 6 EStG erfasst nur den Erlebensfall und den Rückkauf).',
     ],
   },
@@ -230,6 +230,22 @@ export const GLOSSARY = {
   incHeir: {
     title: 'Einkommen der Erben',
     text: ['Zu versteuerndes Einkommen der Erben im Todesjahr, in heutigem Geld. Danach richtet sich der Steuersatz auf AVD-Erträge und Restrenten sowie die gemeinsame Günstigerprüfung beim Depotverkauf. Standard: 38.000 €.'],
+  },
+  kirchensteuer: {
+    title: 'Kirchensteuer',
+    text: [
+      '8 % der Einkommensteuer in Bayern und Baden-Württemberg, 9 % in den übrigen Ländern. Sie fällt auf alles an, was der Einkommensteuer unterliegt: Auszahlungen aus Altersvorsorgedepot und Versicherung, Kapitalerträge und Vorabpauschale.',
+      'Die gezahlte Kirchensteuer ist eine Sonderausgabe und senkt die Einkommensteuer etwas (über 36 € im Jahr, Ehepaare 72 €). Das ist gerechnet; das eingegebene zu versteuernde Einkommen gilt vor diesem Abzug. Lohnt sich beim Altersvorsorgedepot der Sonderausgabenabzug, sinkt die Kirchensteuer um den Satz mal der Steuerersparnis über der Zulage.',
+      'Nicht gerechnet: die Kappung auf einen Höchstsatz des Einkommens (auf Antrag, nur bei hohen Einkommen), Kinderfreibeträge in der Bemessung und das Kirchgeld, wenn nur ein Ehepartner Mitglied ist. Bei Verheirateten gilt der Satz für beide. Erben zahlen im Rechner denselben Satz.',
+    ],
+  },
+  splitting: {
+    title: 'Verheiratet, zusammen veranlagt',
+    text: [
+      'Ehepaare zahlen die Einkommensteuer gemeinsam auf beide Einkommen (Splittingtarif): Steuer auf die Hälfte, mal zwei. Verdient der Partner weniger, sinkt der Steuersatz, bei der Steuererstattung des Altersvorsorgedepots in der Ansparphase wie auf die Auszahlungen im Alter. Dazu gibt es 2.000 € Sparerpauschbetrag statt 1.000 € und eine doppelte Freigrenze beim Solidaritätszuschlag.',
+      'Gerechnet wird mit dem zu versteuernden Einkommen des Partners vor und ab deinem Rentenbeginn, in heutigem Geld. Angenommen: Der Partner hat keine eigenen Kapitalerträge und keinen eigenen geförderten Vertrag. Hat er einen, bekäme er unter Umständen selbst eine Zulage (als mittelbar Berechtigter bis 175 € im Jahr, ab 120 € eigenem Beitrag) und die Günstigerprüfung umfasst beide Verträge. Das ist nicht gerechnet.',
+      'Die Krankenversicherung bleibt je Person. Andere Erben versteuern im Grundtarif mit ihrem eigenen Einkommen. Erbt der Partner, ist das Todesjahr noch gemeinsam veranlagt (Splitting, 2.000 €, mit seinem Einkommen); die spätere Steuer auf ein übernommenes Altersvorsorgedepot ist mit seinem Einkommen im Alter im Grundtarif geschätzt.',
+    ],
   },
   erbschaftsteuer: {
     title: 'Erbschaftsteuer',

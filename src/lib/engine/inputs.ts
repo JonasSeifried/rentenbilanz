@@ -11,6 +11,8 @@ export interface Inputs {
   H: number; gPay: number; einmal: boolean; insLump: boolean; rf: number; gz: number;
   // Erbfall
   deathAge: number; heirHalf: boolean; incHeir: number;
+  // Steuerprofil: Kirchensteuersatz in % (0 = keine) und Zusammenveranlagung mit dem Einkommen des Partners
+  kist: number; married: boolean; incSpouse: number; incSpouseRet: number;
   // Weitere Einstellungen
   studyEnd: number; incStudy: number; eligStudy: boolean; kvRate: number;
   infl: number; dyn: number; basis: number;
@@ -56,6 +58,9 @@ export const RETIRED_KEYS: Readonly<Record<string, InputKey>> = Object.freeze({ 
  *   Ersetzt avdStd/avdSafe (nur AVD); alte Links und Speicherstände werden übernommen (link.ts, storage.ts).
  * - incPeak/incPeakAge = Gehaltsentwicklung: Zielgehalt (zu versteuern, heutiges Geld) ab diesem Alter, dazwischen
  *   konstantes reales Wachstum ab Berufsbeginn (incomeAt in core.ts). −1 = aus, das Gehalt bleibt incWork. Standard aus.
+ * - kist = Kirchensteuersatz in % (0 keine, 8 Bayern/Baden-Württemberg, 9 übrige Länder). Standard 0.
+ * - married = zusammen veranlagt (Splitting, 2.000 € Sparer-Pauschbetrag); incSpouse/incSpouseRet = zu versteuerndes
+ *   Einkommen des Partners vor/ab Rentenbeginn (heutiges Geld). Standard ledig.
  * studyEnd = 16 heißt „keine Ausbildungsphase“ (die Engine klemmt auf das Alter heute).
  */
 export const DEFAULTS: Readonly<Inputs> = Object.freeze({
@@ -64,6 +69,7 @@ export const DEFAULTS: Readonly<Inputs> = Object.freeze({
   etfOn: true, avdOn: true, insOn: true, fondOn: false,
   H: 90, gPay: 4, einmal: false, insLump: true, rf: 30, gz: 10,
   deathAge: 50, heirHalf: false, incHeir: 38000,
+  kist: 0, married: false, incSpouse: 38000, incSpouseRet: 20000,
   studyEnd: 16, incStudy: 12000, eligStudy: true, kvRate: 21.1,
   infl: 2, dyn: 0, basis: 3.2,
   etfM: 150, etfTer: 0.2,
@@ -84,7 +90,7 @@ export const CONTRIB_KEYS = ['etfM', 'avdM', 'insM', 'fondM'] as const;
 
 export const COMBO_KEYS = ['combo', 'cEtf', 'cAvd', 'cIns', 'cFond'] as const;
 /** Schlüssel, die es im Original (legacy/index.html) als Eingabefeld gibt; nur diese gehen in den Golden-Test. */
-const NEW_KEYS: ReadonlySet<string> = new Set(['kvGrossRet', 'payResidual', 'fundingDelay', 'indexAllowance', 'avdPayCost', 'etfPayTer', 'fondPayTer', 'incHeir', 'incPeak', 'incPeakAge', 'kvKind', 'shift', 'safeRate', ...COMBO_KEYS]);
+const NEW_KEYS: ReadonlySet<string> = new Set(['kvGrossRet', 'payResidual', 'fundingDelay', 'indexAllowance', 'avdPayCost', 'etfPayTer', 'fondPayTer', 'incHeir', 'incPeak', 'incPeakAge', 'kist', 'married', 'incSpouse', 'incSpouseRet', 'kvKind', 'shift', 'safeRate', ...COMBO_KEYS]);
 export const LEGACY_KEYS: readonly InputKey[] = INPUT_KEYS.filter(k => !NEW_KEYS.has(k));
 
 export type NumericKey = { [K in InputKey]: Inputs[K] extends number ? K : never }[InputKey];
@@ -97,7 +103,7 @@ export const NUMERIC_KEYS = INPUT_KEYS.filter(k => typeof DEFAULTS[k] === 'numbe
 export const LIMITS: Readonly<Record<NumericKey, readonly [number, number]>> = Object.freeze({
   a0: [0, 150], R: [0, 150], H: [0, 150], deathAge: [0, 150], studyEnd: [0, 150], kidsFrom: [0, 150],
   kvGrossRet: [-1, 1e8], incPeak: [-1, 1e8], incPeakAge: [0, 150], avdPayCost: [-1, 10], etfPayTer: [-1, 10], fondPayTer: [-1, 10],
-  incWork: [0, 1e8], incRet: [0, 1e8], incStudy: [0, 1e8], incHeir: [0, 1e8],
+  incWork: [0, 1e8], incRet: [0, 1e8], incStudy: [0, 1e8], incHeir: [0, 1e8], incSpouse: [0, 1e8], incSpouseRet: [0, 1e8], kist: [0, 10],
   setAll: [0, 1e6], etfM: [0, 1e6], avdM: [0, 1e6], insM: [0, 1e6], fondM: [0, 1e6],
   cEtf: [0, 1e6], cAvd: [0, 1e6], cIns: [0, 1e6], cFond: [0, 1e6],
   g: [-100, 100], gPay: [-100, 100], infl: [-100, 100], dyn: [-100, 100],

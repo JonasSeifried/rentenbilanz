@@ -82,6 +82,16 @@ export interface Params {
   deathAge: number; heirHalf: boolean;
   /** Zu versteuerndes Einkommen der Erben (heutiges Geld). Nur mit Fix heirTax wirksam. */
   incHeir: number;
+  /**
+   * Kirchensteuersatz als Anteil (0 = keine, 0,08 Bayern/Baden-Württemberg, 0,09 übrige Länder). Neu, nicht im Original.
+   * Wirkt auf ESt-Veranlagung (§ 51a EStG), Abgeltungsteuer (§ 32d Abs. 1 S. 3–5) und Sonderausgabenabzug (§ 10 Abs. 1 Nr. 4).
+   */
+  kist: number;
+  /**
+   * Zusammenveranlagung (§§ 26, 26b, 32a Abs. 5 EStG). incSpouse/incSpouseRet: zu versteuerndes Einkommen des Partners
+   * (heutiges Geld) vor bzw. ab Rentenbeginn der Person. Neu, nicht im Original; aus = Grundtarif wie bisher.
+   */
+  married: boolean; incSpouse: number; incSpouseRet: number;
   real: boolean;
   on: Record<ProductKey, boolean>;
 }
@@ -113,6 +123,9 @@ export function readParams(inp: Inputs): Params {
     insM: Math.max(0, num('insM')), insEff: pct('insEff', 0, 10), rf: Math.max(0, num('rf')), gz: clamp(Math.round(num('gz')), 0, 40), insLump: chk('insLump'),
     fondM: Math.max(0, num('fondM')), fondAA: pct('fondAA', 0, 20), fondTer: pct('fondTer', 0, 10),
     deathAge: Math.round(num('deathAge')), heirHalf: chk('heirHalf'), incHeir: Math.max(0, num('incHeir')),
+    // Fehlen (Eingaben des Originals) ⇒ keine Kirchensteuer, ledig.
+    kist: inp.kist == null ? 0 : pct('kist', 0, 10), married: chk('married'),
+    incSpouse: Math.max(0, num('incSpouse')), incSpouseRet: Math.max(0, num('incSpouseRet')),
     real: chk('real'),
     on: { etf: chk('etfOn'), avd: chk('avdOn'), ins: chk('insOn'), fond: chk('fondOn') }
   };

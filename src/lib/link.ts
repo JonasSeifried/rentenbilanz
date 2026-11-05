@@ -35,6 +35,8 @@ const BASES: Record<string, Inputs & { avdStd: boolean; avdSafe: number }> = {
     avdPayCost: -1, etfPayTer: -1, fondPayTer: -1,
     // Später angehängt: Gehaltsentwicklung aus (bisheriges Verhalten: Gehalt bleibt konstant).
     incPeak: -1, incPeakAge: 45,
+    // Später angehängt: keine Kirchensteuer, ledig (bisheriges Verhalten: Grundtarif ohne Kirchensteuer).
+    kist: 0, married: false, incSpouse: 38000, incSpouseRet: 20000,
   },
 };
 /** Die eingefrorene Basis von Version 1 (Tests und Speicher-Migration). */

@@ -44,6 +44,11 @@
       value: pathValue(), changed: i.incPeak >= 0,
     });
     out.push({
+      key: 'tax', label: 'Steuer', tab: 'settings', id: 'f-married',
+      value: (i.married ? 'verheiratet' : 'ledig') + ', ' + (i.kist > 0 ? 'Kirchensteuer ' + de(i.kist) + ' %' : 'keine Kirchensteuer'),
+      changed: i.married !== DEFAULTS.married || i.kist !== DEFAULTS.kist,
+    });
+    out.push({
       key: 'kv', label: 'Krankenversicherung im Alter', tab: app.tab, id: 'f-kv',
       value: KV_KINDS[kv].long + (kv === 1 ? ', ' + de(i.kvRate) + ' %' : ''),
       changed: kv !== 0,
