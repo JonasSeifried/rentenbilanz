@@ -165,6 +165,8 @@ interface Fund {
   pending: number; pendingAt: number[];
   vals: number[]; bases: number[]; net: number[]; abg: number[]; kvInline: number[];
   pay: boolean; W: number; gain: number; rm: number; vp: number; payY: number; dedY: number; kvBase: number;
+  /** Nebendepot: noch nicht gedeckte negative Erstattung (Mehrsteuer durch die gemeinsame Günstigerprüfung mit Partner-Vertrag). */
+  owed: number;
 }
 
 export function combo(p: Params, split: Split, opts: ComboOptions = {}): ComboResult {
@@ -496,7 +498,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     part, monthly, lumpEnd, ter, aa, tEnd, gA, tf, safe: null, risky: null, sell: 0, sellGain: 0,
     pending: 0, pendingAt: [0],
     V: 0, B: 0, own: 0, ownReal: 0, vals: [0], bases: [0], net: zero(), abg: zero(), kvInline: zero(),
-    pay: false, W: 0, gain: 0, rm: 0, vp: -1, payY: 0, dedY: 0, kvBase: 0,
+    pay: false, W: 0, gain: 0, rm: 0, vp: -1, payY: 0, dedY: 0, kvBase: 0, owed: 0,
   });
   // Umschichtung (shift): Beiträge und Einmalbeträge gehen nach Zielanteil in das Aktien-Depot und ein sicheres Teil-Depot
   // (Anleihe-/Geldmarkt-ETF: ETF-Kosten, kein Ausgabeaufschlag, Rendite safeRate, keine Teilfreistellung).
@@ -605,6 +607,11 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
         else { const k = kvAdd(f.kvBase, t); f.dedY += k; f.kvInline[t] += k; }
       }
       if ((accum || (p.fundingDelay && f.part === 'avd')) && f.lumpEnd && f.lumpEnd[t] > 0) { f.V += f.lumpEnd[t]; f.B += f.lumpEnd[t]; }
+      // Negative Erstattung (nur mit Partner-Vertrag, avdSpouse): Mehrsteuer aus dem Nebendepot entnommen, soweit vorhanden
+      // (Näherung: Entnahme zum Durchschnittswert ohne Steuer auf den Gewinnanteil); der Rest wird später gedeckt, notfalls
+      // bei Rentenbeginn von der AVD-Auszahlung abgezogen (ohne Zins).
+      else if ((accum || (p.fundingDelay && f.part === 'avd')) && f.lumpEnd && f.lumpEnd[t] < 0) f.owed -= f.lumpEnd[t];
+      if (f.owed > 0 && f.V > 0) { const x = Math.min(f.owed, f.V); f.B *= (f.V - x) / f.V; f.V -= x; f.owed -= x; }
       f.net[t] = f.payY - f.dedY;
       f.vals.push(f.V); f.bases.push(f.B); f.pendingAt.push(f.pending);
     }
@@ -682,6 +689,8 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       else { const k = kvAdd(avd.kvW[t], t); aNet[t] = avd.cash[t] - (taxAvd[t] + k + kvL); aKv[t] += k; kv[t] += k; }
       aKv[t] += kvL;
     }
+    const owedLeft = side.members.reduce((s, f) => s + f.owed, 0);
+    if (owedLeft > 0) aNet[n] -= owedLeft;
     // Verheiratet: Beim Übertrag auf den Partner versteuert dieser später mit seinem eigenen Einkommen im Alter (Grundtarif).
     const latentTax = (V: number, t: number, survivor = false) => {
       const yrs = Math.max(1, tEnd - Math.max(t, n));

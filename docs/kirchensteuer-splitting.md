@@ -139,6 +139,14 @@ Elternzeit mit Kindererziehungszeiten ohne zvE (wäre unmittelbar). Steht im Hin
   weder Zulage noch Abzug (Rn. 26/27), Ausgangslage daher ohne Abzug: **Erstattung = Steuer(x) − L(x, E + z + eP + zP, z + zP)**.
   Die Partner-Zulage zP fließt in den Partner-Vertrag und ist **nicht** im Ergebnis enthalten (Summe als `zulSpouse`
   unter „Rente im Detail“ und im Rechenweg). Andere Produkte unverändert.
+- **Negative Erstattung (nur unmittelbar):** Lohnt der Abzug für den Partner allein, gemeinsam aber weniger (eigene
+  Zulagenquote über dem Grenzsteuersatz, z. B. kleiner eigener Beitrag oder Kinderzulage), ist die Änderung negativ: Der
+  eigene Vertrag kostet den Haushalt Steuer, weil bei der Prüfung beide Zulagen zählen (Rn. 110). Handprobe beide
+  38.000 €, eigener Beitrag 30 €/Monat, Partner 150 €/Monat: Partner allein 720 − 540 = 180 €, gemeinsam 884 − 720 = 164 €
+  ⇒ −16 €/Jahr. Mit Wiederanlage wird die Mehrsteuer aus dem ETF-Nebendepot entnommen (Näherung: zum Durchschnittswert,
+  ohne Steuer auf den Gewinnanteil der Entnahme); was das Nebendepot nicht deckt, wird bei Rentenbeginn ohne Zins von der
+  AVD-Auszahlung abgezogen. Ohne Wiederanlage zahlt der Haushalt sie aus eigenem Geld; wie bei einer ausgegebenen
+  Erstattung gibt es dann keinen fairen Vergleich (`refundSpent`).
 - **Erbfall (Rückzahlungsbetrag § 93 Abs. 1):** zurückgefordert wird die diesem Vertrag zugerechnete Steuerermäßigung
   (Steuer(x) − gemeinsame Belastung) · E / (E + eP) statt der Erstattung (§ 10a Abs. 4 S. 3–4, Rn. 116/118); ohne
   Partner-Vertrag identisch mit der Erstattung.
@@ -173,6 +181,8 @@ eigenen 1.800 € fast ausgeschöpft, es zählen 120 €).
 - **Wert der mittelbaren Partner-Zulage:** entsteht nur durch den eigenen Vertrag, liegt aber im Partner-Vertrag
   (eigene Erträge, Auszahlung an den Partner). Nicht im Ergebnis; Summe wird angezeigt. Ob sie dem Vergleich
   zugerechnet werden soll, ist eine Modellentscheidung, keine Rechtsfrage.
+- Negative Erstattung: Steuer auf den Gewinnanteil der Entnahme aus dem Nebendepot und Zins auf einen ungedeckten Rest
+  nicht gerechnet (beides leicht zugunsten des AVD); im Erbfall vor Rentenbeginn ist ein ungedeckter Rest nicht abgezogen.
 - Partner-Zulage, wenn der eigene geförderte Beitrag unter 120 € liegt (R6: Abzug ohne Zulage): ob diese Beiträge
   „geförderte Altersvorsorgebeiträge“ im Sinne von § 84 S. 4 n. F. sind, ist ungeklärt; gerechnet ohne Partner-Wirkung.
 - Kinderzulage beim Partner (§ 85 Abs. 2, Zuordnung zur Mutter), Berufseinsteigerbonus des Partners, Einzelveranlagung,

@@ -50,7 +50,15 @@ const LABELS: Readonly<Record<InputKey, readonly [string, string]>> = Object.fre
 });
 
 /** Modellgrenzen, die man beim Nachprüfen kennen muss (Stand wie unter „Weitere Einstellungen“), passend zu den Schaltern. */
-const limitsText = (p: Params, zulSpouse = 0) => [
+/** Mittelbare Partner-Zulage (nominal) je Teilnehmer mit AVD: Einzelprodukt und Kombi getrennt. */
+function spouseZul(A: Analysis): string {
+  const one = A.res.avd ? Number(A.res.avd.zulSpouse ?? 0) : null;
+  const kombi = A.res.kombi?.combo.parts.avd ? Number(A.res.kombi.combo.parts.avd.zulSpouse ?? 0) : null;
+  const bits = [...(one != null ? [(kombi != null ? 'Altersvorsorgedepot ' : '') + n0(one) + ' €'] : []), ...(kombi != null ? ['Kombi ' + n0(kombi) + ' €'] : [])];
+  return bits.join(', ');
+}
+
+const limitsText = (p: Params, zulSpouse = '') => [
   'Konstante Rendite jedes Jahr, keine Schwankungen und kein Sequenzrisiko.',
   taxText(p),
   ...(p.married ? [spouseAvdText(p, zulSpouse)] : []),
@@ -81,13 +89,13 @@ function taxText(p: Params): string {
 }
 
 /** Partner-Vertrag (avdSpouse) in Worten, passend zum AVD-Block in combo.ts. */
-function spouseAvdText(p: Params, zulSpouse: number): string {
+function spouseAvdText(p: Params, zulSpouse: string): string {
   if (!(p.avdSpouse > 0)) return 'Partner ohne eigenen geförderten Altersvorsorgevertrag: Günstigerprüfung nur mit den eigenen Beiträgen und der eigenen Zulage (§ 10a Abs. 3 S. 1 EStG).';
   const m = n2(p.avdSpouse) + ' €/Monat (× (1 + Dynamik)^Jahr bis vor Rentenbeginn)';
-  const tail = ' Die AVD-Erstattung ist die Änderung der gemeinsamen Steuer durch den eigenen Vertrag; der Partner-Vertrag selbst ist nicht im Vergleich, seine Auszahlungen gehören in das Partner-Einkommen ab Rentenbeginn. Zurechnung für die Förderrückzahlung im Erbfall im Verhältnis der geförderten Eigenbeiträge (§ 10a Abs. 4 S. 3–4).';
+  const tail = ' Die AVD-Erstattung ist die Änderung der gemeinsamen Steuer durch den eigenen Vertrag (kann negativ sein: Mehrsteuer, mit Wiederanlage aus dem Nebendepot bezahlt, ein ungedeckter Rest bei Rentenbeginn ohne Zins abgezogen); der Partner-Vertrag selbst ist nicht im Vergleich, seine Auszahlungen gehören in das Partner-Einkommen ab Rentenbeginn. Zurechnung für die Förderrückzahlung im Erbfall im Verhältnis der geförderten Eigenbeiträge (§ 10a Abs. 4 S. 3–4).';
   if (p.incSpouse > 0) return 'Partner zahlt ' + m + ' in einen eigenen geförderten Vertrag; mit eigenem Einkommen als unmittelbar förderberechtigt angenommen (rentenversichert, verbeamtet oder selbständig, § 10a Abs. 1 EStG n. F.): eigene Grundzulage aus dem eigenen Beitrag (ab 120 €/Jahr, § 84 S. 1, § 86 n. F.), eigener Höchstbetrag 1.800 €. Die Günstigerprüfung vergleicht die Steuerersparnis beider Abzüge mit beiden Zulagen (§ 10a Abs. 3 S. 5; BMF 05.10.2023 Rn. 110). Diese Ausgangslage gilt für alle Produkte (auch in der Günstigerprüfung der Kapitalerträge).' + tail;
   return 'Partner zahlt ' + m + ' in einen eigenen geförderten Vertrag; ohne eigenes Einkommen als mittelbar zulageberechtigt angenommen (§ 79 S. 2 EStG; nur in Jahren mit eigenem gefördertem Beitrag ab 120 € und einem Partner-Beitrag ab 120 €/Jahr). Partner-Grundzulage aus den eigenen geförderten Beiträgen, höchstens 175 € (§ 84 S. 3–4 n. F.); bei der eigenen Veranlagung zählen beide Beiträge (eigene vorrangig, zusammen bis 1.920 €) und beide Zulagen (§ 10a Abs. 3 S. 2–4 n. F.; BMF Rn. 109). Ohne eigenen Vertrag gäbe es keine Zulage und keinen Abzug für den Partner (BMF Rn. 26/27).' +
-    (zulSpouse > 0 ? ' Die Partner-Zulage fließt in den Partner-Vertrag und ist nicht im Ergebnis enthalten: zusammen ' + n0(zulSpouse) + ' € nominal.' : ' Partner-Zulage im gerechneten Zeitraum: 0 €.') + tail;
+    (zulSpouse ? ' Die Partner-Zulage fließt in den Partner-Vertrag und ist nicht im Ergebnis enthalten, zusammen nominal: ' + zulSpouse + '.' : '') + tail;
 }
 
 /** Gehaltsverlauf in Worten, passend zu incomeAt (core.ts) einschließlich der Randfälle. */
@@ -169,8 +177,7 @@ export function rechenweg(inputs: Inputs, A: Analysis, url: string, today = new 
     out.push(`Die Kombi wird mit dieser Aufteilung gerechnet (auf den Monatsbeitrag ${n2(splitSum(sp))} € skaliert): ` +
       `ETF ${n2(sp.etf)} €, AVD ${n2(sp.avd)} €, Versicherung ${n2(sp.ins)} €, aktiver Fonds ${n2(sp.fond)} € im Monat.`, '');
   }
-  const zulSpouse = Number(A.res.avd?.zulSpouse ?? 0);
-  out.push('## Modellgrenzen', '', ...limitsText(p, zulSpouse).map(x => '- ' + x), '');
+  out.push('## Modellgrenzen', '', ...limitsText(p, spouseZul(A)).map(x => '- ' + x), '');
 
   out.push('## Ergebnis', '');
   out.push(`Zeitraum für den Vergleich: Rentenbeginn mit ${p.R} bis zum Ende des Auszahlplans mit ${p.H} (${tH - n} Jahre). ` +

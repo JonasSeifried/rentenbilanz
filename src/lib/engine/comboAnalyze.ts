@@ -107,7 +107,7 @@ export function analyzeCombo(p: Params, setup: ComboSetup, best?: BestSplitResul
 
   // Erstattung ausgegeben: Das AVD bekommt netto weniger eigenes Geld als die anderen Produkte.
   const avdRef = user?.res.parts.avd?.ref ?? (keys.includes('avd') && budget > 0 ? combo(p, { ...emptySplit(), avd: budget }, opts).parts.avd!.ref! : 0);
-  const refundSpent = keys.includes('avd') && !p.reinvest && avdRef > 0;
+  const refundSpent = keys.includes('avd') && !p.reinvest && avdRef !== 0; // negativ nur mit Partner-Vertrag (Mehrsteuer)
   const canRank = keys.length >= 2 && budget > 0 && !refundSpent;
 
   let bestView: ComboAnalysis['best'] = null;

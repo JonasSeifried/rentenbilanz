@@ -112,7 +112,7 @@ export function analyze(p: Params, opts?: EngineOptions, kombi?: Split | null): 
   // sonst entscheidet der Anzeige-Schalter (Abzinsung 0 % statt Inflation), welches Produkt vorne liegt.
   const owns = active.map(rankReal ? (pr: Product) => res[pr.key]!.ownReal : ownOf);
   const fairOwn = active.length > 0 && Math.max(...owns) <= Math.min(...owns) * 1.01 + 1;
-  const refundSpent = !p.reinvest && ((res.avd?.ref ?? 0) > 0 || (res.kombi?.ref ?? 0) > 0);
+  const refundSpent = !p.reinvest && ((res.avd?.ref ?? 0) !== 0 || (res.kombi?.ref ?? 0) !== 0); // negativ nur mit Partner-Vertrag (Mehrsteuer)
   const rankBy = rankReal ? (k: ContenderKey) => stats[k]!.cumHReal : (k: ContenderKey) => stats[k]!.cumH;
   const lead = active.length > 1 && fairOwn ? active.reduce((a, b) => rankBy(b.key) > rankBy(a.key) ? b : a) : null;
   const canRank = !!lead && !refundSpent;

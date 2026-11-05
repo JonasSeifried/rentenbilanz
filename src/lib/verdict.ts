@@ -105,7 +105,9 @@ export function verdict(A: Analysis, _scen: Scenario[]): Verdict {
   if (A.refundSpent) return {
     kind: 'refundSpent',
     headline: 'Mit ausgegebener Steuererstattung ist kein fairer Vergleich möglich.',
-    lines: ['Beim Altersvorsorgedepot fließt dann netto weniger eigenes Geld hinein als bei den anderen Produkten. Wird die Erstattung angelegt, ist der Vergleich wieder fair.'],
+    lines: [((res.avd?.ref ?? 0) < 0 || (res.kombi?.ref ?? 0) < 0)
+      ? 'Mit dem Partner-Vertrag kostet der eigene Vertrag hier in der gemeinsamen Günstigerprüfung Steuer statt einer Erstattung; ohne Wiederanlage zahlt der Haushalt sie aus eigenem Geld, beim AVD fließt dann netto mehr eigenes Geld hinein als bei den anderen Produkten. Mit „Steuererstattung wird angelegt“ wird sie aus dem Nebendepot bezahlt, dann ist der Vergleich wieder fair.'
+      : 'Beim Altersvorsorgedepot fließt dann netto weniger eigenes Geld hinein als bei den anderen Produkten. Wird die Erstattung angelegt, ist der Vergleich wieder fair.'],
   };
   const range = p.R + '–' + p.H;
   // Feste Reihenfolge (PRODUCTS, dann Kombi), nicht nach Ergebnis sortiert.

@@ -87,6 +87,41 @@ describe('Partner unmittelbar förderberechtigt (eigenes Einkommen)', () => {
   });
 });
 
+describe('Negative Erstattung (Mehrsteuer durch die gemeinsame Prüfung)', () => {
+  // Beide 38.000 €, eigener Beitrag 30 €/Monat (360 € + 180 € Zulage), Partner 150 €/Monat (1.800 € + 540 €).
+  // Partner allein: Ersparnis 720 € > 540 € ⇒ 180 € Erstattung. Gemeinsam: 884 € > 720 € ⇒ 164 €. Eigener Vertrag: −16 €/Jahr.
+  const q = { ...base, setAll: 30, avdM: 30, incWork: 38000, incSpouse: 38000, reinvest: true };
+  it('Handrechnung −16 € im Jahr; ohne Partner-Vertrag 0 € (168 € < 180 €)', () => {
+    expect(2 * est(38000) - 2 * est((76000 - 2340) / 2)).toBe(720);
+    expect(2 * est(38000) - 2 * est((76000 - 2880) / 2)).toBe(884);
+    expect(2 * est(38000) - 2 * est((76000 - 540) / 2)).toBe(168);
+    const c = combo(P({ ...q, avdSpouse: 150 }), only('avd', 30)), o = combo(P(q), only('avd', 30));
+    expect(c.parts.avd!.ref! / c.n).toBeCloseTo(-16, 9);
+    expect(o.parts.avd!.ref).toBe(0);
+  });
+  it('Mit Wiederanlage: ohne Nebendepot bei Rentenbeginn von der Auszahlung abgezogen', () => {
+    const c = combo(P({ ...q, avdSpouse: 150 }), only('avd', 30)), o = combo(P(q), only('avd', 30));
+    expect(c.parts.avd!.net[c.n]).toBeCloseTo(o.parts.avd!.net[o.n] - 5 * 16, 6);
+    for (let t = 0; t < c.net.length; t++) if (t !== c.n) expect(c.parts.avd!.net[t]).toBe(o.parts.avd!.net[t]);
+  });
+  it('Mit Wiederanlage und Nebendepot: aus dem Nebendepot bezahlt', () => {
+    // Ein Ausbildungsjahr ohne Förderberechtigung: der Beitrag geht ins Nebendepot, das die Mehrsteuer danach deckt.
+    const r = { ...q, a0: 59, studyEnd: 60, eligStudy: false, incStudy: 38000 };
+    const c = combo(P({ ...r, avdSpouse: 150 }), only('avd', 30)), o = combo(P(r), only('avd', 30));
+    const side = (x: typeof c) => x.parts.avd!.sideR!;
+    expect(c.parts.avd!.ref).toBeCloseTo(-5 * 16, 9); // fünf geförderte Jahre
+    expect(side(o)).toBeGreaterThan(5 * 16);
+    expect(side(c)).toBeLessThan(side(o) - 5 * 16 + 1e-6); // Entnahme mindert auch die Erträge
+    // Nichts ungedeckt: kein Abzug von 80 € bei Rentenbeginn, nur die kleinere Entnahme aus dem Nebendepot.
+    const d = o.parts.avd!.net[o.n] - c.parts.avd!.net[c.n];
+    expect(d).toBeGreaterThan(0); expect(d).toBeLessThan(20);
+  });
+  it('Ohne Wiederanlage: kein fairer Vergleich, wie bei ausgegebener Erstattung', () => {
+    expect(analyze(P({ ...q, reinvest: false, avdSpouse: 150 })).refundSpent).toBe(true);
+    expect(analyze(P({ ...q, reinvest: false })).refundSpent).toBe(false);
+  });
+});
+
 describe('Partner mittelbar zulageberechtigt (kein eigenes Einkommen)', () => {
   it('Handrechnung 110.000 € + 0 €, Partner 50 €/Monat: beide Beiträge bis 1.920 €, beide Zulagen', () => {
     const c = combo(P({ ...base, incWork: 110000, incSpouse: 0, avdSpouse: 50 }), only('avd', 150));
@@ -142,7 +177,10 @@ describe('Eingabe, Link, Speicher, Oberfläche', () => {
     const md = rechenweg(i, analyze(readParams(i)), 'x');
     expect(md).toContain('| avdSpouse |');
     expect(md).toContain('mittelbar zulageberechtigt');
-    expect(md).toMatch(/nicht im Ergebnis enthalten: zusammen [\d.]+ € nominal/);
+    expect(md).toMatch(/nicht im Ergebnis enthalten, zusammen nominal: [\d.]+ €\./);
+    const k = { ...i, avdOn: false, combo: true, cEtf: 75, cAvd: 75 };
+    const A = analyze(readParams(k), undefined, { ...emptySplit(), etf: 75, avd: 75 });
+    expect(rechenweg(k, A, 'x')).toContain('nominal: Kombi ' + Number(A.res.kombi!.combo.parts.avd!.zulSpouse).toLocaleString('de-DE') + ' €.');
     const j = { ...i, incSpouse: 38000 };
     expect(rechenweg(j, analyze(readParams(j)), 'x')).toContain('unmittelbar förderberechtigt');
   });

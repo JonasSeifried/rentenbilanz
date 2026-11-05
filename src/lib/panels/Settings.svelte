@@ -148,7 +148,7 @@
           limits={LIMITS.avdSpouse} effective={p.avdSpouse}
           hint={i.avdSpouse <= 0 ? '0 = kein eigener geförderter Vertrag des Partners.'
             : p.incSpouse > 0 ? 'Mit eigenem Einkommen gilt der Partner als selbst förderberechtigt (rentenversichert, verbeamtet oder selbständig): eigene Zulage, gemeinsame Günstigerprüfung beider Verträge. Sein Vertrag ist nicht im Vergleich; gerechnet wird, was er an deiner Erstattung ändert.'
-            : 'Ohne eigenes Einkommen gilt der Partner als mittelbar zulageberechtigt (nur mit deinem eigenen Vertrag, ab 120 € im Jahr): Zulage bis 175 € im Jahr auf seinen Vertrag, nicht im Ergebnis enthalten; gemeinsame Günstigerprüfung bei dir.'} />
+            : 'Ohne eigenes Einkommen gilt der Partner als mittelbar zulageberechtigt (nur in Jahren, in denen du und er je mindestens 120 € einzahlen): Zulage bis 175 € im Jahr auf seinen Vertrag, nicht im Ergebnis enthalten; gemeinsame Günstigerprüfung bei dir.'} />
       {/if}
     </div>
     <div class="grp" role="group" aria-labelledby="s-cap">
