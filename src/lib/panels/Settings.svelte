@@ -54,7 +54,7 @@
   const growth = $derived(incomeGrowth(p));
   function togglePath(v: boolean) {
     if (!v) { setInputs({ incPeak: DEFAULTS.incPeak, incPeakAge: DEFAULTS.incPeakAge }); return; }
-    setInputs({ incPeakAge: Math.max(DEFAULTS.incPeakAge, p.studyEnd + 1), incPeak: Math.round(i.incWork * 1.3 / 1000) * 1000 });
+    setInputs({ incPeakAge: Math.max(DEFAULTS.incPeakAge, p.studyEnd + 1), incPeak: i.incWork >= 1000 ? Math.round(i.incWork * 1.3 / 1000) * 1000 : Math.round(i.incWork * 1.3) });
   }
 
   type OnKey = 'etfOn' | 'avdOn' | 'insOn' | 'fondOn';

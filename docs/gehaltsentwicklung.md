@@ -24,7 +24,8 @@ Eingaben `incPeak` (Zielgehalt, zu versteuern, heutiges Geld) und `incPeakAge` (
 
 Liegt `incPeakAge` nicht nach dem Berufsbeginn, gilt `incPeak` sofort. Sinkende Verläufe sind erlaubt (zum Beispiel
 Teilzeit). Ist Start- oder Zielgehalt 0, wird linear übergeleitet, weil ein geometrischer Übergang dann nicht definiert ist.
-Ein Zielalter nach Rentenbeginn wird nie erreicht; dann gilt bis zur Rente der Zwischenwert.
+Ein Zielalter nach Rentenbeginn wird nie erreicht; dann gilt bis zur Rente der Zwischenwert. Dauert die Ausbildung bis zur Rente,
+gibt es keine Berufsphase und die Gehaltsentwicklung bleibt ohne Wirkung.
 
 **Warum geometrisch:** Gehälter wachsen erfahrungsgemäß eher prozentual als um feste Beträge. Ob jemand früh schneller
 aufsteigt und später flacher, ist individuell; das Modell nimmt den einfachsten nachvollziehbaren Verlauf mit zwei

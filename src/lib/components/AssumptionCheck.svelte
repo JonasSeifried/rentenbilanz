@@ -8,12 +8,22 @@
   // (wird auch im Kombi-Modus verwendet). Im Druck als „Unterstellte Annahmen“ ohne Links.
   import { tick } from 'svelte';
   import { DEFAULTS } from '../engine/inputs';
+  import { incomePathKind, readParams } from '../engine/core';
   import { app, focusField, setTab } from '../state.svelte';
   import type { Tab } from '../link';
   import { KV_KINDS, kvShown } from './KvQuestion.svelte';
 
   const i = $derived(app.inputs);
   const de = (x: number) => x.toLocaleString('de-DE', { maximumFractionDigits: 2 });
+
+  /** Gehaltsentwicklung mit den Werten, mit denen die Engine rechnet (nach Grenzen, mit Randfällen). */
+  function pathValue(): string {
+    const p = readParams(i), kind = incomePathKind(p);
+    if (!(p.incPeak >= 0)) return 'keine (real gleich)';
+    if (kind === 'off') return 'ohne Wirkung (keine Berufsphase vor der Rente)';
+    if (kind === 'now') return de(p.incPeak) + ' € ab Berufsbeginn';
+    return 'auf ' + de(p.incPeak) + ' € mit ' + de(p.incPeakAge) + ' Jahren' + (kind === 'late' ? ' (nach Rentenbeginn, nicht erreicht)' : '');
+  }
 
   interface Row { key: string; label: string; value: string; changed: boolean; tab: Tab; id: string }
   const rows = $derived.by<Row[]>(() => {
@@ -31,7 +41,7 @@
     });
     out.push({
       key: 'incPath', label: 'Gehaltsentwicklung', tab: 'settings', id: 'f-path',
-      value: i.incPeak >= 0 ? 'auf ' + de(i.incPeak) + ' € mit ' + de(i.incPeakAge) + ' Jahren' : 'keine (real gleich)', changed: i.incPeak >= 0,
+      value: pathValue(), changed: i.incPeak >= 0,
     });
     out.push({
       key: 'kv', label: 'Krankenversicherung im Alter', tab: app.tab, id: 'f-kv',

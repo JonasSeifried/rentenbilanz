@@ -75,13 +75,16 @@ const fmtVal = (v: Inputs[InputKey]) => typeof v === 'boolean' ? (v ? 'ja' : 'ne
 /** Eingaben, die als Prozent eingegeben und in Params als Anteil geführt werden. */
 const PCT = new Set<string>(['g', 'gPay', 'infl', 'dyn', 'basis', 'etfTer', 'avdCost', 'insEff', 'fondAA', 'fondTer', 'kvRate', 'safeRate', 'avdPayCost', 'etfPayTer', 'fondPayTer']);
 
+/** Prozentfelder, bei denen −1 „wie die Ansparkosten“ bedeutet; andere dürfen negativ sein (Rendite, Inflation …). */
+const SENTINEL = new Set<string>(['avdPayCost', 'etfPayTer', 'fondPayTer']);
+
 /** Wert, mit dem die Engine tatsächlich rechnet (nach Grenzen und Rundung in readParams), in der Einheit der Eingabe; null = nicht in Params. */
 function effective(p: Params, key: InputKey): number | boolean | null {
   const on: Partial<Record<InputKey, ProductKey>> = { etfOn: 'etf', avdOn: 'avd', insOn: 'ins', fondOn: 'fond' };
   if (on[key]) return p.on[on[key]!];
   if (!(key in p)) return null;
   const v = (p as unknown as Record<string, number | boolean>)[key];
-  if (typeof v !== 'number' || !PCT.has(key) || v < 0) return v;
+  if (typeof v !== 'number' || !PCT.has(key) || (SENTINEL.has(key) && v < 0)) return v;
   return +(v * 100).toFixed(6);
 }
 

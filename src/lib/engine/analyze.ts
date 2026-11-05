@@ -144,7 +144,7 @@ export function scenarioList(p: Params, kombi?: Split | null, opts?: EngineOptio
   add('g', 'Rendite 2 Prozentpunkte niedriger', { g: p.g - 0.02, gPay: p.gPay - 0.02 });
   // Mit Gehaltsentwicklung sinkt der ganze Verlauf (Start- und Zielgehalt); ohne sie wie im Original.
   const path = incomePathKind(p);
-  add('incWork', 'Gehalt 30 % niedriger (' + (path === 'off' ? eur(p.incWork * 0.7) : path === 'now' ? eur(p.incPeak * 0.7) : eur(p.incWork * 0.7) + ', später ' + eur(p.incPeak * 0.7)) + ')',
+  add('incWork', 'Gehalt 30 % niedriger (' + (path === 'off' ? eur(p.incWork * 0.7) : path === 'now' ? eur(p.incPeak * 0.7) : eur(p.incWork * 0.7) + (path === 'late' ? ', steigend Richtung ' : ', später ') + eur(p.incPeak * 0.7)) + ')',
     path === 'off' ? { incWork: p.incWork * 0.7 } : { incWork: p.incWork * 0.7, incPeak: p.incPeak * 0.7 });
   // Gehaltsentwicklung (neu, nicht im Original): ein Annahmeszenario, kein statistischer Durchschnittsverlauf (docs/gehaltsentwicklung.md).
   // Gilt das Zielgehalt sofort, gibt es keinen Verlauf, den man abschalten könnte (incWork wirkt dann nicht): keine Zeile.

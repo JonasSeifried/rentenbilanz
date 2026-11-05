@@ -43,7 +43,14 @@ describe('Rechenweg nach Review', () => {
     const md = rechenweg(inp, analyze(readParams(inp)), '');
     expect(md).toContain('| R | Rentenbeginn | 72 | 70 | Alter |');
     expect(md).toContain('| H | Auszahlplan bis | 80 | 85 | Alter |');
-    expect(md).toContain('| g | Rendite vor Kosten, Ansparphase | 6 |  | % p. a. |');
+    expect(md).toContain('| g | Rendite vor Kosten, Ansparphase | 6 |  | % p. a. |');  });
+
+  it('negative Prozentwerte sind keine Platzhalter (nur die Auszahlkosten kennen −1)', () => {
+    const inp = { ...DEFAULTS, infl: -1, g: -2, avdPayCost: -1 };
+    const md = rechenweg(inp, analyze(readParams(inp)), '');
+    expect(md).toMatch(/\| infl \| [^|]+ \| -1 \|  \|/);
+    expect(md).toMatch(/\| g \| [^|]+ \| -2 \|  \|/);
+    expect(md).toMatch(/\| avdPayCost \| [^|]+ \| -1 \|  \|/);
   });
 
   it('Kombi: letzte Zeile hat ein Vermögen, Aufteilung wird genannt', () => {
