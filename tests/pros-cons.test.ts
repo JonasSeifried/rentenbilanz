@@ -44,9 +44,9 @@ describe('prosCons', () => {
 
 describe('faqs', () => {
   it('AVD-Fragen nur mit AVD, „150 € + Rest“ nur mit AVD und ETF; keine leeren Antworten', () => {
-    expect(faqs(P(), ['etf', 'avd']).map(f => f.id)).toEqual(['avd150', 'early', 'crash', 'etfSwitch', 'mix', 'bav']);
-    expect(faqs(P(), ['etf', 'ins']).map(f => f.id)).toEqual(['early', 'crash', 'etfSwitch', 'bav']);
-    expect(faqs(P(), ['avd']).map(f => f.id)).toEqual(['avd150', 'early', 'crash', 'bav']);
+    expect(faqs(P(), ['etf', 'avd']).map(f => f.id)).toEqual(['avd150', 'early', 'crash', 'etfSwitch', 'mix', 'taxChange', 'bav']);
+    expect(faqs(P(), ['etf', 'ins']).map(f => f.id)).toEqual(['early', 'crash', 'etfSwitch', 'taxChange', 'bav']);
+    expect(faqs(P(), ['avd']).map(f => f.id)).toEqual(['avd150', 'early', 'crash', 'taxChange', 'bav']);
     for (const f of faqs(P(), [...ALL])) for (const a of f.a) expect(a.length).toBeGreaterThan(20);
     // Betriebsrente: nicht im Vergleich, mit Fundstellen, ohne Empfehlung
     const bav = faqs(P(), ['etf']).find(f => f.id === 'bav')!.a.join(' ');

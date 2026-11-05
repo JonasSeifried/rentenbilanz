@@ -120,7 +120,7 @@ export function analyze(p: Params, opts?: EngineOptions, kombi?: Split | null): 
 }
 
 /** Stabile Kennung je Szenario-Zeile (für Oberfläche und Kombi-Robustheit; das Label kann sich ändern). */
-export type ScenarioId = 'kv' | 'avdCost' | 'refund' | 'g' | 'incWork' | 'incPath' | 'incRetLow' | 'incRetHigh' | 'insMode' | 'insCost' | 'shift' | 'payProfile' | 'fundingDelay' | 'allowance' | 'payCost' | 'kvGross' | 'kvRate';
+export type ScenarioId = 'kv' | 'avdCost' | 'refund' | 'g' | 'incWork' | 'incPath' | 'incRetLow' | 'incRetHigh' | 'insMode' | 'insCost' | 'shift' | 'payProfile' | 'fundingDelay' | 'allowance' | 'payCost' | 'kvGross' | 'kvRate' | 'taxAbg' | 'taxEst' | 'taxNow';
 
 export interface ScenarioDef { id: ScenarioId; label: string; p: Params }
 export interface Scenario extends ScenarioDef { a: Analysis }
@@ -166,6 +166,12 @@ export function scenarioList(p: Params, kombi?: Split | null, opts?: EngineOptio
       add('payCost', 'AVD-Auszahlkosten 0,5 Prozentpunkte höher', { avdPayCost: (p.avdPayCost < 0 ? p.avdCost : p.avdPayCost) + .005 });
     }
     add('allowance', p.indexAllowance ? 'Pauschbetrag nominal fest' : 'Pauschbetrag indexiert (hypothetisch)', { indexAllowance: !p.indexAllowance });
+    // Was-wäre-wenn Steueränderung (hypothetisch, docs/steueraenderung.md): je eine Steuerart, ab Rentenbeginn bzw. ab dem gewählten Alter.
+    const from = p.taxFrom < 0 ? 'ab Rentenbeginn' : 'ab ' + p.taxFrom;
+    if (p.abgRate === .25 && p.estAdd === 0) {
+      add('taxAbg', 'Abgeltungsteuer 30 % statt 25 % ' + from + ' (hypothetisch)', { abgRate: .3 });
+      add('taxEst', 'Einkommensteuer 5 Prozentpunkte höher ' + from + ' (hypothetisch)', { estAdd: .05 });
+    } else add('taxNow', 'Steuerrecht wie heute, ohne Änderung', { abgRate: .25, estAdd: 0 });
     if (p.kvOn) {
       add('kvGross', 'Sonstige KV-Bruttoeinnahmen 10.000 € höher (zvE gleich)', { kvGrossRet: kvGross(p) + 10000 });
       add('kvRate', 'KV/PV 3 Prozentpunkte höher', { kvRate: Math.min(.4, p.kvRate + .03) });

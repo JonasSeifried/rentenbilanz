@@ -176,6 +176,17 @@
   <p class="hint">Standard: Ende des Beitragsjahres. Ein Jahr Verzug ist ein Szenario, keine gesetzliche Bearbeitungsfrist. Die letzte Gutschrift kommt am Ende des ersten Rentenjahres.</p>
   <Switch checked={i.indexAllowance} onchange={v => setInput('indexAllowance', v)} label="Sparer-Pauschbetrag wächst mit Inflation (hypothetische Sensitivität)" />
   <p class="hint">Gesetzlicher Ausgangswert: nominal 1.000 € jährlich (zusammen veranlagt 2.000 €). Tarif, Soli-Grenze und KV-BBG wachsen im Modell mit Inflation; diese Fortschreibung ist keine zugesicherte Rechtsentwicklung.</p>
+  <div class="grp" role="group" aria-labelledby="s-taxchange">
+    <h3 id="s-taxchange">Was wäre, wenn sich die Steuern ändern?</h3>
+    <p class="hint">Hypothetisch, keine angekündigte Rechtslage. Standard: heutiges Recht für die ganze Laufzeit. Die Produkte hängen an verschiedenen Steuern: ETF-Depot und aktiver Fonds an der Abgeltungsteuer, Altersvorsorgedepot und Versicherung (nach 12 Jahren und ab 62) an der Einkommensteuer.</p>
+    <NumberField id="f-abgRate" layout="row" label="Abgeltungsteuersatz" value={i.abgRate} onchange={v => setInput('abgRate', v)} min={0} max={60} step={1} unit="%" info="steueraenderung" testid="abgRate"
+      limits={LIMITS.abgRate} effective={pc(p.abgRate)} hint="Heute 25 % (zuzüglich Soli und gegebenenfalls Kirchensteuer). Teilfreistellung und Sparer-Pauschbetrag bleiben gleich." />
+    <NumberField id="f-estAdd" layout="row" label="Einkommensteuersatz höher um" value={i.estAdd} onchange={v => setInput('estAdd', v)} min={-14} max={30} step={1} unit="Punkte" testid="estAdd"
+      limits={LIMITS.estAdd} effective={pc(p.estAdd)} hint="Prozentpunkte auf den Grenzsteuersatz, für jeden Euro über dem Grundfreibetrag (12.348 €); negativ = Senkung. Betrifft auch die Erben." />
+    <NumberField id="f-taxFrom" layout="row" label="Gilt ab Alter" value={i.taxFrom} onchange={v => setInput('taxFrom', v)} min={-1} max={100} step={1} unit="Jahre" testid="taxFrom"
+      limits={LIMITS.taxFrom} effective={p.taxFrom < 0 ? p.R : Math.max(p.taxFrom, p.a0)}
+      hint="−1 = ab Rentenbeginn. Ohne Bestandsschutz gerechnet: Ab diesem Jahr gilt der neue Satz für alle Auszahlungen und Verkäufe, auch für vorher angesparte Gewinne." />
+  </div>
   <NumberField layout="row" label="AVD-Kosten in der Auszahlung" value={i.avdPayCost} onchange={v => setInput('avdPayCost', v)} min={-1} step={0.1} unit="% p. a." limits={LIMITS.avdPayCost} effective={pc(p.avdPayCost < 0 ? p.avdCost : p.avdPayCost)} hint="−1 übernimmt die Ansparkosten. Der Standarddepot-Kostendeckel betrifft die Ansparphase." />
   <NumberField layout="row" label="ETF-Kosten in der Auszahlung (auch Neben-/Folgedepot)" value={i.etfPayTer} onchange={v => setInput('etfPayTer', v)} min={-1} step={0.1} unit="% p. a." limits={LIMITS.etfPayTer} effective={pc(p.etfPayTer < 0 ? p.etfTer : p.etfPayTer)} hint="−1 übernimmt die jeweilige TER; sonst eigener Kostensatz." />
   <NumberField layout="row" label="Aktiver Fonds: Kosten in der Auszahlung" value={i.fondPayTer} onchange={v => setInput('fondPayTer', v)} min={-1} step={0.1} unit="% p. a." limits={LIMITS.fondPayTer} effective={pc(p.fondPayTer < 0 ? p.fondTer : p.fondPayTer)} hint="−1 übernimmt die TER. Ein sicherer ETF-Teil nutzt die ETF-Auszahlkosten." />

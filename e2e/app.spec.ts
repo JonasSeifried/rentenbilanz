@@ -62,7 +62,7 @@ test('Startseite rechnet mit den Standardwerten wie die Engine', async ({ page }
   await expect(page.getByTestId('disclaimer')).toContainText('Rechtsstand 26.05.2026');
   await expect(field(page, 'a0')).toHaveValue('22');
   await expect(field(page, 'incWork')).toHaveValue('38.000');
-  await expect(page.locator('.scen tbody tr')).toHaveCount(16); // Ausgangslage + 9 Zeilen des Originals + Gehaltsentwicklung + Umschichtung + Auszahlprofil, Förderverzug, AVD-Auszahlkosten, Pauschbetrag
+  await expect(page.locator('.scen tbody tr')).toHaveCount(18); // Ausgangslage + 9 Zeilen des Originals + Gehaltsentwicklung + Umschichtung + Auszahlprofil, Förderverzug, AVD-Auszahlkosten, Pauschbetrag, Abgeltungsteuer 30 %, Einkommensteuer +5
 });
 
 test('Eingaben werden gespeichert und beim nächsten Besuch wiederhergestellt', async ({ page }) => {

@@ -48,6 +48,12 @@
       value: (i.married ? 'verheiratet, Partner ' + de(i.incSpouse) + ' / ' + de(i.incSpouseRet) + ' € (vor / ab Rentenbeginn)' + (i.avdSpouse > 0 ? ', zahlt ' + de(i.avdSpouse) + ' €/Monat in einen eigenen geförderten Vertrag' : '') : 'ledig') + ', ' + (i.kist > 0 ? 'Kirchensteuer ' + de(i.kist) + ' %' : 'keine Kirchensteuer'),
       changed: i.married !== DEFAULTS.married || i.kist !== DEFAULTS.kist || (i.married && i.avdSpouse !== DEFAULTS.avdSpouse),
     });
+    const taxChange = i.abgRate !== DEFAULTS.abgRate || i.estAdd !== DEFAULTS.estAdd;
+    out.push({
+      key: 'taxChange', label: 'Steuerrecht in der Zukunft', tab: 'settings', id: 'f-abgRate',
+      value: taxChange ? 'hypothetisch ' + (i.taxFrom < 0 ? 'ab Rentenbeginn' : 'ab Alter ' + de(i.taxFrom)) + ': Abgeltungsteuer ' + de(i.abgRate) + ' %' + (i.estAdd !== 0 ? ', Einkommensteuer ' + (i.estAdd > 0 ? '+' : '−') + de(Math.abs(i.estAdd)) + ' Prozentpunkte' : '') : 'wie heute (keine Änderung angenommen)',
+      changed: taxChange,
+    });
     out.push({
       key: 'allowance', label: 'Sparer-Pauschbetrag schon genutzt', tab: 'settings', id: 'f-allowanceUsed',
       value: i.allowanceUsed > 0 ? de(i.allowanceUsed) + ' €/Jahr' : 'nein', changed: i.allowanceUsed !== DEFAULTS.allowanceUsed,

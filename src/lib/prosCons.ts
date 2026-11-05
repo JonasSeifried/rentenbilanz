@@ -121,6 +121,18 @@ export function faqs(p: Params, keys: readonly ProductKey[]): Faq[] {
       'Bis 150 € im Monat gibt es Zulagen. Bei üblichen Kosten sind sie viel größer als die höheren Kosten des AVD. Darüber gibt es nur noch den Steueraufschub: Der Abstand zum ETF-Depot schrumpft auf wenige Prozent oder kehrt sich um. Das ETF-Depot ist dafür jederzeit verfügbar und nutzt den Sparer-Pauschbetrag.',
     ],
   });
+  // Steueränderungen: neutral, je Produkt die Steuer, an der es hängt (docs/steueraenderung.md); Fundstellen im Glossar.
+  const fund = etf || keys.includes('fond'), ins = keys.includes('ins');
+  out.push({
+    id: 'taxChange', q: 'Was, wenn die Steuern bis zur Rente steigen?',
+    a: [
+      'Gerechnet ist mit dem heutigen Recht. Jedes Produkt kann von einer Änderung betroffen sein, aber über eine andere Steuer und mit einem anderen Betrag:',
+      ...(fund ? ['ETF-Depot' + (keys.includes('fond') ? ' und aktiver Fonds' : '') + ': Abgeltungsteuer auf den Gewinn beim Verkauf und auf die Vorabpauschale. Versteuert wird nach dem Recht im Jahr des Verkaufs, also auch der bis dahin angesammelte Gewinn.'] : []),
+      ...(avd ? ['Altersvorsorgedepot: Einkommensteuer auf die ganze Auszahlung (§ 22 Nr. 5 EStG). Eine höhere Einkommensteuer trifft hier den größten Betrag.'] : []),
+      ...(ins ? ['Versicherung: nach 12 Jahren und ab 62 Einkommensteuer auf die Hälfte des Gewinns, sonst Abgeltungsteuer. Bisher galten neue Regeln nur für neue Verträge (2005); garantiert ist das nicht.'] : []),
+      'Unter „Weitere Einstellungen“, „Was wäre, wenn sich die Steuern ändern?“ lassen sich ein anderer Abgeltungsteuersatz und eine höhere Einkommensteuer durchrechnen; die Szenarien zeigen je eine Änderung ab Rentenbeginn.',
+    ],
+  });
   // Nicht im Vergleich, aber oft verfügbar: Betriebsrente. Neutral, ohne Empfehlung; Rechtsstand 2026.
   out.push({
     id: 'bav', q: 'Und eine Betriebsrente über den Arbeitgeber?',

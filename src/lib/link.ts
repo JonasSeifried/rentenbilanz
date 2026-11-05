@@ -41,6 +41,8 @@ const BASES: Record<string, Inputs & { avdStd: boolean; avdSafe: number }> = {
     allowanceUsed: 0,
     // Später angehängt: Partner ohne eigenen geförderten Vertrag (bisheriges Verhalten).
     avdSpouse: 0,
+    // Später angehängt: heutiges Steuerrecht (bisheriges Verhalten), Änderung ab Rentenbeginn.
+    abgRate: 25, estAdd: 0, taxFrom: -1,
   },
 };
 /** Die eingefrorene Basis von Version 1 (Tests und Speicher-Migration). */

@@ -266,11 +266,11 @@ describe('Robustheit', () => {
     const sum = robustSummary(rows);
     // Mit E10 verschiebt sich die beste Mischung (ETF bis zum Pauschbetrag, Rest AVD) mit jeder Steuerannahme.
     // „shift“: Mit Umschichtung zahlt das ETF-Depot beim Verkauf Steuern, das AVD nicht; die beste Mischung verschiebt sich.
-    expect(sum.flips.map(r => r.id)).toEqual(['kv', 'avdCost', 'g', 'incRetHigh', 'shift', 'payProfile', 'payCost', 'allowance']);
+    expect(sum.flips.map(r => r.id)).toEqual(['kv', 'avdCost', 'g', 'incRetHigh', 'shift', 'payProfile', 'payCost', 'allowance', 'taxEst']);
     expect(sum.flips[0].best.split).toEqual(S({ etf: 300, avd: 150 }));
     expect(sum.flips.find(r => r.id === 'incRetHigh')!.best.split).toEqual(S({ etf: 300, avd: 150 }));
     expect(rows.find(r => r.id === 'incRetLow')!.flip).toBe(false); // R3: neue Tarifprüfung
-    expect(sum.level).toBe('fragile'); expect(sum.held).toBe(ids.length - 8);
+    expect(sum.level).toBe('fragile'); expect(sum.held).toBe(ids.length - 9);
     for (const r of rows) {
       expect(r.user).not.toBeNull(); expect(r.bestPure).not.toBeNull();
       if (!r.flip) expect(r.best.value - r.baseInScenario!.value).toBeLessThanOrEqual(tieTol(r.best.value));
@@ -325,15 +325,15 @@ describe('Ergebnissätze (comboVerdict)', () => {
     expect(v.lines[1]).toBe('Davon sind 180 € im Monat ungefördert im Altersvorsorgedepot (keine Zulage, aber keine Steuer bis zur Auszahlung). Mit 150 € im AVD (voll gefördert) und 300 € ETF-Depot wären es bis zum Alter von 90 rund 3.020 € (0,6 %) weniger. Dieser Abstand hängt an niedrigen AVD-Kosten (gerechnet: 0,5 % im Jahr), und das Geld ist bis zur Rente gebunden.');
     expect(v.lines[2]).toMatch(/^Die Aufteilung mit der höchsten Summe ist eine Mischung: bis zum Alter von 90 rund [\d.]+ € mehr netto als „Alles ins Altersvorsorgedepot \(150 € gefördert \+ 300 € ungefördert\)“, die höchste Summe mit nur einem Produkt\.$/);
     expect(v.lines[3]).toMatch(/^Gemeinsam gerechnet zahlt deine Aufteilung bis zum Alter von 90 rund [\d.]+ € mehr Steuern und Abgaben, als wenn jedes Produkt allein gerechnet würde \(ein Sparer-Pauschbetrag für alle Depots, progressiver Steuertarif\)\.$/);
-    expect(v.lines[4]).toBe('Welche Aufteilung die höchste Summe ergibt, hängt hier stark von den Annahmen ab: In 8 von 14 Szenarien unten ergibt eine andere Aufteilung die höchste Summe, z. B. bei „Als Rentner freiwillig gesetzlich versichert“ (300 € ETF + 150 € AVD).');
+    expect(v.lines[4]).toBe('Welche Aufteilung die höchste Summe ergibt, hängt hier stark von den Annahmen ab: In 9 von 16 Szenarien unten ergibt eine andere Aufteilung die höchste Summe, z. B. bei „Als Rentner freiwillig gesetzlich versichert“ (300 € ETF + 150 € AVD).');
     expect(v.note).toContain('keine Anlageberatung');
   });
-  it('ok, deine Aufteilung ist auf den Euro die beste (300 € = 110 ETF + 190 AVD); 3 von 12 Szenarien verschieben sie ⇒ gemischte Robustheit', () => {
+  it('ok, deine Aufteilung ist auf den Euro die beste (300 € = 110 ETF + 190 AVD); 4 von 14 Szenarien verschieben sie ⇒ gemischte Robustheit', () => {
     const { v } = V({ setAll: 300, cEtf: 110, cAvd: 190, cIns: 0, insOn: false }, true);
     expect(v.headline).toBe('Deine Aufteilung: Ø 1.175 € netto im Monat (67–90).');
     expect(v.lines[0]).toBe('Unter diesen Annahmen findet der Rechner keine Aufteilung mit einer höheren Summe bis zum Alter von 90 (gesucht in 10-€-Schritten).');
     expect(v.lines.some(l => l.startsWith('Die höchste Summe') || l.startsWith('Genau die höchste'))).toBe(false);
-    expect(v.lines.at(-1)).toBe('Aber: In 3 von 12 Szenarien unten ergibt eine andere Aufteilung die höchste Summe, z. B. bei „AVD-Kosten 1,0 % in Anspar- und Auszahlphase (Szenario)“ (270 € ETF + 30 € AVD).');
+    expect(v.lines.at(-1)).toBe('Aber: In 4 von 14 Szenarien unten ergibt eine andere Aufteilung die höchste Summe, z. B. bei „AVD-Kosten 1,0 % in Anspar- und Auszahlphase (Szenario)“ (270 € ETF + 30 € AVD).');
   });
   it('gleichauf (TIE_REL): 300 € = 150 ETF + 150 AVD, 190/110 nur 285 € vorne', () => {
     const { C, v } = V({ setAll: 300, cEtf: 150, cAvd: 150, cIns: 0, insOn: false });
@@ -353,7 +353,7 @@ describe('Ergebnissätze (comboVerdict)', () => {
     const { p, setup, best } = full({});
     const C = analyzeCombo(p, setup, best);
     const rows = [...robustRows(p, setup, best!.split)].map(r => ({ ...r, flip: false }));
-    expect(comboVerdict(C, robustSummary(rows)).lines.at(-1)).toBe('In allen 14 Szenarien unten ergibt dieselbe Aufteilung die höchste Summe.');
+    expect(comboVerdict(C, robustSummary(rows)).lines.at(-1)).toBe('In allen 16 Szenarien unten ergibt dieselbe Aufteilung die höchste Summe.');
   });
   it('pending: nur deine Aufteilung und „wird berechnet“', () => {
     const { p, setup } = full({});
@@ -385,7 +385,7 @@ describe('Ergebnissätze (comboVerdict)', () => {
     const C = analyzeCombo(p, setup, best);
     const rows = [...robustRows(p, setup, best!.split)];
     const fake = { ...robustSummary(rows), level: 'fragile' as const };
-    expect(comboVerdict(C, fake).lines.at(-1)).toMatch(/^Welche Aufteilung die höchste Summe ergibt, hängt hier stark von den Annahmen ab: In 8 von 14 Szenarien/);
+    expect(comboVerdict(C, fake).lines.at(-1)).toMatch(/^Welche Aufteilung die höchste Summe ergibt, hängt hier stark von den Annahmen ab: In 9 von 16 Szenarien/);
   });
   it('neutrale Wortwahl in allen Fällen (nie „optimal“, „empfehlen“, „beste“, „vorne“)', () => {
     const variants: Partial<Inputs>[] = [{}, { setAll: 500 }, { reinvest: false }, { avdOn: false, insOn: false }, { kvOn: true, incRet: 60000, kvGrossRet: 60000, insLump: false, setAll: 750, cEtf: 300, cAvd: 150, cIns: 300 }, { real: false }, { a0: 55, incRet: 0 }];

@@ -7,6 +7,7 @@ export const SETTINGS_KEYS: readonly InputKey[] = [
   'studyEnd', 'incStudy', 'eligStudy', 'incPeak', 'incPeakAge', 'kids', 'kidsFrom', 'kidsYears', 'bonus', 'kvRate',
   'etfM', 'etfTer', 'avdM', 'avdCost', 'reinvest', 'insM', 'insEff', 'fondM', 'fondAA', 'fondTer',
   'infl', 'dyn', 'basis', 'kist', 'married', 'incSpouse', 'incSpouseRet', 'avdSpouse', 'allowanceUsed',
+  'abgRate', 'estAdd', 'taxFrom',
 ];
 
 /**
@@ -22,6 +23,7 @@ export function changedSettings(i: Inputs): InputKey[] {
     if ((k === 'incStudy' || k === 'eligStudy') && !inStudy) return false;
     if ((k === 'kidsFrom' || k === 'kidsYears') && !(i.kids > 0)) return false;
     if ((k === 'incSpouse' || k === 'incSpouseRet' || k === 'avdSpouse') && !i.married) return false;
+    if (k === 'taxFrom') return false; // zählt nur mit einer Steueränderung (eine Zeile im Annahmen-Check)
     if (k === 'incPeakAge') return false; // zählt mit incPeak als eine Angabe (eine Zeile im Annahmen-Check)
     return i[k] !== DEFAULTS[k];
   });

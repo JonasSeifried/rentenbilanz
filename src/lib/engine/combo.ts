@@ -208,6 +208,14 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   const fam = p.kist > 0 || p.married;
   // § 32d Abs. 1 S. 3–5 EStG: ESt = e/(4 + k); Soli 5,5 % und Kirchensteuer k darauf ⇒ Satz (1,055 + k)/(4 + k).
   const ABG = p.kist > 0 ? (1.055 + p.kist) / (4 + p.kist) : .26375;
+  // Was-wäre-wenn Steueränderung (neu, nicht im Original; docs/steueraenderung.md): ab Jahr tChange (Standard Rentenbeginn)
+  // Abgeltungsteuersatz p.abgRate statt 25 % und Grenzsteuersatz der Einkommensteuer um p.estAdd höher. Hypothetisch,
+  // keine künftige Rechtslage. Kirchensteuer wie § 32d Abs. 1 S. 4 verallgemeinert: ESt = e · s/(1 + s · k).
+  // Standard (25 %, 0) ⇒ jeder Ausdruck wie bisher (bitgleich).
+  const tChange = p.taxFrom < 0 ? n : Math.max(0, p.taxFrom - p.a0);
+  const ABG_NEW = p.abgRate === .25 ? ABG : p.kist > 0 ? p.abgRate * (1.055 + p.kist) / (1 + p.abgRate * p.kist) : p.abgRate * 1.055;
+  const abg = (t: number) => t >= tChange ? ABG_NEW : ABG;
+  const estAddAt = (t: number) => t >= tChange ? p.estAdd : 0;
   // § 20 Abs. 9 S. 2 EStG: gemeinsamer Sparer-Pauschbetrag 2.000 € (Partner ohne eigene Kapitalerträge angenommen).
   const SPB = p.married ? 2000 : 1000;
   const partnerNom = (t: number) => (t < n ? p.incSpouse : p.incSpouseRet) * I(t);
@@ -246,11 +254,13 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     return { est, church, total: assessed + so + church };
   };
   const taxNom = (incomeNom: number, t: number, own = true) => fam ? assess(incomeNom, t, own).total
+    : estAddAt(t) !== 0 ? withSoli(incomeTaxNom(incomeNom, t), t)
     : F.round ? tax2026(incomeNom, I(t)) : tax(incomeNom / I(t)) * I(t);
-  const taxAdd = (incReal: number, addNom: number, t: number, own = true) => addNom <= 0 ? 0 : F.round || fam
+  const withSoli = (e: number, t: number) => e + soli(e / I(t)) * I(t);
+  const taxAdd = (incReal: number, addNom: number, t: number, own = true) => addNom <= 0 ? 0 : F.round || fam || estAddAt(t) !== 0
     ? taxNom(incReal * I(t) + addNom, t, own) - taxNom(incReal * I(t), t, own)
     : (tax(incReal + addNom / I(t)) - tax(incReal)) * I(t);
-  const taxSave = (incReal: number, dedNom: number, t: number) => fam
+  const taxSave = (incReal: number, dedNom: number, t: number) => fam || estAddAt(t) !== 0
     ? taxNom(incReal * I(t), t) - taxNom(incReal * I(t) - dedNom, t) // Abzug auch über das eigene Einkommen hinaus (Splitting)
     : F.round
     ? taxNom(incReal * I(t), t) - taxNom(Math.max(0, incReal * I(t) - dedNom), t)
@@ -268,15 +278,16 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   // E4: § 10a prüft die tarifliche ESt, danach § 2 Abs. 6 EStG / § 3 Abs. 2 SolZG.
   // Nominale ESt separat benötigt; core.ts und seine historische Rechnung bleiben unverändert.
   // Dieselben Tarifkoeffizienten wie tax2026, ohne zusätzliche Abrundung in heutigen Euro.
+  // Was-wäre-wenn: estAddAt(t) Prozentpunkte mehr Grenzsteuersatz oberhalb des Grundfreibetrags (12.348 €, heutiges Geld).
   const incomeTaxNom = (incomeNom: number, t: number) => {
-    const index = I(t);
-    if (!F.round) return est(incomeNom / index) * index;
+    const index = I(t), d = estAddAt(t);
+    if (!F.round) return d === 0 ? est(incomeNom / index) * index : Math.max(0, est(incomeNom / index) + d * Math.max(0, Math.floor(Math.max(0, incomeNom / index)) - 12348)) * index;
     const x = Math.floor(Math.max(0, incomeNom)) / index;
-    let e = 0;
-    if (x > 277825) e = .45 * x - 19470.38;
-    else if (x > 69878) e = .42 * x - 11135.63;
-    else if (x > 17799) { const z = (x - 17799) / 1e4; e = (173.10 * z + 2397) * z + 1034.87; }
-    else if (x > 12348) { const y = (x - 12348) / 1e4; e = (914.51 * y + 1400) * y; }
+    let e = d === 0 ? 0 : d * Math.max(0, x - 12348);
+    if (x > 277825) e += .45 * x - 19470.38;
+    else if (x > 69878) e += .42 * x - 11135.63;
+    else if (x > 17799) { const z = (x - 17799) / 1e4; e += (173.10 * z + 2397) * z + 1034.87; }
+    else if (x > 12348) { const y = (x - 12348) / 1e4; e += (914.51 * y + 1400) * y; }
     return Math.floor(Math.max(0, e) * index);
   };
   const avdLiability = (incomeNom: number, ded: number, z: number, t: number) => {
@@ -446,15 +457,15 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   const incTax = zero(), abgTax = zero(), kv = zero(), taxAvd = zero(), taxIns = zero(), xIns = zero();
   let kapTaxFlat = 0; // Kapitalauszahlung vor 12 Jahren: Abgeltungsteuer ohne Pauschbetrag (Vereinfachung des Originals)
   if (ins) {
-    if (p.insLump) { if (ins.halb) xIns[n] = ins.gain * 0.85 * 0.5; else kapTaxFlat = ins.gain * 0.85 * ABG; }
+    if (p.insLump) { if (ins.halb) xIns[n] = ins.gain * 0.85 * 0.5; else kapTaxFlat = ins.gain * 0.85 * abg(n); }
     else for (let t = n; t < T; t++) xIns[t] = ins.annual * ins.ea;
   }
   const insuranceFree = zero();
   if (F.insAllowance && ins && p.insLump) {
-    const x = ins.halb ? xIns[n] : kapTaxFlat / ABG;
+    const x = ins.halb ? xIns[n] : kapTaxFlat / abg(n);
     insuranceFree[n] = Math.min(allowance(n), x);
     if (ins.halb) xIns[n] -= insuranceFree[n];
-    else kapTaxFlat = (x - insuranceFree[n]) * ABG;
+    else kapTaxFlat = (x - insuranceFree[n]) * abg(n);
   }
   for (let t = n; t < T; t++) {
     const xa = avd ? avd.tb[t] : 0, xi = xIns[t];
@@ -485,7 +496,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   const capitalInsIncome = ins?.halb ? (p.insLump ? xIns[n] : Math.max(0, capitalInsGain - capitalInsFree)) : 0;
   let kapTax = 0, kapNet = 0, kvLi = 0;
   if (ins) {
-    kapTax = p.insLump ? (ins.halb ? taxIns[n] : kapTaxFlat) : (ins.halb ? taxAdd(p.incRet, capitalInsIncome, n) : Math.max(0, capitalInsGain - capitalInsFree) * ABG);
+    kapTax = p.insLump ? (ins.halb ? taxIns[n] : kapTaxFlat) : (ins.halb ? taxAdd(p.incRet, capitalInsIncome, n) : Math.max(0, capitalInsGain - capitalInsFree) * abg(n));
     // Ohne kvLumpSpread (Original): KV auf die Kapitalauszahlung sofort, eigener Topf 10 × Spielraum(n).
     if (!F.kvSpread) kvLi = kvLump(ins.C, n);
     kapNet = F.kvSpread ? ins.C - kapTax : ins.C - kapTax - kvLi;
@@ -522,7 +533,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       f.B += vp;
       if (tx > 0 && f.V > 0) {
         const q = Math.max(0, (f.V - f.B) / f.V);
-        const sale = tx / (1 - q * f.tf * ABG);
+        const sale = tx / (1 - q * f.tf * abg(t));
         f.B *= (f.V - sale) / f.V; f.V -= sale; f.abg[t] += sale;
         if (!accum && t < f.tEnd) f.kvBase += q * sale * (F.kvInv ? f.tf : 1);
       }
@@ -543,7 +554,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       const due = shareAllowance(funds.map(f => f.pending * f.tf), free); free = due.left;
       for (let i = 0; i < nf; i++) {
         const f = funds[i];
-        settleVP(f, f.pending, due.taxed[i] * ABG, t, accum); f.pending = 0;
+        settleVP(f, f.pending, due.taxed[i] * abg(t), t, accum); f.pending = 0;
       }
     }
     // Phase 1: Entnahmen am Jahresanfang, Gewinnanteil
@@ -571,7 +582,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     for (let i = 0; i < nf; i++) {
       const f = funds[i];
       if (!(f.sell > 0)) continue;
-      const tx = s1.taxed[i] * ABG, to = (f.safe ?? f.risky)!;
+      const tx = s1.taxed[i] * abg(t), to = (f.safe ?? f.risky)!;
       f.B -= f.sell * f.B / f.V; f.V -= f.sell; f.abg[t] += tx;
       to.V += f.sell - tx; to.B += f.sell - tx;
     }
@@ -579,9 +590,9 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       const f = funds[i];
       if (f.pay) {
         const tb = s1.taxed[i];
-        if (F.kvInv || F.kvShared) { f.dedY = tb * ABG; f.kvBase += F.kvInv ? f.tf * f.gain : f.gain; }
-        else { const k = kvAdd(f.gain, t); f.dedY = tb * ABG + k; f.kvInline[t] += k; }
-        f.abg[t] += tb * ABG;
+        if (F.kvInv || F.kvShared) { f.dedY = tb * abg(t); f.kvBase += F.kvInv ? f.tf * f.gain : f.gain; }
+        else { const k = kvAdd(f.gain, t); f.dedY = tb * abg(t) + k; f.kvInline[t] += k; }
+        f.abg[t] += tb * abg(t);
         f.B -= f.W * f.B / f.V; f.V -= f.W; f.payY = f.W;
       }
       // Monatsbeiträge und Wertentwicklung
@@ -599,7 +610,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       const f = funds[i];
       if (F.nextVP) f.pending = Math.max(0, f.vp);
       else if (f.vp >= 0) {
-        const tx = s2.taxed[i] * ABG;
+        const tx = s2.taxed[i] * abg(t);
         settleVP(f, f.vp, tx, t, accum);
       }
       if (f.kvBase > 0) {
@@ -636,7 +647,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       gain += pending * f.tf + (f.vals[idx] - basisAfterVP) * f.tf;
     }
     const taxable = Math.max(0, gain - free);
-    const flat = taxable * ABG;
+    const flat = taxable * abg(idx);
     const base = income * I(idx) + X;
     const tariff = taxNom(base + taxable, idx, own) - taxNom(base, idx, own);
     if (!(otherCapital > 0)) return { value, tax: F.gp ? Math.min(flat, tariff) : flat };
@@ -646,7 +657,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     // Bei vollständiger Liquidation können Fondsverluste die kurze Versicherungsleistung
     // mindern. Erst nach dieser Saldierung bei null abschneiden (§ 20 Abs. 6 EStG).
     const jointCapital = Math.max(0, otherCapital + gain - free);
-    const jointFlat = jointCapital * ABG, priorFlat = otherCapital * ABG;
+    const jointFlat = jointCapital * abg(idx), priorFlat = otherCapital * abg(idx);
     if (!F.gp) return { value, tax: jointFlat - priorFlat };
     const priorTariff = taxNom(base + otherCapital, idx, own) - taxNom(base, idx, own);
     const priorTax = Math.min(priorFlat, priorTariff);
@@ -658,10 +669,10 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       const l = liquidation(fs, idx, income, own); return l.value - l.tax;
     }
     const spb = own ? allowance(idx) : 1000; // ohne indexAllowance: SPB abzüglich allowanceUsed
-    if (fs.length === 1) { const V = fs[0].vals[idx], B = fs[0].bases[idx], tf = fs[0].tf; return V - Math.max(0, (V - B) * tf - spb) * ABG; }
+    if (fs.length === 1) { const V = fs[0].vals[idx], B = fs[0].bases[idx], tf = fs[0].tf; return V - Math.max(0, (V - B) * tf - spb) * abg(idx); }
     let V = 0, G = 0, X = 0, mixed = false;
     for (const f of fs) { const g = f.vals[idx] - f.bases[idx]; V += f.vals[idx]; G += g; X += g * f.tf; if (f.tf !== 0.7) mixed = true; }
-    return V - Math.max(0, (mixed ? X : G * 0.7) - spb) * ABG; // nur Aktienfonds: wie bisher G · 0,7
+    return V - Math.max(0, (mixed ? X : G * 0.7) - spb) * abg(idx); // nur Aktienfonds: wie bisher G · 0,7
   };
   const sellNet = (d: Depot, idx: number) => sellFunds(d.members, idx);
 
@@ -820,7 +831,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   if (F.gp) for (let t = 0; t < T; t++) {
     const paid = abgTax[t];
     if (!(paid > 0)) continue;
-    const K = paid / ABG;
+    const K = paid / abg(t);
     const base = (t < n ? incAt(t) : p.incRet) * I(t);
     const X = list.reduce((s, r) => s + r.taxBase[t], 0);
     const income = base + X - (F.kvDeduct && t >= n ? kv[t] : 0);
@@ -837,7 +848,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   if (F.gp && avd && avd.L[n] + avd.Lu[n] > 0) {
     const L = avd.L[n] + avd.Lu[n], xL = avd.tb[n] - (avd.W[n] + avd.xW[n]);
     const income = p.incRet * I(n) + list.reduce((s, r) => s + r.taxBase[n], 0) - (F.kvDeduct ? kv[n] : 0);
-    const paid = capitalWithheld[n], K = paid / ABG;
+    const paid = capitalWithheld[n], K = paid / abg(n);
     const totalTax = (x: number) => taxNom(Math.max(0, x), n) + Math.min(paid,
       taxNom(Math.max(0, x + K), n) - taxNom(Math.max(0, x), n));
     lumpNet = L - (totalTax(income) - totalTax(income - xL + (F.kvDeduct ? kvLa : 0))) - kvLa;

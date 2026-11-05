@@ -100,6 +100,12 @@ export interface Params {
    * selbst wird nicht verglichen. Neu, nicht im Original; 0 = bisheriges Verhalten (docs/kirchensteuer-splitting.md).
    */
   avdSpouse: number;
+  /**
+   * Was-wäre-wenn Steueränderung (hypothetisch, keine künftige Rechtslage; docs/steueraenderung.md). Ab Alter taxFrom
+   * (−1 = ab Rentenbeginn) gilt der Abgeltungsteuersatz abgRate (Anteil, heute 0,25) und ein um estAdd (Anteil, z. B. 0,05)
+   * höherer Grenzsteuersatz der Einkommensteuer oberhalb des Grundfreibetrags. Neu, nicht im Original; 0,25 / 0 = bisheriges Verhalten.
+   */
+  abgRate: number; estAdd: number; taxFrom: number;
   real: boolean;
   on: Record<ProductKey, boolean>;
 }
@@ -136,6 +142,9 @@ export function readParams(inp: Inputs): Params {
     kist: inp.kist == null ? 0 : pct('kist', 0, 10), married: chk('married'),
     incSpouse: Math.max(0, num('incSpouse')), incSpouseRet: Math.max(0, num('incSpouseRet')),
     avdSpouse: Math.max(0, num('avdSpouse')), // fehlt ⇒ 0 (kein Partner-Vertrag)
+    // Fehlen ⇒ heutiges Recht (25 %, kein Aufschlag), ab Rentenbeginn.
+    abgRate: inp.abgRate == null ? .25 : pct('abgRate', 0, 60), estAdd: inp.estAdd == null ? 0 : pct('estAdd', -14, 30),
+    taxFrom: inp.taxFrom == null || num('taxFrom') < 0 ? -1 : clamp(Math.round(num('taxFrom')), 16, 100),
     real: chk('real'),
     on: { etf: chk('etfOn'), avd: chk('avdOn'), ins: chk('insOn'), fond: chk('fondOn') }
   };

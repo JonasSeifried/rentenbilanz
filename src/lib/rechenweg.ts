@@ -26,6 +26,9 @@ const LABELS: Readonly<Record<InputKey, readonly [string, string]>> = Object.fre
   incSpouse: ['Partner: zu versteuerndes Einkommen vor dem eigenen Rentenbeginn (heutiges Geld)', '€/Jahr'],
   incSpouseRet: ['Partner: zu versteuerndes Einkommen ab dem eigenen Rentenbeginn (heutiges Geld)', '€/Jahr'],
   avdSpouse: ['Partner: eigener Beitrag in seinen geförderten Altersvorsorgevertrag (nur verheiratet)', '€/Monat'],
+  abgRate: ['Was-wäre-wenn: Abgeltungsteuersatz ohne Soli/Kirchensteuer (heute 25)', '%'],
+  estAdd: ['Was-wäre-wenn: Grenzsteuersatz der Einkommensteuer höher um', 'Prozentpunkte'],
+  taxFrom: ['Was-wäre-wenn: Steueränderung gilt ab (−1 = ab Rentenbeginn)', 'Alter'],
   studyEnd: ['Ausbildung/Studium bis', 'Alter (16 = keine)'], incStudy: ['Zu versteuerndes Einkommen in der Ausbildung', '€/Jahr'],
   eligStudy: ['In der Ausbildung zulageberechtigt', ''], kvRate: ['KV/PV-Satz im Alter', '%'],
   infl: ['Inflation', '% p. a.'], dyn: ['Beitragsdynamik', '% p. a.'], basis: ['Basiszins Vorabpauschale', '%'],
@@ -63,6 +66,7 @@ const limitsText = (p: Params, zulSpouse = '') => [
   taxText(p),
   ...(p.married ? [spouseAvdText(p, zulSpouse)] : []),
   salaryText(p),
+  changeText(p),
   'Abgeltungsteuer ' + (p.kist > 0 ? pct((1.055 + p.kist) / (4 + p.kist)) + ' % einschließlich Soli und Kirchensteuer (§ 32d Abs. 1 S. 4 EStG: 25 % ermäßigt auf e/(4 + k))' : '26,375 %') +
     ', Teilfreistellung 30 % (Aktienfonds), Sparer-Pauschbetrag ' + (p.married ? '2.000 € (zusammen veranlagt; Partner ohne eigene Kapitalerträge außer den unten genannten angenommen) ' : '1.000 € ') +
     (p.indexAllowance ? 'wächst mit der Inflation (hypothetisch, Schalter indexAllowance)' : 'nominal fest') +
@@ -86,6 +90,17 @@ function taxText(p: Params): string {
   const heirs = (p.kist > 0 || p.married ? ' Erben (incHeir) versteuern einzeln im Grundtarif mit 1.000 € Pauschbetrag' + (p.kist > 0 ? ' und demselben Kirchensteuersatz' : '') + '.' : '') +
     (p.married ? ' Erbt der Partner: Todesjahr gemeinsam veranlagt mit dem Partner-Einkommen (Splitting, 2.000 €, Einkommen der verstorbenen Person im Todesjahr 0); spätere Steuer auf das übertragene AVD mit incSpouseRet im Grundtarif.' : '');
   return tariff + ', mit Solidaritätszuschlag; Tarifgrenzen wachsen mit der Inflation; ' + church + '.' + (p.married ? '' : ' Kein Ehegattensplitting.') + heirs;
+}
+
+/** Was-wäre-wenn Steueränderung in Worten, passend zu abg()/estAddAt() in combo.ts. */
+function changeText(p: Params): string {
+  if (p.abgRate === .25 && p.estAdd === 0) return 'Steuerrecht: heute geltendes Recht (Stand 2026) für die ganze Laufzeit; künftige Gesetzesänderungen sind nicht vorweggenommen.';
+  const from = p.taxFrom < 0 ? 'ab Rentenbeginn (Alter ' + p.R + ')' : 'ab Alter ' + Math.max(p.taxFrom, p.a0);
+  const bits = [
+    ...(p.abgRate !== .25 ? ['Abgeltungsteuersatz ' + pct(p.abgRate) + ' % statt 25 % (mit Soli' + (p.kist > 0 ? ' und Kirchensteuer: ESt = e · s/(1 + s · k), verallgemeinert aus § 32d Abs. 1 S. 4 EStG' : '') + '; Teilfreistellung und Sparer-Pauschbetrag unverändert)'] : []),
+    ...(p.estAdd !== 0 ? ['Grenzsteuersatz der Einkommensteuer oberhalb des Grundfreibetrags um ' + pct(p.estAdd) + ' Prozentpunkte ' + (p.estAdd > 0 ? 'höher' : 'niedriger') + ' (tarifliche ESt + Satz × (zvE − 12.348 €), heutiges Geld; Soli und Kirchensteuer darauf)'] : []),
+  ];
+  return 'Was-wäre-wenn Steueränderung (hypothetisch, keine angekündigte Rechtslage): ' + from + ' ' + bits.join('; ') + '. Gilt für alle Zahlungen und Verkäufe ab diesem Jahr, auch für Erben, ohne Bestandsschutz; Beiträge und Erstattungen davor nach heutigem Recht.';
 }
 
 /** Partner-Vertrag (avdSpouse) in Worten, passend zum AVD-Block in combo.ts. */
@@ -117,7 +132,7 @@ const n4 = (x: number) => x.toLocaleString('de-DE', { minimumFractionDigits: 4, 
 const fmtVal = (v: Inputs[InputKey]) => typeof v === 'boolean' ? (v ? 'ja' : 'nein') : String(v).replace('.', ',');
 
 /** Eingaben, die als Prozent eingegeben und in Params als Anteil geführt werden. */
-const PCT = new Set<string>(['g', 'gPay', 'infl', 'dyn', 'basis', 'etfTer', 'avdCost', 'insEff', 'fondAA', 'fondTer', 'kvRate', 'safeRate', 'kist', 'avdPayCost', 'etfPayTer', 'fondPayTer']);
+const PCT = new Set<string>(['g', 'gPay', 'infl', 'dyn', 'basis', 'etfTer', 'avdCost', 'insEff', 'fondAA', 'fondTer', 'kvRate', 'safeRate', 'kist', 'abgRate', 'estAdd', 'avdPayCost', 'etfPayTer', 'fondPayTer']);
 
 /** Prozentfelder, bei denen −1 „wie die Ansparkosten“ bedeutet; andere dürfen negativ sein (Rendite, Inflation …). */
 const SENTINEL = new Set<string>(['avdPayCost', 'etfPayTer', 'fondPayTer']);

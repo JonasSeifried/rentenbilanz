@@ -57,9 +57,9 @@ describe('Ergebnissatz ohne Sieger', () => {
   it('Robustheit zählt Szenarien, in denen sich ein Abstand umkehrt (unabhängig von der Reihenfolge)', () => {
     const p = P(), A = analyze(p), sc = scenarios(p), V = verdict(A, sc);
     // Standardwerte: nur „AVD-Kosten 1,0 %“ dreht AVD ↔ ETF (Gleichstand bei rund 0,87 %).
-    expect(V.robust).toMatchObject({ flips: 1, total: 14, example: 'AVD-Kosten 1,0 % in Anspar- und Auszahlphase (Szenario)' });
+    expect(V.robust).toMatchObject({ flips: 1, total: 16, example: 'AVD-Kosten 1,0 % in Anspar- und Auszahlphase (Szenario)' });
     const r = robustText(V.robust!);
-    expect(r.before + r.link + r.after).toBe('In 1 von 14 Szenarien unten kehrt sich mindestens ein Abstand zwischen zwei Produkten um, z. B. bei „AVD-Kosten 1,0 % in Anspar- und Auszahlphase (Szenario)“.');
+    expect(r.before + r.link + r.after).toBe('In 1 von 16 Szenarien unten kehrt sich mindestens ein Abstand zwischen zwei Produkten um, z. B. bei „AVD-Kosten 1,0 % in Anspar- und Auszahlphase (Szenario)“.');
   });
 });
 

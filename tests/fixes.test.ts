@@ -345,9 +345,9 @@ describe('Szenarien', () => {
   it('stabile IDs, Reihenfolge wie im Original, Label ohne Klammerzusatz', () => {
     // Reihenfolge des Originals; „shift“ (Umschichtung, nicht im Original) nur außerhalb des Originalpfads, am Ende.
     expect(scenarioList(P(), null, NONE).map(s => s.id)).toEqual(['kv', 'avdCost', 'refund', 'g', 'incWork', 'incRetLow', 'incRetHigh', 'insMode', 'insCost']);
-    expect(scenarioList(P()).map(s => s.id)).toEqual(['kv', 'avdCost', 'refund', 'g', 'incWork', 'incPath', 'incRetLow', 'incRetHigh', 'insMode', 'insCost', 'shift', 'payProfile', 'fundingDelay', 'payCost', 'allowance']);
-    expect(scenarioList(P({ avdCost: 1, insEff: 2, incRet: 10000, reinvest: false })).map(s => s.id)).toEqual(['kv', 'g', 'incWork', 'incPath', 'incRetHigh', 'insMode', 'shift', 'payProfile', 'fundingDelay', 'payCost', 'allowance']);
-    expect(scenarioList(P({ avdOn: false, insOn: false })).map(s => s.id)).toEqual(['kv', 'g', 'incWork', 'incPath', 'incRetLow', 'incRetHigh', 'shift', 'payProfile', 'allowance']);
+    expect(scenarioList(P()).map(s => s.id)).toEqual(['kv', 'avdCost', 'refund', 'g', 'incWork', 'incPath', 'incRetLow', 'incRetHigh', 'insMode', 'insCost', 'shift', 'payProfile', 'fundingDelay', 'payCost', 'allowance', 'taxAbg', 'taxEst']);
+    expect(scenarioList(P({ avdCost: 1, insEff: 2, incRet: 10000, reinvest: false })).map(s => s.id)).toEqual(['kv', 'g', 'incWork', 'incPath', 'incRetHigh', 'insMode', 'shift', 'payProfile', 'fundingDelay', 'payCost', 'allowance', 'taxAbg', 'taxEst']);
+    expect(scenarioList(P({ avdOn: false, insOn: false })).map(s => s.id)).toEqual(['kv', 'g', 'incWork', 'incPath', 'incRetLow', 'incRetHigh', 'shift', 'payProfile', 'allowance', 'taxAbg', 'taxEst']);
     expect(scenarioList(P()).find(s => s.id === 'refund')!.label).toBe('Steuererstattung ausgegeben statt angelegt');
   });
   it('Szenarien rechnen mit denselben Fixes wie die Basis', () => {

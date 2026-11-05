@@ -273,6 +273,15 @@ export const GLOSSARY = {
       'Nicht gerechnet: Kinderzulagen und Berufseinsteigerbonus des Partners, ein anderer Rentenbeginn des Partners. Die Auszahlungen aus dem Partner-Vertrag gehören in sein Einkommen ab deinem Rentenbeginn.',
     ],
   },
+  steueraenderung: {
+    title: 'Was wäre, wenn sich die Steuern ändern?',
+    text: [
+      'Gerechnet wird mit dem heutigen Steuerrecht. Bis zur Auszahlung können sich die Regeln ändern, für alle Produkte, aber über verschiedene Steuern: ETF-Depot und aktiver Fonds hängen an der Abgeltungsteuer (heute 25 % auf den Gewinn, bei Aktienfonds auf 70 % davon). Das Altersvorsorgedepot hängt an der Einkommensteuer, und zwar auf die ganze Auszahlung, weil Beiträge und Zulagen vorher steuerfrei waren (§ 22 Nr. 5 EStG). Die Versicherung hängt nach 12 Jahren und ab 62 an der Einkommensteuer auf die Hälfte des Gewinns (§ 20 Abs. 1 Nr. 6 S. 2 mit § 52 Abs. 28 S. 7 EStG), davor an der Abgeltungsteuer.',
+      'Gleich viele Prozentpunkte treffen die Produkte deshalb verschieden stark: am meisten Euro dort, wo der größte Betrag besteuert wird. Mit diesen Feldern lässt sich das mit den eigenen Zahlen durchspielen. Gerechnet wird ohne Bestandsschutz: Ab dem gewählten Alter gilt der neue Satz für alle Auszahlungen und Verkäufe.',
+      'Bisherige Änderungen hatten Übergangsregeln: Kapitallebensversicherungen, die vor 2005 abgeschlossen wurden, bleiben nach altem Recht steuerfrei (§ 52 Abs. 28 S. 5 EStG). Kursgewinne auf Wertpapiere, die vor 2009 gekauft wurden, blieben bei Einführung der Abgeltungsteuer steuerfrei (§ 52a Abs. 11 S. 4 EStG a. F.). Bei Fondsanteilen wurde dieser Schutz 2018 eingeschränkt: Wertsteigerungen ab 2018 sind über 100.000 € je Person steuerpflichtig (§ 56 Abs. 6 S. 1 Nr. 2 InvStG). Einen Anspruch auf Bestandsschutz gibt es nicht.',
+      'Für bestehende Verträge und Depots ist eine Änderung für die Zukunft grundsätzlich zulässig, der Gesetzgeber muss aber den Vertrauensschutz abwägen. Das Bundesverfassungsgericht hat 2010 entschieden, dass Wertzuwächse, die nach altem Recht schon steuerfrei realisierbar waren, nicht nachträglich besteuert werden dürfen (Beschluss vom 07.07.2010, 2 BvL 14/02 u. a., zu Grundstücken). Wie eine künftige Änderung aussähe, lässt sich nicht vorhersagen.',
+    ],
+  },
   erbschaftsteuer: {
     title: 'Erbschaftsteuer',
     text: ['Nicht gerechnet. Freibeträge: Ehepartner 500.000 €, Kinder 400.000 €, Partner ohne Trauschein nur 20.000 € (darüber 30 %).'],
