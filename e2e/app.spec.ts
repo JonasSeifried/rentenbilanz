@@ -52,7 +52,7 @@ test('Startseite rechnet mit den Standardwerten wie die Engine', async ({ page }
   await expect(page.getByTestId('disclaimer')).toContainText('Rechtsstand 26.05.2026');
   await expect(field(page, 'a0')).toHaveValue('22');
   await expect(field(page, 'incWork')).toHaveValue('38.000');
-  await expect(page.locator('.scen tbody tr')).toHaveCount(11); // Ausgangslage + 9 Zeilen des Originals + „Alle schichten vor der Rente um“
+  await expect(page.locator('.scen tbody tr')).toHaveCount(15); // Ausgangslage + 9 Zeilen des Originals + Umschichtung + Auszahlprofil, Förderverzug, AVD-Auszahlkosten, Pauschbetrag
 });
 
 test('Eingaben werden gespeichert und beim nächsten Besuch wiederhergestellt', async ({ page }) => {

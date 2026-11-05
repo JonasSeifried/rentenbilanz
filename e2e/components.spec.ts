@@ -34,6 +34,13 @@ test.afterEach(async ({ page }) => {
   expect((page as unknown as { __errors: string[] }).__errors, 'Konsolenfehler').toEqual([]);
 });
 
+// Ohne den Header wäre der folgende Test wertlos: Der Testserver muss die CSP aus public/_headers mitschicken.
+test('Testserver liefert die Sicherheits-Header aus public/_headers', async ({ request }) => {
+  const res = await request.get('./');
+  expect(res.headers()['content-security-policy']).toContain("default-src 'self'");
+  expect(res.headers()['x-content-type-options']).toBe('nosniff');
+});
+
 test('keine CSP-Verletzung beim Durchklicken (Tabs, Popover, Diagramm, Farbschema, Schalter)', async ({ page, isMobile }) => {
   await page.goto('./');
   for (const t of ['detail', 'heirs', 'settings', 'overview']) await page.click('#tab-' + t);

@@ -34,6 +34,7 @@ describe('parseDe', () => {
     expect(parseDe(' 5 % ')).toBe(5);
     expect(parseDe('1 500 €')).toBe(1500);
     expect(parseDe('−3')).toBe(-3);
+    expect(parseDe('–1,5')).toBe(-1.5); // Halbgeviertstrich (Mac: Alt+Minus)
     for (const bad of ['', '  ', 'abc', '1,2,3', '--1', '1e5x', '.', '-']) expect(parseDe(bad), bad).toBeNull();
     expect(parseDe('9'.repeat(400))).toBeNull(); // nicht endlich
   });
