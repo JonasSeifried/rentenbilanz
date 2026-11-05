@@ -10,7 +10,7 @@ import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
 import { combo, comboStats, emptySplit, partStats, readCombo, shareAllowance, SPLIT_KEYS, type ComboResult, type Split } from '../src/lib/engine/combo';
 
 // engine.ts bleibt Referenz für E1–E10; neue R-Fixes werden ausschließlich in combo.ts gerechnet.
-const REFERENCE_IDS = FIX_IDS.filter(f => FIXES[f].finding.startsWith('E'));
+const REFERENCE_IDS = FIX_IDS.filter(f => FIXES[f].finding.startsWith('E') && f !== 'soliOnZulage');
 const REFERENCE_FIXES = new Set(REFERENCE_IDS);
 const M: Record<ProductKey, keyof Params> = { etf: 'etfM', avd: 'avdM', ins: 'insM', fond: 'fondM' };
 const ALL_ON = { etf: true, avd: true, ins: true, fond: true };
@@ -217,6 +217,25 @@ describe('I3 – Zulagen und Erstattungen hängen nur am AVD-Teil', () => {
 });
 
 describe('I4 – gemeinsam gegen getrennt', () => {
+  it('R3 erlaubt eine positive Wechselwirkung ohne KV, auch ohne nominale R8-Rundung (D1)', () => {
+    const p = readParams({ ...DEFAULTS, a0: 20, incWork: 25000, incRet: 2000,
+      R: 67, H: 100, g: 1.2, gPay: 1.3, infl: 4.4, dyn: 1,
+      einmal: true, insLump: true, reinvest: false, kvOn: false });
+    const split = S({ etf: 120, avd: 90, ins: 60, fond: 30 });
+    const interaction = (fixes: ReadonlySet<FixId>) => {
+      const joint = comboStats(p, combo(p, split, { fixes })).cumHReal;
+      const separate = SPLIT_KEYS.reduce((s, k) => s + comboStats(p, combo(p, S({ [k]: split[k] }), { fixes })).cumHReal, 0);
+      return { joint, separate, delta: joint - separate };
+    };
+    const fixes = new Set([...ALL_FIXES].filter(f => f !== 'taxRounding'));
+    const current = interaction(fixes);
+    expect(current.joint).toBeCloseTo(23869.339078368866, 7);
+    expect(current.separate).toBeCloseTo(23856.13732911591, 7);
+    expect(current.delta).toBeCloseTo(13.201749252955779, 7);
+    fixes.delete('capitalGuenstiger');
+    expect(interaction(fixes).delta).toBeLessThan(0);
+    // Auch ohne R8 bleibt die historische Einkommensabrundung aktiv; kein rundungsfreier Beweis.
+  });
   it('gemeinsamer Tarif/Pauschbetrag ohne KV; mit KV gilt eine BBG trotz veränderter Steuerverkäufe', () => {
     let maxKvSaving = 0;
     for (const inp of SCENARIOS) {

@@ -18,7 +18,7 @@
 // also mit ALL_FIXES. Ohne kvSharedRoom wird (wie im Original) jeder KV-Strom einzeln bis zur BBG begrenzt.
 
 import { eur } from '../format';
-import { kvGross, tax, tax2026, contractGrowth, riskyShare, AVD_MAX, AVD_SUB_MAX, ERTRAG, KV_BBG, numOf, type HeirValue, type Params, type ProductKey, type ProductResult } from './core';
+import { est, soli, kvGross, tax, tax2026, contractGrowth, riskyShare, AVD_MAX, AVD_SUB_MAX, ERTRAG, KV_BBG, numOf, type HeirValue, type Params, type ProductKey, type ProductResult } from './core';
 import { fixesOf, type EngineOptions } from './fixes';
 import type { Inputs } from './inputs';
 
@@ -175,6 +175,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   const fx = fixesOf(opts);
   const F = {
     bonus: fx.has('bonusOutsideSA'),  // E3
+    soliZ: fx.has('soliOnZulage'),    // E4
     kvInv: fx.has('kvInvestBase'),    // E6
     kvShared: fx.has('kvSharedRoom'), // E7
     kvSpread: fx.has('kvLumpSpread'), // E8
@@ -203,6 +204,30 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   const kvLump = (addNom: number, t: number) => p.kvOn && addNom > 0 ? p.kvRate * Math.min(addNom, 10 * kvRoom(t)) : 0;
   const allowance = (t: number) => 1000 * (p.indexAllowance ? I(t) : 1);
   const saDed = new Array<number>(T).fill(0), saZ = new Array<number>(T).fill(0);
+  // E4: § 10a prüft die tarifliche ESt, danach § 2 Abs. 6 EStG / § 3 Abs. 2 SolZG.
+  // Nominale ESt separat benötigt; core.ts und seine historische Rechnung bleiben unverändert.
+  // Dieselben Tarifkoeffizienten wie tax2026, ohne zusätzliche Abrundung in heutigen Euro.
+  const incomeTaxNom = (incomeNom: number, t: number) => {
+    const index = I(t);
+    if (!F.round) return est(incomeNom / index) * index;
+    const x = Math.floor(Math.max(0, incomeNom)) / index;
+    let e = 0;
+    if (x > 277825) e = .45 * x - 19470.38;
+    else if (x > 69878) e = .42 * x - 11135.63;
+    else if (x > 17799) { const z = (x - 17799) / 1e4; e = (173.10 * z + 2397) * z + 1034.87; }
+    else if (x > 12348) { const y = (x - 12348) / 1e4; e = (914.51 * y + 1400) * y; }
+    return Math.floor(Math.max(0, e) * index);
+  };
+  const avdLiability = (incomeNom: number, ded: number, z: number, t: number) => {
+    const base = taxNom(Math.max(0, incomeNom), t);
+    if (!(ded > 0)) return base;
+    if (!F.soliZ) return Math.min(base, taxNom(Math.max(0, incomeNom - ded), t) + z);
+    const before = incomeTaxNom(incomeNom, t), after = incomeTaxNom(Math.max(0, incomeNom - ded), t);
+    // Kein SA-Abzug und keine Hinzurechnung bei Gleichstand oder höherer Zulagenförderung.
+    if (before - after <= z) return base;
+    const assessed = after + z;
+    return assessed + soli(assessed / I(t)) * I(t);
+  };
   const dynF = (t: number) => Math.pow(1 + p.dyn, t);
   const annuityDue = (V: number, rr: number, rem: number) => rem <= 1 ? V : (Math.abs(rr) < 1e-9 ? V / rem : V * rr / ((1 + rr) * (1 - Math.pow(1 + rr, -rem))));
   const zero = () => new Array<number>(T).fill(0);
@@ -272,8 +297,9 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
         if (p.fundingDelay) delayedZ[t + 1] = z; else V += z;
         zul += z; zulReal += z / I(t + (p.fundingDelay ? 1 : 0));
         saDed[t] = E + zSA; saZ[t] = zSA;
-        const save = taxSave(incAt(t), E + zSA, t);
-        const extra = Math.max(0, save - zSA);
+        const extra = F.soliZ
+          ? taxNom(incAt(t) * I(t), t) - avdLiability(incAt(t) * I(t), E + zSA, zSA, t)
+          : Math.max(0, taxSave(incAt(t), E + zSA, t) - zSA);
         refunds[t + (p.fundingDelay ? 1 : 0)] = extra; ref += extra; refReal += extra / I(t + (p.fundingDelay ? 1 : 0));
       }
       if (p.fundingDelay) V += delayedZ[t];
@@ -333,9 +359,14 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     kv[n] += kvLa;
   }
   // Versicherung: Steuer auf die Kapitalauszahlung (gemeinsam im Jahr n) bzw. für die Anzeige allein (Leibrente).
+  // Die hypothetische Kapitalwahl hat einen eigenen Freibetrag. Er verändert weder den
+  // Pauschbetrag der tatsächlich gewählten Leibrente noch deren Steuer-/KV-Jahresbuch.
+  const capitalInsGain = ins ? ins.gain * .85 * (ins.halb ? .5 : 1) : 0;
+  const capitalInsFree = F.insAllowance && ins ? (p.insLump ? insuranceFree[n] : Math.min(allowance(n), capitalInsGain)) : 0;
+  const capitalInsIncome = ins?.halb ? (p.insLump ? xIns[n] : Math.max(0, capitalInsGain - capitalInsFree)) : 0;
   let kapTax = 0, kapNet = 0, kvLi = 0;
   if (ins) {
-    kapTax = p.insLump ? (ins.halb ? taxIns[n] : kapTaxFlat) : (ins.halb ? taxAdd(p.incRet, Math.max(0, ins.gain * 0.85 * 0.5 - (F.insAllowance ? allowance(n) : 0)), n) : Math.max(0, ins.gain * 0.85 - (F.insAllowance ? allowance(n) : 0)) * 0.26375);
+    kapTax = p.insLump ? (ins.halb ? taxIns[n] : kapTaxFlat) : (ins.halb ? taxAdd(p.incRet, capitalInsIncome, n) : Math.max(0, capitalInsGain - capitalInsFree) * 0.26375);
     // Ohne kvLumpSpread (Original): KV auf die Kapitalauszahlung sofort, eigener Topf 10 × Spielraum(n).
     if (!F.kvSpread) kvLi = kvLump(ins.C, n);
     kapNet = F.kvSpread ? ins.C - kapTax : ins.C - kapTax - kvLi;
@@ -470,7 +501,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     return { vals: sum(a.vals, b.vals), bases: sum(a.bases, b.bases), net: sum(a.net, b.net), abg: sum(a.abg, b.abg), kvInline: sum(a.kvInline, b.kvInline), own: a.own + b.own, ownReal: a.ownReal + b.ownReal, members: [a, b] };
   };
   /** Verkauf aller Fonds der Liste zum Zeitpunkt idx mit einem Sparer-Pauschbetrag; Gewinne je Teilfreistellung. */
-  const liquidation = (fs: readonly Fund[], idx: number, income = p.incHeir, X = 0, free = allowance(idx)) => {
+  const liquidation = (fs: readonly Fund[], idx: number, income = p.incHeir, X = 0, free = allowance(idx), otherCapital = 0) => {
     let value = 0, gain = 0;
     for (const f of fs) {
       const pending = F.nextVP ? f.pendingAt[idx] : 0;
@@ -483,7 +514,19 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     const flat = taxable * .26375;
     const base = income * I(idx) + X;
     const tariff = taxNom(base + taxable, idx) - taxNom(base, idx);
-    return { value, tax: F.gp ? Math.min(flat, tariff) : flat };
+    if (!(otherCapital > 0)) return { value, tax: F.gp ? Math.min(flat, tariff) : flat };
+    // Kapitalanzeige: kurze Versicherungsleistung und Fonds nehmen gemeinsam an R3 teil.
+    // Nur die marginale Fondssteuer zuordnen; eine spätere Erstattung der Versicherung
+    // erhöht auch hier nicht deren anfängliche Kapitalauszahlung.
+    // Bei vollständiger Liquidation können Fondsverluste die kurze Versicherungsleistung
+    // mindern. Erst nach dieser Saldierung bei null abschneiden (§ 20 Abs. 6 EStG).
+    const jointCapital = Math.max(0, otherCapital + gain - free);
+    const jointFlat = jointCapital * .26375, priorFlat = otherCapital * .26375;
+    if (!F.gp) return { value, tax: jointFlat - priorFlat };
+    const priorTariff = taxNom(base + otherCapital, idx) - taxNom(base, idx);
+    const priorTax = Math.min(priorFlat, priorTariff);
+    const jointTariff = taxNom(base + jointCapital, idx) - taxNom(base, idx);
+    return { value, tax: Math.min(jointFlat, jointTariff) - priorTax };
   };
   const sellFunds = (fs: readonly Fund[], idx: number, income = p.incHeir) => {
     if (F.gp || F.nextVP || p.indexAllowance) {
@@ -646,7 +689,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     const X = list.reduce((s, r) => s + r.taxBase[t], 0);
     const income = base + X - (F.kvDeduct && t >= n ? kv[t] : 0);
     const liability = (x: number) => t < n
-      ? Math.min(taxNom(Math.max(0, x), t), taxNom(Math.max(0, x - saDed[t]), t) + saZ[t])
+      ? avdLiability(x, saDed[t], saZ[t], t)
       : taxNom(Math.max(0, x), t);
     const refund = Math.max(0, paid - (liability(income + K) - liability(income)));
     for (const r of list) {
@@ -670,9 +713,10 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   // Kapital nach Steuern gesamt: Fonds bei Rentenbeginn gemeinsam verkauft (ein Pauschbetrag)
   const capDepots = [dEtf, dFond, dSide].filter((d): d is Depot => !!d);
   let capNet = sum(r => r.capNet);
-  if (capDepots.length > 1 || (F.insAllowance && ins && p.insLump && capDepots.length > 0)) {
+  if (capDepots.length > 1 || (F.insAllowance && ins && capDepots.length > 0)) {
     const fs = capDepots.flatMap(d => d.members);
-    const l = liquidation(fs, n, p.incRet, xIns[n], Math.max(0, allowance(n) - insuranceFree[n]));
+    const otherCapital = ins && !ins.halb ? Math.max(0, capitalInsGain - capitalInsFree) : 0;
+    const l = liquidation(fs, n, p.incRet, capitalInsIncome, Math.max(0, allowance(n) - capitalInsFree), otherCapital);
     const joint = F.insAllowance ? l.value - l.tax : sellFunds(fs, n, p.incRet);
     capNet += joint - capDepots.reduce((a, d) => a + sellFunds(d.members, n, p.incRet), 0);
   }

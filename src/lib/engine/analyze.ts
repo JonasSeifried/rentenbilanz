@@ -134,7 +134,9 @@ export function scenarioList(p: Params, kombi?: Split | null, opts?: EngineOptio
   const avd = p.on.avd || (kombi?.avd ?? 0) > 0, ins = p.on.ins || (kombi?.ins ?? 0) > 0;
   const add = (id: ScenarioId, label: string, patch: Partial<Params>) => list.push({ id, label, p: Object.assign({}, p, patch) });
   add('kv', p.kvOn ? 'Als Rentner in der KVdR oder privat versichert' : 'Als Rentner freiwillig gesetzlich versichert', { kvOn: !p.kvOn });
-  if (avd && p.avdCost < 0.01) add('avdCost', 'AVD-Ansparkosten 1,0 % (Deckel Standarddepot)', { avdCost: 0.01 });
+  if (avd && p.avdCost < 0.01) add('avdCost', p.avdPayCost < 0
+    ? 'AVD-Kosten 1,0 % in Anspar- und Auszahlphase (Szenario)'
+    : 'AVD-Ansparkosten 1,0 % (Deckel Standarddepot)', { avdCost: 0.01 });
   if (avd && p.reinvest) add('refund', 'Steuererstattung ausgegeben statt angelegt', { reinvest: false });
   add('g', 'Rendite 2 Prozentpunkte niedriger', { g: p.g - 0.02, gPay: p.gPay - 0.02 });
   add('incWork', 'Gehalt 30 % niedriger (' + eur(p.incWork * 0.7) + ')', { incWork: p.incWork * 0.7 });

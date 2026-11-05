@@ -3,7 +3,7 @@
 //    engine_var.ts mit OPT-Schaltern). Fälle mit kvOn wie dort mit kvRate 21,7 (damaliger Standard).
 // 2. Eigenschaften über 200 Zufallsszenarien (mulberry32 wie im Golden-Test).
 // 3. Snapshots der Standardwerte mit ALL_FIXES.
-// 4. Jede Teilmenge der Fixes läuft; Laufzeit.
+// 4. Ausgewählte Teilmengen der Fixes laufen; Laufzeit separat in performance.test.ts.
 import { describe, expect, it } from 'vitest';
 import { readParams, tax, model, type Params, type ProductKey } from '../src/lib/engine/engine';
 import { analyze, scenarios, scenarioList, PRODUCTS, type Analysis } from '../src/lib/engine/analyze';
@@ -325,9 +325,9 @@ describe('jede Teilmenge der Fixes', () => {
     const cases = [P(), P(DK), P(HIGH), P({ ...HIGH, incRet: 60000, einmal: true, real: false, deathAge: 75, heirHalf: true })];
     // Historische E-Kombinationen vollständig; R-Schalter zusätzlich einzeln, ausgehend
     // von ALL, und sämtliche Teilmengen des neuen Pakets auf dem geprüften R1/R2/R6/R8-Stand.
-    const historical = FIX_IDS.filter(f => FIXES[f].finding.startsWith('E'));
+    const historical = FIX_IDS.filter(f => FIXES[f].finding.startsWith('E') && f !== 'soliOnZulage');
     const newIds: FixId[] = ['capitalGuenstiger', 'vpNextYear', 'kvGrossIncome', 'insuranceAllowance'];
-    const previous = FIX_IDS.filter(f => !newIds.includes(f));
+    const previous = FIX_IDS.filter(f => !newIds.includes(f) && f !== 'soliOnZulage');
     const sets = [NO_FIXES, ALL_FIXES, ...FIX_IDS.map(f => new Set([f])), ...FIX_IDS.map(f => new Set(FIX_IDS.filter(x => x !== f)))];
     for (let mask = 0; mask < 1 << historical.length; mask++) sets.push(new Set(historical.filter((_, i) => mask & (1 << i))));
     for (let mask = 0; mask < 1 << newIds.length; mask++) sets.push(new Set([...previous, ...newIds.filter((_, i) => mask & (1 << i))]));
@@ -368,21 +368,7 @@ describe('Snapshots mit ALL_FIXES (aktuelle Standardwerte)', () => {
   it('DK mit KV-Sonderausgabenabzug (R1)', () => {
     expect(snap({ kvOn: true })).toEqual({ lead: 'avd', etf: 140713, avd: 140903, ins: 105292 });
   });
-  it('High mit KV-Sonderausgabenabzug (R1)', () => {
-    expect(snap({ ...HIGH, kvRate: 21.1 })).toEqual({ lead: 'etf', etf: 330961, avd: 316109, ins: 264449 });
+  it('High mit KV-Sonderausgabenabzug (R1) und Zulage in der Soli-Basis (E4)', () => {
+    expect(snap({ ...HIGH, kvRate: 21.1 })).toEqual({ lead: 'etf', etf: 330961, avd: 312445, ins: 264449 });
   });
-});
-
-describe('Laufzeit', () => {
-  it('analyze + scenarios mit ALL_FIXES höchstens 3,5 × (mehr Sensitivitäten und jährliche Steuerprüfung) so lang wie ohne Fixes', () => {
-    // Messung (MacBook, Node 26, 2026-11-03): siehe Konsole; ohne Fixes entspricht der Pfad dem Original.
-    const cases = [P(), P(DK), P(HIGH), P({ insLump: false, fondOn: true, kvOn: true })];
-    const run = (o: { fixes: ReadonlySet<FixId> }) => { for (const p of cases) { analyze(p, o); scenarios(p, o); } };
-    const time = (o: { fixes: ReadonlySet<FixId> }) => { const t0 = performance.now(); for (let i = 0; i < 20; i++) run(o); return performance.now() - t0; };
-    for (let i = 0; i < 3; i++) { time(NONE); time(ALL); } // Aufwärmen
-    let tn = Infinity, ta = Infinity;
-    for (let i = 0; i < 7; i++) { tn = Math.min(tn, time(NONE)); ta = Math.min(ta, time(ALL)); }
-    console.log(`Laufzeit analyze+scenarios: ohne Fixes ${(tn / 80).toFixed(2)} ms, mit allen ${(ta / 80).toFixed(2)} ms je Fall (× ${(ta / tn).toFixed(2)})`);
-    expect(ta / tn).toBeLessThan(3.5);
-  }, 60_000);
 });
