@@ -8,6 +8,7 @@ import { analyze, scenarios } from '../src/lib/engine/analyze';
 import { emptySplit, readCombo, type Split } from '../src/lib/engine/combo';
 import { bestSplit, evaluate } from '../src/lib/engine/search';
 import { analyzeCombo, robustRows } from '../src/lib/engine/comboAnalyze';
+import { costBreakEvens } from '../src/lib/engine/breakEven';
 const P = (patch: Partial<Inputs> = {}) => readParams({ ...DEFAULTS, ...patch });
 const S = (patch: Partial<Split>) => ({ ...emptySplit(), ...patch });
 const K4 = ['etf', 'avd', 'ins', 'fond'] as const;
@@ -49,6 +50,13 @@ describe('Laufzeit (Node)', () => {
     expect(tBest).toBeLessThan(30);
     expect(tAna).toBeLessThan(5);
     expect(median(rowTimes)).toBeLessThan(50);
+  });
+  it('Kosten-Gleichstand für AVD, Versicherung und Fonds (bei jeder Eingabe in der Übersicht) < 15 ms', () => {
+    const cases = [P({ fondOn: true }), P({ fondOn: true, kvOn: true, kvRate: 21.7 }), P({ ...HIGH, fondOn: true, fondM: 500 })].map(p => analyze(p));
+    for (let i = 0; i < 10; i++) for (const A of cases) costBreakEvens(A);
+    const t = median(cases.flatMap(A => Array.from({ length: 7 }, () => time(() => costBreakEvens(A)))));
+    console.log(`Laufzeit: Kosten-Gleichstand (3 Produkte) Median ${t.toFixed(1)} ms`);
+    expect(t).toBeLessThan(15);
   });
   it('eine Auswertung (ohne Kosten-Lauf) < 0,5 ms', () => {
     const p = P(); const s = S({ etf: 150, avd: 150, ins: 150 });

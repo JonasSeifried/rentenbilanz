@@ -15,25 +15,21 @@
   const res = $derived(A.res);
   const i = $derived(app.inputs);
 
-  type Row = { label: string; f: (pr: Product) => number; dir: 'min' | 'max' | null; info?: 'guenstiger' };
+  type Row = { label: string; f: (pr: Product) => number; info?: 'guenstiger' };
   const rows = $derived.by<Row[]>(() => [
-    { label: 'Eigene Einzahlungen', f: A.ownOf, dir: null },
-    ...(A.refundSpent ? [{ label: 'Netto-Eigenaufwand (Einzahlungen − ausgegebene Steuererstattung)', f: (pr: Product) => A.ownOf(pr) - (pr.key === 'avd' || pr.key === 'kombi' ? ((p.real ? res[pr.key]!.refReal : res[pr.key]!.ref) ?? 0) : 0), dir: null } as Row] : []),
-    { label: 'Staatliche Förderung (Zulagen + Steuervorteil)', f: pr => p.real ? res[pr.key]!.foerderReal : res[pr.key]!.foerder, dir: null, info: 'guenstiger' },
-    { label: 'Kosten bis Rentenbeginn (entgangener Ertrag)', f: pr => A.R(res[pr.key]!.cost, A.n), dir: 'min' },
-    { label: 'Kapital bei Rentenbeginn (vor Steuern)', f: pr => A.R(res[pr.key]!.capR, A.n), dir: null },
-    { label: 'Kapital bei Rentenbeginn nach Einkommensteuer (geschätzt)', f: pr => A.R(res[pr.key]!.capNet, A.n), dir: 'max' },
-    { label: 'Netto pro Monat, Ø ' + p.R + '–' + p.H + ' (ohne Einmalauszahlung)', f: pr => A.stats[pr.key]!.avgMonthly, dir: 'max' },
-    { label: 'Summe netto bis Alter ' + p.H, f: pr => A.stats[pr.key]!.cumH, dir: 'max' },
-    { label: 'Summe netto bis Alter 100', f: pr => A.stats[pr.key]!.cum100, dir: 'max' },
+    { label: 'Eigene Einzahlungen', f: A.ownOf },
+    ...(A.refundSpent ? [{ label: 'Netto-Eigenaufwand (Einzahlungen − ausgegebene Steuererstattung)', f: (pr: Product) => A.ownOf(pr) - (pr.key === 'avd' || pr.key === 'kombi' ? ((p.real ? res[pr.key]!.refReal : res[pr.key]!.ref) ?? 0) : 0) } as Row] : []),
+    { label: 'Staatliche Förderung (Zulagen + Steuervorteil)', f: pr => p.real ? res[pr.key]!.foerderReal : res[pr.key]!.foerder, info: 'guenstiger' },
+    { label: 'Kosten bis Rentenbeginn (entgangener Ertrag)', f: pr => A.R(res[pr.key]!.cost, A.n) },
+    { label: 'Kapital bei Rentenbeginn (vor Steuern)', f: pr => A.R(res[pr.key]!.capR, A.n) },
+    { label: 'Kapital bei Rentenbeginn nach Einkommensteuer (geschätzt)', f: pr => A.R(res[pr.key]!.capNet, A.n) },
+    { label: 'Netto pro Monat, Ø ' + p.R + '–' + p.H + ' (ohne Einmalauszahlung)', f: pr => A.stats[pr.key]!.avgMonthly },
+    { label: 'Summe netto bis Alter ' + p.H, f: pr => A.stats[pr.key]!.cumH },
+    { label: 'Summe netto bis Alter 100', f: pr => A.stats[pr.key]!.cum100 },
   ]);
 
-  // Markiert wird nur, wo „mehr“ bzw. „weniger“ eindeutig besser ist (wie im Original)
-  function marks(row: Row) {
-    const vals = A.active.map(row.f);
-    const target = row.dir && A.canRank && new Set(vals.map(Math.round)).size > 1 ? (row.dir === 'max' ? Math.max(...vals) : Math.min(...vals)) : null;
-    return vals.map(v => ({ v, best: target !== null && Math.round(v) === Math.round(target) }));
-  }
+  // Keine Hervorhebung des größten oder kleinsten Werts: Der Rechner zeigt Zahlen, keinen Sieger.
+  const cells = (row: Row) => A.active.map(row.f);
 
   const notes = $derived.by(() => {
     const out: string[] = ['„Nach Einkommensteuer“: ETF/Fonds bei komplettem Verkauf, AVD bei Entnahme über den Auszahlplan (grob), Versicherung bei Kapitalauszahlung. Ohne Krankenversicherung.'];
@@ -84,7 +80,7 @@
           <tbody>
             {#each rows as row}
               <tr><td>{row.label}{#if row.info}&nbsp;<Info k={row.info} />{/if}</td>
-                {#each marks(row) as c}<td class:best={c.best}>{eur(c.v)}</td>{/each}</tr>
+                {#each cells(row) as v}<td>{eur(v)}</td>{/each}</tr>
             {/each}
           </tbody>
         </table>

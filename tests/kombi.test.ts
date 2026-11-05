@@ -45,7 +45,7 @@ describe('analyze mit Kombi', () => {
     expect(a.res.kombi!.vals[t]).toBeCloseTo((c.parts.etf!.vals[t] as number) + (c.parts.avd!.vals[t] as number), 6);
   });
 
-  it('Kombi kann vorne liegen; der Ergebnissatz nennt sie', () => {
+  it('Kombi im Vergleich: Ergebnissatz nennt Beträge in fester Reihenfolge und den Abstand, kein Sieger', () => {
     // nur ETF einzeln, Kombi 300 ETF + 150 AVD: Das geförderte AVD zieht die Kombi nach vorne.
     const i = inp({ ...at(450), avdOn: false, insOn: false });
     const p = readParams(i), k = S({ etf: 300, avd: 150 });
@@ -53,8 +53,8 @@ describe('analyze mit Kombi', () => {
     expect(a.lead?.key).toBe('kombi');
     const v = verdict(a, scenarios(p, undefined, k));
     expect(v.kind).toBe('ok');
-    expect(v.headline).toMatch(/Deine Kombi mit Ø [\d.]+ € netto im Monat \(67–90\)\.$/);
-    expect(v.lines[0]).toContain('mehr netto als beim ETF-Depot');
+    expect(v.headline).toMatch(/^Ø netto im Monat \(67–90\): ETF-Depot [\d.]+ €, Deine Kombi [\d.]+ €\.$/);
+    expect(v.lines[0]).toMatch(/^Deine Kombi zahlt bis zum Alter von 90 zusammen rund [\d.]+ € \([\d,]+ %\) mehr aus als das ETF-Depot\.$/);
     expect(v.lines[1]).toBe('Die Kombi (300 € ETF + 150 € AVD) wird gemeinsam versteuert: ein Steuertarif, ein Sparer-Pauschbetrag für alle Depots.');
   });
 
@@ -65,20 +65,23 @@ describe('analyze mit Kombi', () => {
     expect(verdict(a, scenarios(p, undefined, k)).headline).not.toMatch(/^Gleichauf/);
   });
 
-  it('Gleichstand (≤ 1 €): „Gleichauf“ statt „Knapp vorne … rund 0 €“, kein Kippen durch Cent-Abstände', () => {
+  it('Gleichstand (≤ 1 €): „praktisch gleich viel“ statt „rund 0 € mehr“, kein Kippen durch Cent-Abstände', () => {
     // Über dem Höchstbetrag (570 €/Monat) liegt das AVD im ETF-Nebendepot: AVD 700 € ≈ Kombi 570 € AVD + 130 € ETF.
     const p = readParams(inp({ ...at(700), insOn: false })), k = S({ etf: 130, avd: 570 });
     const a = analyze(p, undefined, k);
     expect(Math.abs(a.stats.avd!.cumHReal - a.stats.kombi!.cumHReal)).toBeLessThanOrEqual(1);
     const sc = scenarios(p, undefined, k);
     const v = verdict(a, sc);
-    // „Gleichauf“, außer die Szenarien sind uneinig: dann hat „Kein klarer Favorit“ Vorrang
-    if (v.robust!.level < 2) expect(v.headline).toMatch(/^Gleichauf: (Das Altersvorsorgedepot und deine Kombi|Deine Kombi und das Altersvorsorgedepot), je Ø [\d.]+ € netto im Monat \(67–90\)\.$/);
-    else expect(v.headline).toMatch(/^Kein klarer Favorit/);
-    expect(v.lines[0]).toBe('Bis zum Alter von 90 liegen beide weniger als 1 € auseinander.');
-    expect(v.lines[1]).toContain('über 570 € im Monat');
-    // Gezählt werden nur echte Wechsel, nicht AVD ↔ Kombi
-    expect(v.robust!.flips).toBe(sc.filter(s => s.a.canRank && s.a.lead && !['avd', 'kombi'].includes(s.a.lead.key)).length);
+    expect(v.headline).toMatch(/^Ø netto im Monat \(67–90\): ETF-Depot [\d.]+ €, Altersvorsorgedepot [\d.]+ €, Deine Kombi [\d.]+ €\.$/);
+    expect(v.lines[2]).toBe('Deine Kombi und das Altersvorsorgedepot zahlen bis zum Alter von 90 praktisch gleich viel aus (weniger als 1 € Unterschied).');
+    expect(v.lines[3]).toContain('über 570 € im Monat');
+    // Gezählt werden nur echte Wechsel: Paare, die in beiden Rechnungen mehr als 1 € auseinanderliegen (nicht AVD ↔ Kombi)
+    const real = (x: typeof a, k: 'etf' | 'avd' | 'kombi') => x.stats[k]!.cumHReal;
+    const flipsEtf = sc.filter(s => s.a.canRank && (['avd', 'kombi'] as const).some(k => {
+      const d0 = real(a, k) - real(a, 'etf'), d1 = real(s.a, k) - real(s.a, 'etf');
+      return Math.abs(d0) > 1 && Math.abs(d1) > 1 && (d0 > 0) !== (d1 > 0);
+    }));
+    expect(v.robust!.flips).toBe(flipsEtf.filter(s => s.id !== 'refund').length);
   });
 
   it('ausgegebene Steuererstattung in der Kombi ⇒ kein fairer Vergleich, auch ohne AVD als Einzelprodukt', () => {

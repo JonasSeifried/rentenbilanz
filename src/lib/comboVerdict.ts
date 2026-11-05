@@ -1,5 +1,5 @@
-// Ergebnissatz im Kombi-Modus (Kombi-Design §4.3, UX U5). Neutral: „rechnerisch“, „unter diesen Annahmen“,
-// nie „optimal für dich“ oder „empfehlen“. Abstände (Δ) immer in heutiger Kaufkraft (Fix rankReal, E1);
+// Ergebnissatz im Kombi-Modus (Kombi-Design §4.3, UX U5). Neutral: „höchste Summe unter diesen Annahmen“, nie
+// „beste“, „optimal“, „vorne“ oder „empfehlen“ (Entscheidung des Betreibers, November 2026). Abstände (Δ) immer in heutiger Kaufkraft (Fix rankReal, E1);
 // im Nominalmodus mit dem Zusatz „(in heutiger Kaufkraft)“. Monatsdurchschnitte in der Anzeige-Einheit.
 import type { ProductKey } from './engine/core';
 import { SPLIT_KEYS, type Split } from './engine/combo';
@@ -14,7 +14,7 @@ export interface ComboVerdict {
   lines: string[];
   /** Kleingedrucktes unter dem Ergebnis. */
   note: string;
-  /** Die beste Aufteilung wird noch berechnet (Oberfläche: aria-busy, „wird berechnet …“). */
+  /** Die Aufteilung mit der höchsten Summe wird noch berechnet (Oberfläche: aria-busy, „wird berechnet …“). */
   pending: boolean;
 }
 
@@ -36,7 +36,11 @@ export function splitText(split: Split, style: 'long' | 'short' = 'long'): strin
   return ks.length ? ks.map(k => eurAmount(split[k]) + ' ' + names[k]).join(' + ') : 'nichts verteilt';
 }
 
-export function comboVerdict(C: ComboAnalysis, robust?: RobustSummary | null): ComboVerdict {
+/**
+ * `searched`: Die Suche nach der Aufteilung mit der höchsten Summe wurde angefordert (im Dialog per Knopf, opt-in).
+ * Ohne Anforderung nennt der Satz nur deine Aufteilung und die Wechselwirkung, keine andere Aufteilung.
+ */
+export function comboVerdict(C: ComboAnalysis, robust?: RobustSummary | null, searched = true): ComboVerdict {
   const { p } = C;
   const base = { note: COMBO_NOTE, pending: false };
   const range = '(' + p.R + '–' + p.H + ')';
@@ -60,26 +64,30 @@ export function comboVerdict(C: ComboAnalysis, robust?: RobustSummary | null): C
     ],
   };
 
+  // Wechselwirkung (gemeinsam − getrennt): gilt für deine Aufteilung, unabhängig von der Suche
+  const interactionLine = C.interaction !== null && Math.abs(C.interaction) > TIE_EUR ? (C.interaction < 0
+    ? 'Gemeinsam gerechnet zahlt deine Aufteilung ' + bisH + ' ' + delta(-C.interaction) + ' mehr Steuern und Abgaben, als wenn jedes Produkt allein gerechnet würde (ein Sparer-Pauschbetrag für alle Depots, progressiver Steuertarif).'
+    : 'Gemeinsam gerechnet zahlt deine Aufteilung ' + bisH + ' ' + delta(C.interaction) + ' weniger Abgaben, als wenn jedes Produkt allein gerechnet würde'
+      + (p.kvOn ? ', weil die Beitragsbemessungsgrenze der Krankenversicherung die Summe deckelt.' : '.')) : null;
+
   const B = C.best;
-  if (!B || B === 'pending') return { ...base, kind: 'ok', pending: true, headline: userLine, lines: ['Die rechnerisch beste Aufteilung wird berechnet …'] };
+  if (!searched) return { ...base, kind: 'ok', headline: userLine, lines: interactionLine ? [interactionLine] : [] };
+  if (!B || B === 'pending') return { ...base, kind: 'ok', pending: true, headline: userLine, lines: ['Die Aufteilung mit der höchsten Summe unter diesen Annahmen wird berechnet …'] };
 
   const lines: string[] = [];
-  let headline: string;
   const max = B.top ? Math.max(B.top.value, B.value) : B.value;
   const userExact = !!C.user && C.user.value >= max - TIE_EUR;
   const rel = pct(TIE_REL);
-  if (B.userIsBest) headline = userExact
-    ? 'Deine Aufteilung ist unter diesen Annahmen rechnerisch die beste: Ø ' + eur(C.user!.stats.avgMonthly) + ' netto im Monat ' + range + '.'
-    : 'Deine Aufteilung ist unter diesen Annahmen rechnerisch gleichauf mit der besten (weniger als ' + rel + ' Unterschied): Ø ' + eur(C.user!.stats.avgMonthly) + ' netto im Monat ' + range + '.';
-  else {
-    headline = userLine;
-    lines.push('Rechnerisch am meisten bringt hier ' + splitText(B.split) + ': Ø ' + eur(B.stats.avgMonthly) + ' im Monat. '
-      + cap(bisH) + ' sind das zusammen ' + delta(B.deltaUser ?? 0) + ' mehr netto.');
-  }
-  // Genannt ist eine gleichwertige, einfachere Aufteilung statt des letzten Euros (TIE_REL).
-  if (B.top && !(B.userIsBest && userExact)) lines.push('Auf den Euro gerechnet liegt ' + splitText(B.top.split) + ' ' + bisH + ' ' + delta(B.top.value - B.value)
-    + ' vorne. Das sind weniger als ' + rel + ' und weit unter der Unsicherheit der Annahmen. Bei so kleinen Unterschieden zählt der Rechner die Aufteilung mit mehr ETF als beste, weil das Geld dort jederzeit verfügbar ist.');
-  // Ungeförderter AVD-Teil: Vorteil gegenüber „150 € AVD + Rest“ offen beziffern.
+  const headline = userLine;
+  if (B.userIsBest) lines.push(userExact
+    ? 'Unter diesen Annahmen findet der Rechner keine Aufteilung mit einer höheren Summe ' + bisH + ' (gesucht in 10-€-Schritten).'
+    : 'Deine Aufteilung liegt weniger als ' + rel + ' unter der höchsten Summe ' + bisH + ', die der Rechner unter diesen Annahmen findet (gesucht in 10-€-Schritten).');
+  else lines.push((B.top ? 'Fast die höchste Summe unter diesen Annahmen' : 'Die höchste Summe unter diesen Annahmen') + ' (gesucht in 10-€-Schritten) ergibt '
+    + splitText(B.split) + ': Ø ' + eur(B.stats.avgMonthly) + ' im Monat, ' + bisH + ' zusammen ' + delta(B.deltaUser ?? 0) + ' mehr netto als deine Aufteilung.');
+  // Genannt ist eine gleichwertige, einfachere Aufteilung statt des letzten Euros (TIE_REL); das Maximum wird offen genannt.
+  if (B.top && !(B.userIsBest && userExact)) lines.push('Genau die höchste Summe ergibt ' + splitText(B.top.split) + ', ' + bisH + ' '
+    + delta(B.top.value - (B.userIsBest ? C.user!.value : B.value)) + (B.userIsBest ? ' mehr als deine Aufteilung' : ' mehr als diese') + '. Das sind weniger als ' + rel + ' und weit unter der Unsicherheit der Annahmen. Bei so kleinen Unterschieden nennt der Rechner die Aufteilung mit weniger Produkten und mehr ETF (jederzeit verfügbar).');
+  // Ungeförderter AVD-Teil: Abstand zu „150 € AVD + Rest“ offen beziffern.
   const cap150 = B.split.avd > AVD_CAP ? B.curve.find(x => x.avd === AVD_CAP) : undefined;
   if (cap150) {
     const d = B.value - cap150.value, rest = { ...cap150.split, avd: 0 };
@@ -87,25 +95,21 @@ export function comboVerdict(C: ComboAnalysis, robust?: RobustSummary | null): C
     lines.push((mine ? 'In deiner Aufteilung' : B.userIsBest ? 'In der Aufteilung ' + splitText(B.split) : 'Davon') + ' sind ' + eurAmount(B.split.avd - AVD_CAP)
       + ' im Monat ungefördert im Altersvorsorgedepot (keine Zulage, aber keine Steuer bis zur Auszahlung). '
       + 'Mit ' + eurAmount(AVD_CAP) + ' im AVD (voll gefördert) und ' + splitText(rest) + ' wären es ' + bisH + ' ' + (d > TIE_EUR ? delta(d) + ' (' + pct(d / B.value) + ') weniger' : 'praktisch gleich viel') + '. '
-      + 'Dieser Vorteil hängt an niedrigen AVD-Kosten (gerechnet: ' + pct(p.avdCost) + ' im Jahr), und das Geld ist bis zur Rente gebunden.');
+      + 'Dieser Abstand hängt an niedrigen AVD-Kosten (gerechnet: ' + pct(p.avdCost) + ' im Jahr), und das Geld ist bis zur Rente gebunden.');
   }
-  // Hat Mischen einen Nachteil?
+  // Mischung oder ein Produkt?
   if (C.bestPure) lines.push(B.isMix
-    ? 'Die rechnerisch beste Aufteilung ist eine Mischung: ' + bisH + ' ' + delta(B.mixGain) + ' mehr netto als „' + C.bestPure.label + '“.'
-    : 'Mischen bringt hier rechnerisch nichts gegenüber „' + C.bestPure.label + '“.');
-  // Wechselwirkung (gemeinsam − getrennt)
-  if (C.interaction !== null && Math.abs(C.interaction) > TIE_EUR) lines.push(C.interaction < 0
-    ? 'Gemeinsam gerechnet zahlt deine Aufteilung ' + bisH + ' ' + delta(-C.interaction) + ' mehr Steuern und Abgaben, als wenn jedes Produkt allein gerechnet würde (ein Sparer-Pauschbetrag für alle Depots, progressiver Steuertarif).'
-    : 'Gemeinsam gerechnet zahlt deine Aufteilung ' + bisH + ' ' + delta(C.interaction) + ' weniger Abgaben, als wenn jedes Produkt allein gerechnet würde'
-      + (p.kvOn ? ', weil die Beitragsbemessungsgrenze der Krankenversicherung die Summe deckelt.' : '.'));
+    ? 'Die Aufteilung mit der höchsten Summe ist eine Mischung: ' + bisH + ' ' + delta(B.mixGain) + ' mehr netto als „' + C.bestPure.label + '“, die höchste Summe mit nur einem Produkt.'
+    : 'Mischen ergibt hier keine höhere Summe als „' + C.bestPure.label + '“.');
+  if (interactionLine) lines.push(interactionLine);
   // Robustheit (U5), sobald die Leerlauf-Rechnung fertig ist
   if (robust && robust.total > 0) {
     const f = robust.flips;
-    if (robust.level === 'robust') lines.push('Die rechnerisch beste Aufteilung bleibt in allen ' + robust.total + ' Szenarien unten vorne.');
+    if (robust.level === 'robust') lines.push('In allen ' + robust.total + ' Szenarien unten ergibt dieselbe Aufteilung die höchste Summe.');
     else {
       const ex = f[0], example = ' z. B. bei „' + ex.label + '“ (' + splitText(ex.best.split, 'short') + ').';
-      const core = 'In ' + f.length + ' von ' + robust.total + ' Szenarien unten ist eine andere Aufteilung rechnerisch vorne,' + example;
-      lines.push(robust.level === 'fragile' ? 'Die beste Aufteilung hängt hier stark von den Annahmen ab: ' + core : 'Aber: ' + core);
+      const core = 'In ' + f.length + ' von ' + robust.total + ' Szenarien unten ergibt eine andere Aufteilung die höchste Summe,' + example;
+      lines.push(robust.level === 'fragile' ? 'Welche Aufteilung die höchste Summe ergibt, hängt hier stark von den Annahmen ab: ' + core : 'Aber: ' + core);
     }
   }
   return { ...base, kind: 'ok', headline, lines };

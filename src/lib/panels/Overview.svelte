@@ -5,7 +5,8 @@
   import { eur, eurRound } from '../format';
   import { SITE } from '../site';
   import { rechenweg } from '../rechenweg';
-  import { isFlip, legendName, robustText, tileName, tileSub, verdict } from '../verdict';
+  import { breakEvenText, isFlip, legendName, robustText, tileName, tileSub, verdict } from '../verdict';
+  import { costBreakEvens } from '../engine/breakEven';
   import { app, focusField, openKombi, setInputs, setTab, shareUrl, showToast } from '../state.svelte';
   import Icon from '../components/Icon.svelte';
   import Info from '../components/Info.svelte';
@@ -18,6 +19,8 @@
   let { A, scen }: { A: Analysis; scen: Scenario[] } = $props();
 
   const V = $derived(verdict(A, scen));
+  // Kosten-Gleichstand mit dem ETF-Depot (je Produkt etwa 10–15 Einzelrechnungen), nur bei fairem Vergleich.
+  const breakEvens = $derived(V.kind === 'ok' ? costBreakEvens(A) : []);
   const p = $derived(A.p);
   const res = $derived(A.res);
   const i = $derived(app.inputs);
@@ -52,11 +55,12 @@
     const ins = cumSeries[ii].values as number[];
     const others = cumSeries.filter((_, k) => A.active[k].key !== 'ins');
     if (!others.length || !(ins[ins.length - 1] > 0)) return '';
-    const bestOther = ins.map((_, k) => Math.max(...others.map(o => o.values[k] as number)));
-    const idx = ins.findIndex((v, k) => k > 0 && v >= bestOther[k]);
+    const maxOther = ins.map((_, k) => Math.max(...others.map(o => o.values[k] as number)));
+    const idx = ins.findIndex((v, k) => k > 0 && v >= maxOther[k]);
+    const all = others.length > 1 ? 'jedes andere Produkt im Vergleich' : 'das andere Produkt';
     return idx > 0
-      ? 'Die lebenslange Rente der Versicherung holt die beste Alternative erst ein, wenn man etwa ' + (p.R + idx) + ' Jahre alt wird.'
-      : 'Die lebenslange Rente der Versicherung holt die beste Alternative bis Alter 100 nicht ein.';
+      ? 'Die lebenslange Rente der Versicherung hat in Summe erst ab einem Alter von etwa ' + (p.R + idx) + ' Jahren so viel ausgezahlt wie ' + all + '.'
+      : 'Bis Alter 100 hat die lebenslange Rente der Versicherung in Summe weniger ausgezahlt als ' + (others.length > 1 ? 'mindestens ein anderes Produkt im Vergleich' : 'das andere Produkt') + '.';
   });
 
   function equalize() {
@@ -64,7 +68,7 @@
   }
   const inactive = $derived(PRODUCTS.filter(pr => !i[(pr.key + 'On') as 'etfOn']));
   const contribOf = (pr: Product) => pr.key === 'kombi' ? i.setAll : i[(pr.key + 'M') as 'etfM'];
-  const avdLead = $derived(A.lead?.key === 'avd' || (A.lead?.key === 'kombi' && (res.kombi?.split.avd ?? 0) > 0));
+  const withAvd = $derived(!!res.avd || (res.kombi?.split.avd ?? 0) > 0);
 
   // --- Szenarien ---
   const ADJUST: Partial<Record<ScenarioId, string>> = { avdCost: 'f-avdCost', insCost: 'f-insEff' };
@@ -76,7 +80,7 @@
       const can = A.canRank && s.a.canRank;
       return {
         id: s.id, label: s.label, a: s.a, base: false, can,
-        flip: can && !!A.lead && isFlip(A.lead.key, s.a),
+        flip: can && isFlip(A, s.a),
         unfair: !s.a.canRank && s.a.refundSpent,
       };
     })];
@@ -129,10 +133,14 @@
 <section class="verdict card" id="verdict" class:neutral={V.kind !== 'ok'} aria-labelledby="verdict-h" data-testid="verdict">
   <p class="eyebrow">{isExample ? 'Ergebnis für die Beispielwerte' : 'Ergebnis unter diesen Annahmen'}</p>
   <h2 id="verdict-h" tabindex="-1">
-    {#if V.kind === 'ok' && A.lead}<span class="key big" style:background={A.lead.color}></span>{/if}
     {V.headline}
   </h2>
   {#each V.lines as l}<p>{l}</p>{/each}
+  {#if breakEvens.length}
+    <ul class="be" data-testid="break-even">
+      {#each breakEvens as b (b.key)}<li>{breakEvenText(A, b)}</li>{/each}
+    </ul>
+  {/if}
   {#if V.robust}
     {@const r = robustText(V.robust)}
     <p data-testid="robust">{r.before}<button type="button" class="linkish" onclick={jumpScen}>{r.link}</button>{r.after}</p>
@@ -149,7 +157,7 @@
       {#if !res.kombi}<button class="btn small" type="button" onclick={openKombi} aria-haspopup="dialog"><Icon name="plus" />Kombi</button>{/if}
     </div>
   {/if}
-  {#if avdSoon && V.kind === 'ok' && avdLead}
+  {#if avdSoon && V.kind === 'ok' && withAvd}
     <p class="fine">Das Altersvorsorgedepot startet am {SITE.avdStart}; gerechnet wird vereinfacht ab heute.</p>
   {/if}
   <p class="fine">{p.real ? 'Beträge in heutiger Kaufkraft.' : 'Nominale Beträge (Euro der Zukunft).'} Modellrechnung mit konstanter Rendite, keine Anlageberatung.</p>
@@ -165,13 +173,11 @@
   {#each A.active as pr (pr.key)}
     {@const r = res[pr.key]!}
     {@const s = A.stats[pr.key]!}
-    {@const isLead = A.canRank && A.lead?.key === pr.key}
     {@const sub = tileSub(A, pr)}
     {@const m = contribOf(pr)}
-    <article class="tile" class:lead={isLead} data-testid="tile-{pr.key}">
+    <article class="tile" data-testid="tile-{pr.key}">
       <div class="name">
-        <div class="nm"><span class="key" style:background={pr.color}></span><span>{tileName(pr)}</span>
-          {#if isLead}<span class="badge"><Icon name="check" size={12} />vorne</span>{/if}</div>
+        <div class="nm"><span class="key" style:background={pr.color}></span><span>{tileName(pr)}</span></div>
         {#if sub}<div class="sub">{sub}</div>{/if}
       </div>
       <div class="big">{eur(s.avgMonthly)}</div>
@@ -188,26 +194,23 @@
 <AssumptionCheck />
 
 {#snippet scenTable()}
-  <p class="hint">Jede Zeile ändert genau eine Annahme. Gezeigt wird Ø netto pro Monat bis zum Ende des Auszahlplans. {#if A.canRank}<span class="flipkey">Gelb</span>: Dann läge ein anderes Produkt vorne.{/if}</p>
-  {#if !A.canRank}<p class="hint">Solange der Vergleich oben nicht fair ist, wird hier kein Produkt als „vorne“ markiert.</p>{/if}
+  <p class="hint">Jede Zeile ändert genau eine Annahme. Gezeigt wird Ø netto pro Monat bis zum Ende des Auszahlplans. {#if A.canRank}<span class="flipkey">Gelb</span>: Dann kehrt sich mindestens ein Abstand um, ein anderes Produkt zahlt mehr aus als oben.{/if}</p>
+  {#if !A.canRank}<p class="hint">Solange der Vergleich oben nicht fair ist, wird hier nichts markiert.</p>{/if}
   <div class="table-scroll scen-desk" {@attach scrollRegion('Tabelle: Was das Ergebnis kippen würde')}>
     <table class="scen" data-testid="scenarios">
       <thead>
         <tr><th>Szenario</th>
-          {#each A.active as pr}<th><span class="th-key"><span class="key" style:background={pr.color}></span>{pr.short}</span></th>{/each}
-          <th>Vorne</th></tr>
+          {#each A.active as pr}<th><span class="th-key"><span class="key" style:background={pr.color}></span>{pr.short}</span></th>{/each}</tr>
       </thead>
       <tbody>
         {#each scenRows as s (s.id)}
-          {@const lead = s.can ? s.a.lead : null}
           <tr class:flip={s.flip} class:base={s.base} data-sid={s.id}>
-            <td>{#if s.base}<strong>{s.label}</strong>{:else}{s.label}{/if}{#if s.id === 'refund'}&nbsp;<Info k="reinvest" />{/if}{#if s.flip}<span class="sr-only"> (anderes Produkt vorne)</span>{/if}
+            <td>{#if s.base}<strong>{s.label}</strong>{:else}{s.label}{/if}{#if s.id === 'refund'}&nbsp;<Info k="reinvest" />{/if}{#if s.flip}<span class="sr-only"> (ein Abstand kehrt sich um)</span>{/if}{#if s.unfair}<span class="muted small"> · nicht fair vergleichbar</span>{/if}
               {#if s.id !== 'base' && ADJUST[s.id]}<button type="button" class="linkish adj noprint" onclick={() => focusField('settings', ADJUST[s.id as ScenarioId]!)} aria-label="Kosten anpassen: {s.label}">anpassen</button>{/if}</td>
             {#each A.active as pr}
               {@const v = s.a.stats[pr.key]}
-              <td class:best={!!lead && lead.key === pr.key} data-label={pr.short}>{v ? eur(v.avgMonthly) : '–'}</td>
+              <td data-label={pr.short}>{v ? eur(v.avgMonthly) : '–'}</td>
             {/each}
-            <td data-label="Vorne">{#if s.unfair}<span class="muted small">nicht fair vergleichbar</span>{:else}{lead ? lead.short : '–'}{/if}</td>
           </tr>
         {/each}
       </tbody>
@@ -215,12 +218,10 @@
   </div>
   <!-- Mobil: kompakte Liste, gekippte Zeilen zuerst -->
   {#snippet mRow(s: Row)}
-    {@const lead = s.can ? s.a.lead : null}
     <li class:flip={s.flip} class:base={s.base}>
       <div class="m-top">
-        <span class="m-label">{#if s.base}<strong>{s.label}</strong>{:else}{s.label}{/if}{#if s.flip}<span class="sr-only"> (anderes Produkt vorne)</span>{/if}</span>
-        {#if s.unfair}<span class="m-chip muted">nicht fair vergleichbar</span>
-        {:else if lead}<span class="m-chip"><span class="key" style:background={lead.color}></span>{lead.short}<span class="sr-only"> vorne</span></span>{/if}
+        <span class="m-label">{#if s.base}<strong>{s.label}</strong>{:else}{s.label}{/if}{#if s.flip}<span class="sr-only"> (ein Abstand kehrt sich um)</span>{/if}</span>
+        {#if s.unfair}<span class="m-chip muted">nicht fair vergleichbar</span>{/if}
       </div>
       <div class="m-vals">{A.active.map(pr => SHORT[pr.key] + ' ' + (s.a.stats[pr.key] ? eur(s.a.stats[pr.key]!.avgMonthly) : '–')).join(' · ')}
         {#if s.id !== 'base' && ADJUST[s.id]}<button type="button" class="linkish adj" onclick={() => focusField('settings', ADJUST[s.id as ScenarioId]!)} aria-label="Kosten anpassen: {s.label}">anpassen</button>{/if}</div>
@@ -230,7 +231,7 @@
     <ul>{#each mTop as s (s.id)}{@render mRow(s)}{/each}</ul>
     {#if mRest.length}
       <details class="m-more">
-        <summary>{mTop.length > 1 ? 'Weitere ' + mRest.length + ' Szenarien anzeigen' : 'Alle ' + mRest.length + ' Szenarien anzeigen (keines ändert, was vorne liegt)'}</summary>
+        <summary>{mTop.length > 1 ? 'Weitere ' + mRest.length + ' Szenarien anzeigen' : 'Alle ' + mRest.length + ' Szenarien anzeigen (in keinem kehrt sich ein Abstand um)'}</summary>
         <ul>{#each mRest as s (s.id)}{@render mRow(s)}{/each}</ul>
       </details>
     {/if}
@@ -286,10 +287,11 @@
   .eyebrow { font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
   .verdict h2 { font-size: clamp(1.1rem, 1rem + .6vw, 1.4rem); font-weight: 650; margin-bottom: 8px; line-height: 1.35; }
   .verdict h2:focus { outline: none; }
-  .verdict h2 .key.big { width: 18px; height: 4px; vertical-align: middle; margin-right: 6px; position: relative; top: -2px; }
   .verdict p { color: var(--text-2); max-width: 75ch; }
   .verdict .fine { font-size: .78rem; color: var(--muted); margin: 10px 0 0; }
   .verdict .fine + .fine { margin-top: 2px; }
+  .be { margin: 6px 0 8px; padding-left: 20px; color: var(--text-2); max-width: 75ch; }
+  .be li { margin: 3px 0; }
   .acts { margin: 8px 0 4px; display: flex; flex-wrap: wrap; gap: 8px; }
   .notes { margin-top: 12px; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 12px; margin: 16px 0 4px; }
@@ -299,7 +301,6 @@
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
     padding: 14px 16px; box-shadow: var(--shadow);
   }
-  .tile.lead { border-color: color-mix(in srgb, var(--good) 45%, transparent); }
   .tile .nm { display: flex; align-items: center; gap: 8px; color: var(--text-2); font-size: .85rem; font-weight: 550; }
   .tile .sub { font-size: .75rem; color: var(--muted); margin: 1px 0 0 22px; }
   .tile .big { font-size: 1.85rem; font-weight: 700; letter-spacing: -0.02em; margin: 6px 0 0; line-height: 1.15; }
@@ -308,11 +309,6 @@
   .tile .contrib.warn { color: var(--warn-text); font-weight: 600; }
   .tile .small { font-size: .8rem; color: var(--text-2); padding-top: 2px; line-height: 1.45; }
   .tile .start { font-size: .75rem; color: var(--muted); padding-top: 6px; display: flex; align-items: center; gap: 2px; }
-  .badge {
-    margin-left: auto; display: inline-flex; align-items: center; gap: 3px;
-    font-size: .72rem; font-weight: 650; padding: 1px 8px 1px 6px; border-radius: 999px;
-    color: var(--good); background: var(--good-soft);
-  }
   #scen-h:focus { outline: none; }
   #scen-h { scroll-margin-top: 64px; }
   .scen tr.flip td { background: var(--flip-bg); }

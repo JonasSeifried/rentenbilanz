@@ -77,9 +77,8 @@ Partner-Einkommen des jeweiligen Jahres; Restzeitraum weiter der der verstorbene
 
 Default/DK/High-Zeilen ohne Steuerprofil sind die bisherigen Werte. Beobachtungen ohne Wertung: Kirchensteuer senkt
 alle Produkte; beim AVD stärker (−2.949 € gegenüber ETF −1.692 € im Default), weil die Auszahlungen voll
-einkommensteuerpflichtig sind; die Erstattung in der Ansparphase steigt dagegen (+279 €). DK dreht mit KiSt 9 % die
-knappe Reihenfolge ETF/AVD (190 € Abstand vorher, jetzt 662 € in die andere Richtung) – weiterhin keine robuste
-Überlegenheit. Verheiratet mit einem Partner ohne Einkommen fällt die AVD-Erstattung fast weg (Splitting senkt den
+einkommensteuerpflichtig sind; die Erstattung in der Ansparphase steigt dagegen (+279 €). In DK wechselt mit KiSt 9 % der
+knappe Abstand ETF − AVD das Vorzeichen (vorher −190 €, jetzt +662 €). Verheiratet mit einem Partner ohne Einkommen fällt die AVD-Erstattung fast weg (Splitting senkt den
 Grenzsteuersatz in der Ansparphase), die Auszahlungen werden aber ebenfalls niedriger besteuert.
 
 Erbwert AVD bei Tod mit 50 (real): Default 108.719 €, Ehepartner erbt 124.715 €; KiSt 9 % 107.520 / 122.629 €;

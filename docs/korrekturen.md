@@ -371,6 +371,9 @@ Laufzeit: `analyze` und `scenarios` mit allen Fixes etwa ×1,03 gegenüber `NO_F
 - Der neue Standardwert `kvRate` 21,1 % statt 21,7 % (Befund E5, ermäßigter Satz nach § 243 SGB V) ist keine
   Engine-Korrektur. Er steht in `inputs.ts`. Beide Engines bekommen im Golden-Test dieselben Eingaben.
 
+- Darstellung ohne Sieger und Kosten-Gleichstand (November 2026): nur Oberfläche und eine Sensitivitätsrechnung mit
+  `single()`, keine Änderung an `combo.ts`; siehe `docs/neutrale-darstellung.md`.
+
 ## Erweiterung: Umschichtung vor Rentenbeginn (`shift`, kein Fix)
 
 Neue Eingabe, kein Befund am Original; Standard **aus**, dann bitgleich (Golden-Test erlaubt nur die neuen Schlüssel
@@ -665,7 +668,7 @@ bleiben offen.
 Wirkung cumH real (ETF / AVD / Versicherung): Default 153.289 / 174.856 / 127.694 € → KiSt 9 %
 151.597 / 171.907 / 126.624 €; verheiratet mit Partner 38.000/20.000 € 159.807 / 177.174 / 131.201 €; Partner 0/0 €
 176.707 / 199.696 / 138.223 € (AVD-Erstattung 8.017 → 1.246 €). DK mit KiSt 9 %: 139.342 / 138.680 / 104.734 €
-(knappe Reihenfolge dreht, 662 € Abstand). Herleitung, Quellen, alle Messungen und offene Punkte:
+(der knappe Abstand ETF − AVD wechselt das Vorzeichen: +662 €). Herleitung, Quellen, alle Messungen und offene Punkte:
 [kirchensteuer-splitting.md](kirchensteuer-splitting.md). Tests: `tests/kirchensteuer-splitting.test.ts`.
 ### Eingabe „Sparer-Pauschbetrag schon genutzt“ (`allowanceUsed`)
 
@@ -703,6 +706,6 @@ Wirkung cumH (heutige Kaufkraft), ETF / AVD / Versicherung, bei 0 / 250 / 500 / 
 | DK (KV 21,7 %) | 140.356 / 139.932 / 104.650 | 135.946 / 138.479 / 103.137 | 131.895 / 137.194 / 102.623 | 128.445 / 136.384 / 102.623 |
 | High | 330.246 / 310.722 / 263.311 | 325.475 / 308.985 / 261.680 | 321.046 / 307.100 / 260.741 | 317.295 / 305.755 / 260.741 |
 
-Das ETF-Depot verliert bis 8 % (Default −12.933 €), das AVD nur über sein Nebendepot (−2 %). Im DK-Fall kippt die
-knappe Rangfolge schon bei 250 € von ETF (424 € vorne) zum AVD (2.533 € vorne). Die Versicherung ist ab 500 € gleich,
+Das ETF-Depot verliert bis 8 % (Default −12.933 €), das AVD nur über sein Nebendepot (−2 %). Im DK-Fall wechselt der
+knappe Abstand ETF − AVD schon bei 250 € das Vorzeichen (von +424 € auf −2.533 €). Die Versicherung ist ab 500 € gleich,
 weil der Betrag bis zum Auszahljahr über 1.000 € nominal gewachsen ist.

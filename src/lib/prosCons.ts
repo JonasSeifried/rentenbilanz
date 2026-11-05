@@ -84,10 +84,10 @@ export function faqs(p: Params, keys: readonly ProductKey[]): Faq[] {
   const out: Faq[] = [];
   const avd = keys.includes('avd'), etf = keys.includes('etf');
   if (avd) out.push({
-    id: 'avd150', q: 'Lohnt sich mehr als 150 € im Monat im Altersvorsorgedepot?',
+    id: 'avd150', q: 'Was ändert sich über 150 € im Monat im Altersvorsorgedepot?',
     a: [
       'Gefördert sind nur 1.800 € im Jahr (150 € im Monat). Bis 6.840 € im Jahr (570 € im Monat) darf man ungefördert in denselben Vertrag einzahlen: keine Zulage und kein Steuerabzug, aber auch keine Steuer bis zur Auszahlung. Dann ist nur der Gewinn steuerpflichtig, nach 12 Jahren Laufzeit zur Hälfte mit dem persönlichen Steuersatz.',
-      'Gegenüber einem ETF-Depot ist das bei niedrigen AVD-Kosten (um 0,5 %) nur knapp besser, bei höheren Kosten, mit Krankenversicherung auf die Auszahlung oder hohem Einkommen im Alter schlechter. Dafür ist das Geld bis zur Rente gebunden. Welche Aufteilung unter deinen Annahmen rechnerisch vorne liegt, zeigt der Kombi-Modus.',
+      'Gegenüber einem ETF-Depot zahlt dieser ungeförderte Teil bei niedrigen AVD-Kosten (um 0,5 %) nur knapp mehr aus, bei höheren Kosten, mit Krankenversicherung auf die Auszahlung oder hohem Einkommen im Alter weniger. Das Geld ist bis zur Rente gebunden. Wie sich verschiedene Aufteilungen unter deinen Annahmen rechnen, zeigt der Kombi-Modus.',
     ],
   });
   out.push({
@@ -116,9 +116,9 @@ export function faqs(p: Params, keys: readonly ProductKey[]): Faq[] {
     ],
   });
   if (avd && etf) out.push({
-    id: 'mix', q: 'Warum oft 150 € ins AVD und den Rest ins ETF-Depot?',
+    id: 'mix', q: 'Warum ist beim AVD die Grenze von 150 € im Monat wichtig?',
     a: [
-      'Bis 150 € im Monat bringen die Zulagen viel mehr, als die höheren Kosten des AVD kosten. Darüber gibt es nur noch den Steueraufschub, und der Vorteil schrumpft auf wenige Prozent oder kippt. Das ETF-Depot bleibt dafür jederzeit verfügbar und nutzt den Sparer-Pauschbetrag.',
+      'Bis 150 € im Monat gibt es Zulagen. Bei üblichen Kosten sind sie viel größer als die höheren Kosten des AVD. Darüber gibt es nur noch den Steueraufschub: Der Abstand zum ETF-Depot schrumpft auf wenige Prozent oder kehrt sich um. Das ETF-Depot ist dafür jederzeit verfügbar und nutzt den Sparer-Pauschbetrag.',
     ],
   });
   // Nicht im Vergleich, aber oft verfügbar: Betriebsrente. Neutral, ohne Empfehlung; Rechtsstand 2026.

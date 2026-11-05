@@ -15,7 +15,7 @@ import { combo, comboStats, emptySplit, SPLIT_KEYS, type ComboStats, type Split 
 /** Unterschiede bis 1 € (Summe bis H, heutige Kaufkraft) gelten in der Suche als gleich. */
 export const TIE_EUR = 1;
 /**
- * Gleichwertig für die Empfehlung: Unterschiede bis 0,1 % der Zielgröße (mindestens TIE_EUR). Das liegt weit unter der
+ * Gleichwertig für die genannte Aufteilung: Unterschiede bis 0,1 % der Zielgröße (mindestens TIE_EUR). Das liegt weit unter der
  * Genauigkeit jeder Annahme (Rendite, Kosten, Steuersatz). Innerhalb dieser Spanne nennt der Rechner die einfachere,
  * flexiblere Aufteilung (weniger Produkte, mehr ETF), nicht die mit dem letzten Euro mehr.
  */

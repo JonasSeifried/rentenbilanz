@@ -166,7 +166,7 @@
 <section class="card" aria-labelledby="s-model">
   <h2 id="s-model">Modellannahmen und Sensitivitäten</h2>
   <Switch checked={i.payResidual} onchange={v => setInput('payResidual', v)} label="Offene Depots wie das AVD: jährlich Restkapital ÷ Restlaufzeit" />
-  <p class="hint">Sonst nominal konstante vorschüssige Annuität für Depots. Das Entnahmeprofil beeinflusst die Summe der realen Zahlungen und die Rangfolge.</p>
+  <p class="hint">Sonst nominal konstante vorschüssige Annuität für Depots. Das Entnahmeprofil beeinflusst die Summe der realen Zahlungen und die Abstände zwischen den Produkten.</p>
   <Switch checked={i.fundingDelay} onchange={v => setInput('fundingDelay', v)} label="AVD-Zulagen und Erstattungen ein Jahr später (Sensitivität)" />
   <p class="hint">Standard: Ende des Beitragsjahres. Ein Jahr Verzug ist ein Szenario, keine gesetzliche Bearbeitungsfrist. Die letzte Gutschrift kommt am Ende des ersten Rentenjahres.</p>
   <Switch checked={i.indexAllowance} onchange={v => setInput('indexAllowance', v)} label="Sparer-Pauschbetrag wächst mit Inflation (hypothetische Sensitivität)" />
@@ -264,7 +264,7 @@
   </details>
   <details>
     <summary>Heutige Kaufkraft</summary>
-    <p>Einzahlungen und Förderung werden Jahr für Jahr in heutige Kaufkraft umgerechnet, Kapitalwerte zum jeweiligen Zeitpunkt. Die Ø-Monatsrente wird für alle Produkte über denselben Zeitraum (Rentenbeginn bis Auszahlplan-Ende) gemittelt. Welches Produkt vorne liegt, wird immer in heutiger Kaufkraft verglichen, auch wenn nominale Beträge angezeigt werden.</p>
+    <p>Einzahlungen und Förderung werden Jahr für Jahr in heutige Kaufkraft umgerechnet, Kapitalwerte zum jeweiligen Zeitpunkt. Die Ø-Monatsrente wird für alle Produkte über denselben Zeitraum (Rentenbeginn bis Auszahlplan-Ende) gemittelt. Abstände zwischen den Produkten werden immer in heutiger Kaufkraft gerechnet, auch wenn nominale Beträge angezeigt werden.</p>
   </details>
   <details>
     <summary>Erbfall</summary>
@@ -272,7 +272,7 @@
   </details>
   <details>
     <summary>Kapitalerträge</summary>
-    <p>Ein gemeinsamer Sparer-Pauschbetrag für Versicherungsleistung und alle Fondsdepots: zunächst Versicherung, dann zugeflossene Vorabpauschalen, danach Entnahmen/Umschichtungen. Vorabpauschalen gelten am ersten Werktag des Folgejahres als zugeflossen. Die jährliche Kapitalertrags-Günstigerprüfung vergleicht die gesamte Abgeltungsteuer mit dem persönlichen Tarif nach Sonderausgaben. Erstattungen zählen im selben Steuerjahr als verfügbares Geld ohne Wiederanlage, auch beim Ansparen. Diese Zahlungen vor Rentenbeginn gehen nicht in die Summe der Rentenauszahlungen ein. Andere Kapitalerträge (z. B. Tagesgeld) gehen nur so weit ein, wie sie den Sparer-Pauschbetrag verbrauchen (unter „Andere Kapitalerträge“); der Betrag wächst mit der Inflation, der Pauschbetrag nicht. Die Erben haben ihren eigenen vollen Pauschbetrag.</p>
+    <p>Ein gemeinsamer Sparer-Pauschbetrag für Versicherungsleistung und alle Fondsdepots: zunächst Versicherung, dann zugeflossene Vorabpauschalen, danach Entnahmen/Umschichtungen. Vorabpauschalen gelten am ersten Werktag des Folgejahres als zugeflossen. Die jährliche Kapitalertrags-Günstigerprüfung vergleicht die gesamte Abgeltungsteuer mit dem persönlichen Tarif nach Sonderausgaben. Erstattungen zählen im selben Steuerjahr als verfügbares Geld ohne Wiederanlage, auch beim Ansparen. Diese Zahlungen vor Rentenbeginn gehen nicht in die Summe der Rentenauszahlungen ein. Andere Kapitalerträge (z. B. Tagesgeld) gehen nur so weit ein, wie sie den Sparer-Pauschbetrag verbrauchen (unter „Andere Kapitalerträge“); der Betrag wächst mit der Inflation, der Pauschbetrag nicht. Die Erben haben ihren eigenen vollen Pauschbetrag; erbt der zusammen veranlagte Partner, gilt im Todesjahr der gemeinsame Pauschbetrag abzüglich dieses Betrags.</p>
   </details>
   <details>
     <summary>Versicherung</summary>

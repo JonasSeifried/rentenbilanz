@@ -38,6 +38,14 @@ test('Kombi: über „+ Kombi“ zusammenstellen, im Vergleich sehen, bearbeiten
   await expect(field(page, 'kombi-etf')).toHaveValue('300');
   await expect(page.getByTestId('kombi-status')).toContainText('Verteilt 450 € von 450 €');
   await expect(page.getByTestId('kombi-result')).toBeVisible();
+  // Suche nach der höchsten Summe nur auf Wunsch (opt-in), neutral formuliert
+  await expect(page.getByTestId('kombi-use-best')).toHaveCount(0);
+  await expect(page.getByTestId('kombi-result')).not.toContainText('höchste Summe unter');
+  await page.getByTestId('kombi-search').click();
+  await expect(page.getByTestId('kombi-search')).toHaveCount(0);
+  await expect(page.getByTestId('kombi-result')).toContainText('höchste Summe unter diesen Annahmen');
+  await expect(page.getByTestId('kombi-result')).not.toContainText(/beste|vorne|rechnerisch|empfehl/i);
+  await expect(page.getByTestId('kombi-use-best')).toBeVisible();
 
   // Zu viel verteilt: Überschuss abziehen nimmt vom größten Anteil
   await setField(page, 'kombi-avd', '400');

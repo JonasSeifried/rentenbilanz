@@ -6,6 +6,8 @@ import { incomeAt, incomeGrowth, incomePathKind, incomeStartText, type Params, t
 import { AMOUNT, type Analysis, type ContenderKey } from './engine/analyze';
 import { splitSum } from './engine/combo';
 import { SITE } from './site';
+import { costBreakEvens, MAX_COST } from './engine/breakEven';
+import { breakEvenText, gapText } from './verdict';
 
 /** Beschriftung und Einheit je Eingabe (Einheit leer = Zahl/Schalter ohne Einheit). */
 const LABELS: Readonly<Record<InputKey, readonly [string, string]>> = Object.freeze({
@@ -166,7 +168,17 @@ export function rechenweg(inputs: Inputs, A: Analysis, url: string, today = new 
     const x = rowsOf(A, pr.key)!, s = A.stats[pr.key]!;
     out.push(`| ${x.name} | ${n0(x.r.own)} | ${n0(x.r.ownReal)} | ${n0(x.r.foerder)} | ${n0(x.r.capR)} | ${n0(s.avgMonthly)} | ${n0(s.cumH)} | ${n0(s.cumHReal)} | ${n0(s.lump)} |`);
   }
-  out.push('', `Ø Monat, Summe bis H und Einmalauszahlung in der Anzeige-Einheit (${p.real ? 'heutige Kaufkraft' : 'nominal'}); Rangfolge immer nach heutiger Kaufkraft.`, '');
+  out.push('', `Ø Monat, Summe bis H und Einmalauszahlung in der Anzeige-Einheit (${p.real ? 'heutige Kaufkraft' : 'nominal'}); Abstände zwischen den Produkten immer in heutiger Kaufkraft.`, '');
+  out.push('Der Rechner bewertet die Produkte nicht. Er zeigt Beträge, Abstände und die Annahmen, an denen sie hängen.', '');
+  if (A.canRank && A.active.length > 1) {
+    out.push('### Abstände', '', ...A.active.slice(1).map(pr => '- ' + gapText(A, pr, A.active[0])), '');
+    const be = costBreakEvens(A);
+    if (be.length) {
+      out.push('### Kosten-Gleichstand mit dem ETF-Depot', '',
+        `Kostensatz, bei dem die Summe netto bis Alter ${p.H} (heutige Kaufkraft) gleich der des ETF-Depots ist. Gesucht per Bisektion zwischen 0 % und ${pct(MAX_COST)} % (Genauigkeit 0,01 Prozentpunkte) mit derselben Rechnung; alle anderen Eingaben unverändert.`, '',
+        ...be.map(b => '- ' + breakEvenText(A, b)), '');
+    }
+  } else out.push('Kein fairer Vergleich (ungleiche Beiträge oder ausgegebene Steuererstattung): keine Abstände und kein Kosten-Gleichstand.', '');
 
   if (p.incPeak >= 0) {
     out.push('## Einkommen vor Rentenbeginn', '', 'Zu versteuerndes Einkommen, mit dem die Ansparphase gerechnet ist (Günstigerprüfung AVD, Kapitalerträge), in heutigem Geld.', '',

@@ -46,7 +46,7 @@
   const V = $derived(verdict(A, scen));
   const changedN = $derived(changedSettings(i).length);
   const isExample = $derived(INPUT_KEYS.every(k => k === 'real' || i[k] === DEFAULTS[k]));
-  const peekText = $derived(V.kind === 'ok' ? V.headline : 'Ergebnis siehe Überblick');
+  const peekText = $derived(V.kind === 'ok' ? V.peek ?? V.headline : 'Ergebnis siehe Überblick');
 
   const contribDiffer = $derived(CONTRIB_KEYS.some(k => i[k] !== i.setAll));
   const today = new Date().toLocaleDateString('de-DE');
@@ -226,7 +226,7 @@
   </div>
 </footer>
 
-<ResultPeek text={peekText} color={V.kind === 'ok' ? A.lead?.color : ''} targetId="verdict" watchId="eck" />
+<ResultPeek text={peekText} targetId="verdict" watchId="eck" />
 <Toast />
 <KombiDialog />
 

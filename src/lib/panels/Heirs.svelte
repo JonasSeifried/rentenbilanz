@@ -35,8 +35,6 @@
 
   const tD = $derived(p.deathAge - p.a0);
   const heirVals = $derived(heirRows.map(h => h.f(tD)));
-  const maxH = $derived(Math.max(...heirVals.map(h => h.val)));
-  const markHeir = $derived(maxH > 0 && heirRows.length > 1 && new Set(heirVals.map(h => Math.round(h.val))).size > 1);
 
   const series = $derived.by<Series[]>(() => {
     const ages = Array.from({ length: A.T }, (_, k) => k + 1);
@@ -68,7 +66,7 @@
               {@const h = heirVals[k]}
               <tr>
                 <td><span class="th-key"><span class="key" class:dash={row.dash} style:background={row.dash ? undefined : row.color} style:color={row.color}></span>{row.name}</span></td>
-                <td class:best={markHeir && Math.round(h.val) === Math.round(maxH)}>{eur(A.R(h.val, tD))}</td>
+                <td>{eur(A.R(h.val, tD))}</td>
                 <td class="l note-cell">{h.note}</td>
               </tr>
             {/each}

@@ -32,6 +32,7 @@ Für die Browser-Tests einmalig: `npx playwright install chromium webkit`.
 |---|---|
 | `legacy/index.html` | Ursprünglicher Rechner, Referenz für die Golden-Tests. Nicht ändern. |
 | `src/lib/engine/` | Eine Rechen-Engine für Einzelprodukte und Kombi (`combo.ts`; ein Einzelprodukt ist eine Kombi mit einem Teil), Auswertung (`analyze.ts`), Tarif, Konstanten und Eingaben (`core.ts`, `inputs.ts`). `engine.ts` ist der unveränderte Port des Originals und nur noch Referenz für die Tests. |
+| `src/lib/engine/breakEven.ts` | Kosten-Gleichstand mit dem ETF-Depot (Bisektion über dieselbe Einzelrechnung, keine eigene Rechnung) |
 | `src/lib/link.ts`, `storage.ts`, `state.svelte.ts` | Link-Format, Speichern im Browser, App-Zustand |
 | `src/lib/glossary.ts` | Erklärtexte zu Fachbegriffen |
 | `src/lib/pensionTax.ts` | Hilfsrechnung Bruttorente → zu versteuerndes Einkommen im Alter (nur Oberfläche, Besteuerungsanteil § 22 EStG, Pauschbeträge, KV/PV des Rentners) |
@@ -68,6 +69,7 @@ Die Rechnung nutzt Werte, die sich jedes Jahr ändern. Nach jeder Änderung: `np
 - `docs/zulagen-veranlagung-2026-11.md`: E4-Veranlagung mit Primärbelegen, R3-Bilanz, D1-Gegenfall und aktuelle Wirkung.
 - `docs/gehaltsentwicklung.md`: Gehaltsverlauf bis zur Rente (Zielgehalt und Alter), abschaltbar, mit Wirkung auf die AVD-Erstattung.
 - `docs/kirchensteuer-splitting.md`: Kirchensteuer und Zusammenveranlagung (Primärquellen, Rechenmodell, Wirkung, offene Punkte).
+- `docs/neutrale-darstellung.md`: Darstellung ohne Sieger (feste Reihenfolge, Abstände) und Kosten-Gleichstand mit dem ETF-Depot.
 - `docs/kombi-modus.md`: Rechenmodell der Kombi (gemeinsame Besteuerung, Suche nach der besten Aufteilung, Einbindung in den Vergleich).
 
 ## Speichern und Teilen
