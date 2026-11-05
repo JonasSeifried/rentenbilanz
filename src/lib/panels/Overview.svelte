@@ -199,7 +199,7 @@
 
 {#snippet scenTable()}
   <p class="hint">Jede Zeile ändert genau eine Annahme. Gezeigt wird Ø netto pro Monat bis zum Ende des Auszahlplans. {#if A.canRank}<span class="flipkey">Gelb</span>: Dann kehrt sich mindestens ein Abstand um, ein anderes Produkt zahlt mehr aus als oben.
-    Reihenfolge in der Zeile nach der Summe netto bis {p.H} in heutiger Kaufkraft: <strong>fett</strong> = höchste, normal = zweite, <span class="muted">grau</span> = dritte und dahinter. Weniger als 1 € Unterschied zählt als gleich.{/if}</p>
+    Reihenfolge der Beträge in der Zeile: <strong>fett</strong> = höchster, normal = zweiter, <span class="muted">grau</span> = ab dem dritten; gleiche Beträge, gleiche Schrift.{#if !p.real} Gelb rechnet mit der Summe in heutiger Kaufkraft, die nominalen Beträge können deshalb anders liegen.{/if}{/if}</p>
   {#if !A.canRank}<p class="hint">Solange der Vergleich oben nicht fair ist, wird hier nichts markiert.</p>{/if}
   <div class="table-scroll scen-desk" {@attach scrollRegion('Tabelle: Wann sich die Abstände umkehren')}>
     <table class="scen" data-testid="scenarios">
@@ -323,7 +323,7 @@
   /* Reihenfolge je Zeile: Platz 1 fett, Platz 2 normal, ab Platz 3 grau (--muted, Kontrast ≥ 4,5:1) */
   .scen td.top, .m-v.top { font-weight: 700; color: var(--text); }
   .scen td.low { color: var(--muted); }
-  .m-v.mid { color: var(--text-2); }
+  .m-v.mid { color: var(--text); }
   .adj { margin-left: 8px; font-size: .8rem; }
   .small { font-size: .8rem; }
   .collapsed summary { cursor: pointer; color: var(--text-2); font-size: .9rem; padding: 2px 0 6px; }

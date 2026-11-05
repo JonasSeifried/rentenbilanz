@@ -6,7 +6,7 @@ import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
 import { analyze, scenarios, single, PRODUCTS } from '../src/lib/engine/analyze';
 import { emptySplit } from '../src/lib/engine/combo';
 import { costBreakEven, costBreakEvens, COST_TOL, MAX_COST } from '../src/lib/engine/breakEven';
-import { breakEvenText, ranks, robustText, verdict, TIE_EUR } from '../src/lib/verdict';
+import { breakEvenText, ranks, robustText, verdict } from '../src/lib/verdict';
 import { rechenweg } from '../src/lib/rechenweg';
 import { faqs } from '../src/lib/prosCons';
 import { GLOSSARY } from '../src/lib/glossary';
@@ -155,24 +155,34 @@ describe('Kosten-Gleichstand des aktiven Fonds mit Umschichtung', () => {
 });
 
 describe('Reihenfolge je Szenario-Zeile (ranks)', () => {
-  it('ordnet nach Summe bis H in heutiger Kaufkraft, passend zu isFlip', () => {
-    for (const patch of [{}, { fondOn: true }, { real: false }, { incWork: 70000 }] as Partial<Inputs>[]) {
-      const A = analyze(P(patch)), r = ranks(A);
-      const ks = A.active.map(pr => pr.key);
-      expect(Object.keys(r).sort()).toEqual([...ks].sort());
-      for (const x of ks) for (const y of ks) {
-        const d = A.stats[x]!.cumHReal - A.stats[y]!.cumHReal;
-        if (d > TIE_EUR) expect(r[x]!).toBeLessThan(r[y]!);
+  const shown = (A: ReturnType<typeof analyze>, k: string) => Math.round(A.stats[k as 'etf']!.avgMonthly);
+  it('folgt den gezeigten Beträgen, auch nominal und mit Kombi, in allen Szenarien', () => {
+    const variants: Partial<Inputs>[] = [{}, { fondOn: true }, { real: false }, { real: false, a0: 25, kvOn: true }, { incWork: 70000 },
+      { combo: true, cEtf: 100, cAvd: 50 }];
+    for (const patch of variants) {
+      const i = inp(patch), p = readParams(i);
+      const kombi = i.combo ? { ...emptySplit(), etf: i.cEtf, avd: i.cAvd } : null;
+      const A = analyze(p, undefined, kombi);
+      for (const a of [A, ...scenarios(p, undefined, kombi).map(s => s.a)]) {
+        const r = ranks(a);
+        if (!a.canRank) { expect(r).toEqual({}); continue; }
+        const ks = a.active.map(pr => pr.key).filter(k => a.stats[k]);
+        expect(Object.keys(r).sort()).toEqual([...ks].sort());
+        for (const x of ks) for (const y of ks) {
+          const d = shown(a, x) - shown(a, y);
+          if (d > 0) expect(r[x]!).toBeLessThan(r[y]!);
+          if (d === 0) expect(r[x]).toBe(r[y]);
+        }
+        expect(Math.min(...Object.values(r) as number[])).toBe(1);
       }
-      expect(Math.min(...Object.values(r) as number[])).toBe(1);
     }
   });
-  it('Gleichstand unter 1 € teilt den Platz, danach wird weitergezählt (1, 1, 3)', () => {
+  it('gleicher gerundeter Betrag teilt den Platz, danach wird weitergezählt (1, 1, 3)', () => {
     const A = analyze(P());
     const [a, b, c] = A.active.map(pr => pr.key);
-    const st = (v: number) => ({ ...A.stats[a]!, cumHReal: v });
-    const T = { ...A, stats: { ...A.stats, [a]: st(1000), [b]: st(999.5), [c]: st(500) } };
-    expect(ranks(T)).toEqual({ [a]: 1, [b]: 1, [c]: 3 });
+    const st = (v: number) => ({ ...A.stats[a]!, avgMonthly: v });
+    expect(ranks({ ...A, stats: { ...A.stats, [a]: st(600.2), [b]: st(599.6), [c]: st(500) } })).toEqual({ [a]: 1, [b]: 1, [c]: 3 });
+    expect(ranks({ ...A, stats: { ...A.stats, [a]: st(601), [b]: st(600), [c]: st(599) } })).toEqual({ [a]: 1, [b]: 2, [c]: 3 });
   });
   it('ohne fairen Vergleich keine Reihenfolge', () => {
     expect(ranks(analyze(P({ avdM: 100 })))).toEqual({});

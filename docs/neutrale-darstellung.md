@@ -34,12 +34,16 @@ Zellen); eine erste Fassung mit Zahl im Kreis war zu unruhig. So sieht man ohne
 Nachrechnen, wie sich die Reihenfolge in jedem Szenario verschiebt. Die Reihenfolge ist eine Eigenschaft der Zahlen,
 keine Bewertung; es gibt kein Wort wie „vorne“ oder „beste“ dazu. Kacheln, Detail und Erbfall bleiben ohne Markierung.
 
-- Größe: Summe netto bis H in heutiger Kaufkraft (`cumHReal`), dieselbe wie bei `isFlip` und den Abständen. Die
-  Zelle zeigt den Ø pro Monat; bei Einmalauszahlung (Versicherung mit Kapitalanteil) oder im Nominalmodus kann die
-  Reihenfolge der gezeigten Monatswerte davon abweichen. Der Hinweis über der Tabelle nennt die Größe.
-- Gleichstand: weniger als `TIE_EUR` (1 €) unter dem nächsthöheren Wert = gleicher Platz (Wettkampfzählung 1, 1, 3), also gleiche Schrift.
+- Größe: der gezeigte Ø netto pro Monat, auf ganze Euro gerundet wie in der Zelle. Eine erste Fassung rangierte nach
+  der Summe bis H in heutiger Kaufkraft (wie `isFlip`); im Nominalmodus war dann in rund 2 % der Szenario-Zeilen der
+  fette Betrag sichtbar kleiner als ein anderer (Review mit rund 14.000 Zufallszeilen). Folge der Umstellung: Gelb
+  (Summe, heutige Kaufkraft) und Schrift (gezeigter Monatsbetrag) können im Nominalmodus oder bei Kapitalauszahlung
+  auseinanderfallen; im Nominalmodus sagt der Hinweis über der Tabelle das.
+- Gleichstand: gleicher gerundeter Betrag = gleicher Platz und gleiche Schrift (Wettkampfzählung 1, 1, 3), ohne
+  Verkettung.
 - Bei vier oder fünf Produkten sind Platz 3 bis 5 gleich grau; die Reihenfolge dahinter steht nur in den Beträgen.
-- Ohne fairen Vergleich (ungleiche Beiträge, Steuererstattung ausgegeben) keine Zahlen, wie bei der gelben Markierung.
+  Im Modus „erzwungene Farben“ (Windows-Kontrast) fällt das Grau weg, fett und der Screenreader-Text „(Platz N)“ bleiben.
+- Ohne fairen Vergleich (ungleiche Beiträge, Steuererstattung ausgegeben) keine Hervorhebung, wie bei der gelben Markierung.
 
 ### Kombi-Suche: opt-in
 

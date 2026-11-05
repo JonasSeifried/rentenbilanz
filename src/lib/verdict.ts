@@ -51,19 +51,18 @@ export function isFlip(base: Analysis, s: Analysis): boolean {
 }
 
 /**
- * Platzierung je Teilnehmer in einer Rechnung (1 = höchste Summe netto bis H in heutiger Kaufkraft, dieselbe Größe wie
- * bei `isFlip`). Liegt ein Wert weniger als TIE_EUR unter dem nächsthöheren, teilt er dessen Platz (1, 1, 3).
- * Ohne fairen Vergleich: leer.
+ * Platzierung je Teilnehmer in einer Rechnung nach dem gezeigten Ø netto pro Monat (`avgMonthly`, auf ganze Euro
+ * gerundet wie in der Anzeige), damit die Hervorhebung nie den sichtbaren Beträgen widerspricht. Gleicher gerundeter
+ * Betrag = gleicher Platz (Wettkampfzählung 1, 1, 3). Ohne fairen Vergleich: leer.
+ * Anders als `isFlip` (Summe bis H in heutiger Kaufkraft): Im Nominalmodus oder bei Kapitalauszahlung kann die gelbe
+ * Markierung deshalb ohne sichtbaren Platzwechsel erscheinen und umgekehrt.
  */
 export function ranks(a: Analysis): Partial<Record<ContenderKey, number>> {
   if (!a.canRank) return {};
-  const ks = a.active.map(pr => pr.key).filter(k => !!a.stats[k]);
-  const v = (k: ContenderKey) => a.stats[k]!.cumHReal;
-  const sorted = [...ks].sort((x, y) => v(y) - v(x));
+  const ks = a.active.map(pr => pr.key).filter(k => !!a.stats[k] && isFinite(a.stats[k]!.avgMonthly));
+  const v = (k: ContenderKey) => Math.round(a.stats[k]!.avgMonthly);
   const out: Partial<Record<ContenderKey, number>> = {};
-  sorted.forEach((k, i) => {
-    out[k] = i > 0 && v(sorted[i - 1]) - v(k) <= TIE_EUR ? out[sorted[i - 1]]! : i + 1;
-  });
+  for (const k of ks) out[k] = 1 + ks.filter(o => v(o) > v(k)).length;
   return out;
 }
 

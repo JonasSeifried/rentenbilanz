@@ -60,6 +60,7 @@ test('Startseite rechnet mit den Standardwerten wie die Engine', async ({ page }
   const baseRow = page.locator('.scen tbody tr[data-sid=base]');
   await expect(baseRow.locator('td.top')).toHaveCount(1);
   await expect(baseRow.locator('td.low')).toHaveCount(1);
+  await expect(page.locator('.scen tbody tr[data-sid=refund] td.top, .scen tbody tr[data-sid=refund] td.low')).toHaveCount(0);
   expect((await baseRow.locator('.sr-only').allTextContents()).map(t => t.replace(/\D/g, '')).sort()).toEqual(['1', '2', '3']);
   await expect(page.locator('.tile [data-testid^=contrib]')).toHaveCount(3);
   expect(await page.locator('.tile').evaluateAll(els => els.map(e => e.getAttribute('data-testid')))).toEqual(['tile-etf', 'tile-avd', 'tile-ins']);
