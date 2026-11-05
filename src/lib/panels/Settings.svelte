@@ -178,7 +178,7 @@
   <p class="hint">Gesetzlicher Ausgangswert: nominal 1.000 € jährlich (zusammen veranlagt 2.000 €). Tarif, Soli-Grenze und KV-BBG wachsen im Modell mit Inflation; diese Fortschreibung ist keine zugesicherte Rechtsentwicklung.</p>
   <div class="grp" role="group" aria-labelledby="s-taxchange">
     <h3 id="s-taxchange">Was wäre, wenn sich die Steuern ändern?</h3>
-    <p class="hint">Hypothetisch, keine angekündigte Rechtslage. Standard: heutiges Recht für die ganze Laufzeit. Die Produkte hängen an verschiedenen Steuern: ETF-Depot und aktiver Fonds an der Abgeltungsteuer, Altersvorsorgedepot und Versicherung (nach 12 Jahren und ab 62) an der Einkommensteuer.</p>
+    <p class="hint">Hypothetisch, keine angekündigte Rechtslage. Standard: heutiges Recht für die ganze Laufzeit. Die Produkte hängen an verschiedenen Steuern: ETF-Depot und aktiver Fonds an der Abgeltungsteuer, Altersvorsorgedepot und Versicherung (als Kapital nach 12 Jahren und ab 62, als Leibrente immer) an der Einkommensteuer.</p>
     <NumberField id="f-abgRate" layout="row" label="Abgeltungsteuersatz" value={i.abgRate} onchange={v => setInput('abgRate', v)} min={0} max={60} step={1} unit="%" info="steueraenderung" testid="abgRate"
       limits={LIMITS.abgRate} effective={pc(p.abgRate)} hint="Heute 25 % (zuzüglich Soli und gegebenenfalls Kirchensteuer). Teilfreistellung und Sparer-Pauschbetrag bleiben gleich." />
     <NumberField id="f-estAdd" layout="row" label="Einkommensteuersatz höher um" value={i.estAdd} onchange={v => setInput('estAdd', v)} min={-14} max={30} step={1} unit="Punkte" testid="estAdd"

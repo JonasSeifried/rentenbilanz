@@ -44,9 +44,12 @@ es bewusst nicht: Eine solche Änderung träfe nach bisheriger Praxis eher neue 
 - **Stichtag:** `tChange` = Rentenbeginn (`taxFrom` = −1) oder Jahr des Alters `taxFrom` (nicht vor heute). Ab diesem Jahr
   gelten beide Änderungen für alle Zahlungen, Verkäufe, Vorabpauschalen, die Günstigerprüfung und die Erben; davor heutiges
   Recht (auch für Beiträge und Erstattungen in der Ansparphase).
-- **Abgeltungsteuer:** `abg(t)` ersetzt die Konstante `ABG`. Mit Kirchensteuer verallgemeinert aus § 32d Abs. 1 S. 4 EStG
-  (ESt = e/(4 + k) bei 25 %): ESt = e · s/(1 + s · k), insgesamt s · (1,055 + k)/(1 + s · k). Bei s = 25 % exakt der bisherige
-  Ausdruck. Teilfreistellung und Sparer-Pauschbetrag bleiben gleich.
+- **Abgeltungsteuer:** `abg(t)` ersetzt die Konstante `ABG`. Mit Kirchensteuer verallgemeinert aus § 32d Abs. 1 S. 3–4 EStG
+  (S. 3: Ermäßigung um 25 % der Kirchensteuer; S. 4: ESt = (e − 4q)/(4 + k)): ESt = e · s/(1 + s · k), insgesamt
+  s · (1,055 + k)/(1 + s · k). **Annahme:** Auch die 25 % in S. 3 folgen dem neuen Satz. Bliebe S. 3 bei 25 %, wäre
+  ESt = e · s/(1 + 0,25 · k) (bei s = 30 %, k = 9 %: 33,59 % statt 33,45 % einschließlich Soli und Kirchensteuer). Bei
+  s = 25 % exakt der bisherige Ausdruck. Teilfreistellung und Sparer-Pauschbetrag bleiben gleich. Bei 0 % wird die
+  Bemessungsgrundlage der kurzen Versicherungsleistung direkt geführt statt über Steuer ÷ Satz zurückgerechnet.
 - **Einkommensteuer:** `estAddAt(t)` Prozentpunkte zusätzlicher Grenzsteuersatz oberhalb des Grundfreibetrags
   (12.348 €, heutiges Geld, mit dem Tarif indexiert): tarifliche ESt + d · max(0, zvE − 12.348 €), mindestens 0. Soli und
   Kirchensteuer darauf, bei Splitting je Hälfte. Grundfreibetrag und Tarifzonen bleiben. Negativ = Senkung (bis −14 Punkte,
@@ -59,9 +62,9 @@ es bewusst nicht: Eine solche Änderung träfe nach bisheriger Praxis eher neue 
 | Fall | Annahme | ETF-Depot | Altersvorsorgedepot | Versicherung |
 |---|---|---:|---:|---:|
 | Default | heute | 153.289 € | 174.856 € | 127.694 € |
-| Default | Abgeltungsteuer 30 % | −107 € | −9 € | −51 € |
+| Default | Abgeltungsteuer 30 % | −107 € | −10 € | −51 € |
 | Default | Einkommensteuer +5 | −753 € | −10.712 € | −2.458 € |
-| DK (KV freiwillig 21,7 %) | Abgeltungsteuer 30 % | −83 € | −5 € | −33 € |
+| DK (KV freiwillig 21,7 %) | Abgeltungsteuer 30 % | −82 € | −5 € | −33 € |
 | DK | Einkommensteuer +5 | −92 € | −8.299 € | −970 € |
 | High (30 J., 110.000 €, 500 €/Monat) | Abgeltungsteuer 30 % | −9.073 € | −332 € | −3.306 € |
 | High | Einkommensteuer +5 | +1.926 € | −8.298 € | −1.937 € |
@@ -78,6 +81,11 @@ Erläuterungen:
 
 ## Offene Punkte
 
+- Grob geschätzte latente Steuer auf das AVD (Bewertung bei Rentenbeginn, Übertrag auf den Ehepartner im Erbfall,
+  `latentTax`/`latentTaxO`): verteilt den Wert auf die Restjahre, rechnet aber jedes Jahr mit dem Satz des
+  Bewertungsjahres. Liegt der Stichtag später, fehlt dort die Änderung.
+- Die Szenarien „Abgeltungsteuer 30 %“ und „Einkommensteuer +5“ ändern bei Standardwerten die Zahl der Szenarien
+  (Robustheitssatz, Kombi-Ergebnissatz); die Rechnung selbst bleibt bitgleich.
 - Andere denkbare Änderungen (Teilfreistellung, Sparer-Pauschbetrag, Besteuerungsanteil, Halbierungsregel, Vorabpauschale)
   sind nicht als Feld vorhanden.
 - Fassung des § 22 Nr. 5 EStG ab 01.01.2027 (Altersvorsorgereformgesetz, BGBl. 2026 I Nr. 156) nicht im Volltext geprüft;

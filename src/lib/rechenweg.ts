@@ -97,10 +97,10 @@ function changeText(p: Params): string {
   if (p.abgRate === .25 && p.estAdd === 0) return 'Steuerrecht: heute geltendes Recht (Stand 2026) für die ganze Laufzeit; künftige Gesetzesänderungen sind nicht vorweggenommen.';
   const from = p.taxFrom < 0 ? 'ab Rentenbeginn (Alter ' + p.R + ')' : 'ab Alter ' + Math.max(p.taxFrom, p.a0);
   const bits = [
-    ...(p.abgRate !== .25 ? ['Abgeltungsteuersatz ' + pct(p.abgRate) + ' % statt 25 % (mit Soli' + (p.kist > 0 ? ' und Kirchensteuer: ESt = e · s/(1 + s · k), verallgemeinert aus § 32d Abs. 1 S. 4 EStG' : '') + '; Teilfreistellung und Sparer-Pauschbetrag unverändert)'] : []),
+    ...(p.abgRate !== .25 ? ['Abgeltungsteuersatz ' + pct(p.abgRate) + ' % statt 25 % (mit Soli' + (p.kist > 0 ? ' und Kirchensteuer: ESt = e · s/(1 + s · k), verallgemeinert aus § 32d Abs. 1 S. 3–4 EStG unter der Annahme, dass auch die Ermäßigung um 25 % der Kirchensteuer dem neuen Satz folgt' : '') + '; Teilfreistellung und Sparer-Pauschbetrag unverändert)'] : []),
     ...(p.estAdd !== 0 ? ['Grenzsteuersatz der Einkommensteuer oberhalb des Grundfreibetrags um ' + pct(p.estAdd) + ' Prozentpunkte ' + (p.estAdd > 0 ? 'höher' : 'niedriger') + ' (tarifliche ESt + Satz × (zvE − 12.348 €), heutiges Geld; Soli und Kirchensteuer darauf)'] : []),
   ];
-  return 'Was-wäre-wenn Steueränderung (hypothetisch, keine angekündigte Rechtslage): ' + from + ' ' + bits.join('; ') + '. Gilt für alle Zahlungen und Verkäufe ab diesem Jahr, auch für Erben, ohne Bestandsschutz; Beiträge und Erstattungen davor nach heutigem Recht.';
+  return 'Was-wäre-wenn Steueränderung (hypothetisch, keine angekündigte Rechtslage): ' + from + ' ' + bits.join('; ') + '. Gilt für alle Zahlungen und Verkäufe ab diesem Jahr, auch für Erben, ohne Bestandsschutz; Beiträge und Erstattungen davor nach heutigem Recht. Die grob geschätzte spätere Steuer auf ein vererbtes oder bei Rentenbeginn bewertetes AVD rechnet mit dem Satz des Bewertungsjahres, auch wenn der Stichtag erst später liegt.';
 }
 
 /** Partner-Vertrag (avdSpouse) in Worten, passend zum AVD-Block in combo.ts. */

@@ -127,10 +127,10 @@ export function faqs(p: Params, keys: readonly ProductKey[]): Faq[] {
     id: 'taxChange', q: 'Was, wenn die Steuern bis zur Rente steigen?',
     a: [
       'Gerechnet ist mit dem heutigen Recht. Jedes Produkt kann von einer Änderung betroffen sein, aber über eine andere Steuer und mit einem anderen Betrag:',
-      ...(fund ? ['ETF-Depot' + (keys.includes('fond') ? ' und aktiver Fonds' : '') + ': Abgeltungsteuer auf den Gewinn beim Verkauf und auf die Vorabpauschale. Versteuert wird nach dem Recht im Jahr des Verkaufs, also auch der bis dahin angesammelte Gewinn.'] : []),
-      ...(avd ? ['Altersvorsorgedepot: Einkommensteuer auf die ganze Auszahlung (§ 22 Nr. 5 EStG). Eine höhere Einkommensteuer trifft hier den größten Betrag.'] : []),
-      ...(ins ? ['Versicherung: nach 12 Jahren und ab 62 Einkommensteuer auf die Hälfte des Gewinns, sonst Abgeltungsteuer. Bisher galten neue Regeln nur für neue Verträge (2005); garantiert ist das nicht.'] : []),
-      'Unter „Weitere Einstellungen“, „Was wäre, wenn sich die Steuern ändern?“ lassen sich ein anderer Abgeltungsteuersatz und eine höhere Einkommensteuer durchrechnen; die Szenarien zeigen je eine Änderung ab Rentenbeginn.',
+      ...(fund ? ['ETF-Depot' + (keys.includes('fond') ? ' und aktiver Fonds' : '') + ': Abgeltungsteuer auf den Gewinn beim Verkauf und auf die Vorabpauschale. Versteuert wird nach dem Recht im Jahr des Verkaufs, also auch der bis dahin angesammelte Gewinn, sofern keine Übergangsregel gilt.'] : []),
+      ...(avd ? ['Altersvorsorgedepot: Einkommensteuer auf die ganze Auszahlung aus geförderten Beiträgen (§ 22 Nr. 5 EStG), aus ungeförderten nur auf den Ertrag. Eine höhere Einkommensteuer trifft hier den größten Betrag.'] : []),
+      ...(ins ? ['Versicherung: als Kapital nach 12 Jahren und ab 62 Einkommensteuer auf die Hälfte des Gewinns, früher Abgeltungsteuer; als Leibrente Einkommensteuer auf den Ertragsanteil. Bisher galten neue Regeln nur für neue Verträge (2005); garantiert ist das nicht.'] : []),
+      'Unter „Weitere Einstellungen“, „Was wäre, wenn sich die Steuern ändern?“ lassen sich ein anderer Abgeltungsteuersatz und eine höhere Einkommensteuer durchrechnen. Solange dort nichts geändert ist, zeigen die Szenarien je eine der beiden Änderungen ab dem eingestellten Alter (Standard: Rentenbeginn).',
     ],
   });
   // Nicht im Vergleich, aber oft verfügbar: Betriebsrente. Neutral, ohne Empfehlung; Rechtsstand 2026.

@@ -88,6 +88,51 @@ describe('Steueränderung – Wirkung', () => {
     const r25 = (1.055 + .09) / (4 + .09), r30 = .3 * (1.055 + .09) / (1 + .3 * .09);
     expect((V - b.parts.etf!.capNet) / (V - a.parts.etf!.capNet)).toBeCloseTo(r30 / r25, 10);
   });
+  it('Abgeltungsteuer 0 %: keine NaN (kurze Versicherungsleistung, AVD-Teilauszahlung), Steuer 0', () => {
+    for (const c of [{ a0: 60 }, { einmal: true }, { einmal: true, a0: 50, incRet: 60000 }] as Partial<Inputs>[]) {
+      const A = analyze(P({ ...c, abgRate: 0 }));
+      for (const k of ['etf', 'avd', 'ins'] as const) {
+        expect(Number.isFinite(A.res[k]!.capNet)).toBe(true);
+        expect(A.stats[k]!.cumHReal).toBeGreaterThan(0);
+        expect(A.stats[k]!.cumHReal).toBeGreaterThanOrEqual(analyze(P(c)).stats[k]!.cumHReal - 1e-6);
+      }
+      if (c.einmal) expect(Number.isFinite(A.res.avd!.lumpNet!)).toBe(true);
+    }
+    const r = combo(P({ a0: 60, abgRate: 0 }), S({ ins: 150 }));
+    expect(r.parts.ins!.kapNet).toBe(r.parts.ins!.vals[r.n]);
+  });
+  it('Stichtag nach Ende der Rechnung = heutiges Recht', () => {
+    for (const s of SPLITS) expect(books(P({ abgRate: 40, estAdd: 10, taxFrom: 100 }), s)).toEqual(books(P(), s));
+  });
+  it('Stichtag mitten in der Auszahlphase: davor unverändert, danach höher', () => {
+    const a = combo(P({ incRet: 60000, reinvest: false }), S({ avd: 150, etf: 150 }));
+    const b = combo(P({ incRet: 60000, reinvest: false, estAdd: 5, abgRate: 30, taxFrom: 75 }), S({ avd: 150, etf: 150 }));
+    const t75 = 75 - 22;
+    expect(b.incTax.slice(0, t75)).toEqual(a.incTax.slice(0, t75));
+    expect(b.abgTax.slice(0, t75)).toEqual(a.abgTax.slice(0, t75));
+    expect(b.incTax[t75]).toBeGreaterThan(a.incTax[t75]);
+    expect(b.abgTax[t75]).toBeGreaterThan(a.abgTax[t75]);
+  });
+  it('Einkommensteuer +5 mit Kirchensteuer und Splitting, Leibrente und Erben: endlich und höher', () => {
+    const c = { kist: 9, married: true, incSpouse: 50000, incSpouseRet: 30000, insLump: false, reinvest: false };
+    const a = combo(P(c), S({ avd: 150, ins: 150 })), b = combo(P({ ...c, estAdd: 5 }), S({ avd: 150, ins: 150 }));
+    const t = a.n + 2;
+    expect(b.incTax[t]).toBeGreaterThan(a.incTax[t]);
+    expect(b.parts.ins!.incTax[t]).toBeGreaterThan(a.parts.ins!.incTax[t]);
+    const h = (r: typeof a) => r.heir(a.n + 3).val;
+    expect(Number.isFinite(h(b))).toBe(true);
+    expect(h(b)).toBeLessThan(h(a));
+    const e = (x: number) => combo(P({ incHeir: 50000, estAdd: x, taxFrom: 30 }), S({ avd: 150 })).heir(10).val;
+    expect(e(5)).toBeLessThan(e(0));
+  });
+  it('Vorabpauschale des Vorjahres fließt im Stichtagsjahr zu und wird mit dem neuen Satz versteuert (§ 18 Abs. 3 InvStG)', () => {
+    const c = { incWork: 90000 };
+    const a = combo(P(c), S({ etf: 1000 })), b = combo(P({ ...c, abgRate: 30, taxFrom: 40 }), S({ etf: 1000 }));
+    const t40 = 40 - 22;
+    // Steuer auf die Vorjahres-VP × 1,2, dazu die Steuer auf den Verkauf, der sie bezahlt (R2)
+    expect(b.abgTax[t40] / a.abgTax[t40]).toBeGreaterThan(1.19);
+    expect(b.abgTax[t40 - 1]).toBe(a.abgTax[t40 - 1]);
+  });
   it('Senkung (negativ) zieht nie unter 0 Steuer', () => {
     const r = combo(P({ incRet: 0, estAdd: -14 }), S({ avd: 150 }));
     for (const x of r.incTax) expect(x).toBeGreaterThanOrEqual(-1e-9);
@@ -102,6 +147,7 @@ describe('Steueränderung – Oberfläche und Texte', () => {
     expect(s.map(x => x.id)).toContain('taxNow');
     expect(s.find(x => x.id === 'taxNow')!.p).toMatchObject({ abgRate: .25, estAdd: 0, taxFrom: 50 });
     expect(scenarioList(P({ taxFrom: 50 })).find(x => x.id === 'taxAbg')!.label).toBe('Abgeltungsteuer 30 % statt 25 % ab 50 (hypothetisch)');
+    expect(scenarioList(P({ a0: 40, taxFrom: 30 })).find(x => x.id === 'taxAbg')!.label).toBe('Abgeltungsteuer 30 % statt 25 % ab 40 (hypothetisch)');
   });
   it('Link und Speicher', () => {
     expect(decodeState('#v=1&a0=40').inputs!).toMatchObject({ abgRate: 25, estAdd: 0, taxFrom: -1 });

@@ -210,7 +210,8 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   const ABG = p.kist > 0 ? (1.055 + p.kist) / (4 + p.kist) : .26375;
   // Was-wäre-wenn Steueränderung (neu, nicht im Original; docs/steueraenderung.md): ab Jahr tChange (Standard Rentenbeginn)
   // Abgeltungsteuersatz p.abgRate statt 25 % und Grenzsteuersatz der Einkommensteuer um p.estAdd höher. Hypothetisch,
-  // keine künftige Rechtslage. Kirchensteuer wie § 32d Abs. 1 S. 4 verallgemeinert: ESt = e · s/(1 + s · k).
+  // keine künftige Rechtslage. Kirchensteuer: § 32d Abs. 1 S. 3–4 verallgemeinert unter der Annahme, dass auch die Ermäßigung
+  // um „25 % der Kirchensteuer“ (S. 3) dem neuen Satz folgt: ESt = e · s/(1 + s · k). Bleibt S. 3 bei 25 %: e · s/(1 + 0,25 · k).
   // Standard (25 %, 0) ⇒ jeder Ausdruck wie bisher (bitgleich).
   const tChange = p.taxFrom < 0 ? n : Math.max(0, p.taxFrom - p.a0);
   const ABG_NEW = p.abgRate === .25 ? ABG : p.kist > 0 ? p.abgRate * (1.055 + p.kist) / (1 + p.abgRate * p.kist) : p.abgRate * 1.055;
@@ -456,13 +457,14 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   // ---------- 3) Gemeinsame Einkommensteuer im Alter (hängt nicht an den Fonds, daher vorab) ----------
   const incTax = zero(), abgTax = zero(), kv = zero(), taxAvd = zero(), taxIns = zero(), xIns = zero();
   let kapTaxFlat = 0; // Kapitalauszahlung vor 12 Jahren: Abgeltungsteuer ohne Pauschbetrag (Vereinfachung des Originals)
+  let kapFlatBase = 0; // deren Bemessungsgrundlage (für Abgeltungsteuersatz 0 %, sonst über kapTaxFlat / abg(n) wie bisher)
   if (ins) {
-    if (p.insLump) { if (ins.halb) xIns[n] = ins.gain * 0.85 * 0.5; else kapTaxFlat = ins.gain * 0.85 * abg(n); }
+    if (p.insLump) { if (ins.halb) xIns[n] = ins.gain * 0.85 * 0.5; else { kapFlatBase = ins.gain * 0.85; kapTaxFlat = kapFlatBase * abg(n); } }
     else for (let t = n; t < T; t++) xIns[t] = ins.annual * ins.ea;
   }
   const insuranceFree = zero();
   if (F.insAllowance && ins && p.insLump) {
-    const x = ins.halb ? xIns[n] : kapTaxFlat / abg(n);
+    const x = ins.halb ? xIns[n] : abg(n) > 0 ? kapTaxFlat / abg(n) : kapFlatBase;
     insuranceFree[n] = Math.min(allowance(n), x);
     if (ins.halb) xIns[n] -= insuranceFree[n];
     else kapTaxFlat = (x - insuranceFree[n]) * abg(n);
@@ -809,7 +811,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   if (F.kvDeduct && p.kvOn) for (let t = n; t < T; t++) {
     if (!(kv[t] > 0)) continue;
     const X = list.reduce((s, r) => s + r.taxBase[t], 0), base = p.incRet * I(t);
-    const relief = F.round || fam
+    const relief = F.round || fam || estAddAt(t) !== 0
       ? taxNom(base + X, t) - taxNom(Math.max(0, base + X - kv[t]), t)
       : (tax(p.incRet + X / I(t)) - tax(Math.max(0, p.incRet + (X - kv[t]) / I(t)))) * I(t);
     incTax[t] -= relief;
@@ -848,7 +850,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   if (F.gp && avd && avd.L[n] + avd.Lu[n] > 0) {
     const L = avd.L[n] + avd.Lu[n], xL = avd.tb[n] - (avd.W[n] + avd.xW[n]);
     const income = p.incRet * I(n) + list.reduce((s, r) => s + r.taxBase[n], 0) - (F.kvDeduct ? kv[n] : 0);
-    const paid = capitalWithheld[n], K = paid / abg(n);
+    const paid = capitalWithheld[n], K = abg(n) > 0 ? paid / abg(n) : 0; // 0 %: nichts einbehalten, min(paid, …) = 0
     const totalTax = (x: number) => taxNom(Math.max(0, x), n) + Math.min(paid,
       taxNom(Math.max(0, x + K), n) - taxNom(Math.max(0, x), n));
     lumpNet = L - (totalTax(income) - totalTax(income - xL + (F.kvDeduct ? kvLa : 0))) - kvLa;

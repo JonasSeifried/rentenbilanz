@@ -51,7 +51,7 @@
     const taxChange = i.abgRate !== DEFAULTS.abgRate || i.estAdd !== DEFAULTS.estAdd;
     out.push({
       key: 'taxChange', label: 'Steuerrecht in der Zukunft', tab: 'settings', id: 'f-abgRate',
-      value: taxChange ? 'hypothetisch ' + (i.taxFrom < 0 ? 'ab Rentenbeginn' : 'ab Alter ' + de(i.taxFrom)) + ': Abgeltungsteuer ' + de(i.abgRate) + ' %' + (i.estAdd !== 0 ? ', Einkommensteuer ' + (i.estAdd > 0 ? '+' : '−') + de(Math.abs(i.estAdd)) + ' Prozentpunkte' : '') : 'wie heute (keine Änderung angenommen)',
+      value: taxChange ? 'hypothetisch ' + (i.taxFrom < 0 ? 'ab Rentenbeginn' : 'ab Alter ' + de(Math.max(readParams(i).taxFrom, readParams(i).a0))) + ': Abgeltungsteuer ' + de(i.abgRate) + ' %' + (i.estAdd !== 0 ? ', Einkommensteuer ' + (i.estAdd > 0 ? '+' : '−') + de(Math.abs(i.estAdd)) + ' Prozentpunkte' : '') : 'wie heute (keine Änderung angenommen)',
       changed: taxChange,
     });
     out.push({

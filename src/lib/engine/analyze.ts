@@ -167,7 +167,7 @@ export function scenarioList(p: Params, kombi?: Split | null, opts?: EngineOptio
     }
     add('allowance', p.indexAllowance ? 'Pauschbetrag nominal fest' : 'Pauschbetrag indexiert (hypothetisch)', { indexAllowance: !p.indexAllowance });
     // Was-wäre-wenn Steueränderung (hypothetisch, docs/steueraenderung.md): je eine Steuerart, ab Rentenbeginn bzw. ab dem gewählten Alter.
-    const from = p.taxFrom < 0 ? 'ab Rentenbeginn' : 'ab ' + p.taxFrom;
+    const from = p.taxFrom < 0 ? 'ab Rentenbeginn' : 'ab ' + Math.max(p.taxFrom, p.a0);
     if (p.abgRate === .25 && p.estAdd === 0) {
       add('taxAbg', 'Abgeltungsteuer 30 % statt 25 % ' + from + ' (hypothetisch)', { abgRate: .3 });
       add('taxEst', 'Einkommensteuer 5 Prozentpunkte höher ' + from + ' (hypothetisch)', { estAdd: .05 });
