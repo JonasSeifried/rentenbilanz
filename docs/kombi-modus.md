@@ -1,6 +1,6 @@
 # Kombi
 
-**Aktueller Stand:** R1–R8 und E4 sind umgesetzt ([E4/D1-Nachtrag](zulagen-veranlagung-2026-11.md)), V1–V3/Auszahlkosten sind wählbar; siehe [Umsetzungsbericht](engine-rest-2026-11.md). Frühere Zahlenbeispiele unten sind historische Stände; aktuelle Vergleichswerte und Aufteilungen stehen in [Abweichungen, Review-Korrekturen](abweichungen-vom-original.md#korrekturen-aus-dem-review-november-2026).
+**Aktueller Stand:** R1–R8 und E4 sind umgesetzt ([E4/D1-Nachtrag](zulagen-veranlagung-2026-11.md)), V1–V3/Auszahlkosten sind wählbar; siehe [Umsetzungsbericht](engine-rest-2026-11.md). Frühere Zahlenbeispiele unten sind historische Stände; aktuelle Vergleichswerte und Aufteilungen stehen in [Korrekturen, Review November 2026](korrekturen.md#korrekturen-aus-dem-review-november-2026).
 
 Eine Kombi verteilt den Monatsbeitrag auf mehrere Produkte. Der Rechner versteuert die Teile gemeinsam, wie es bei
 einer Person auch tatsächlich geschieht. Die Kombi läuft im Vergleich als **eigener Teilnehmer** neben den
@@ -27,7 +27,7 @@ Dialog hinter „+ Kombi“ in der Zeile „Vergleichen“. Dort zeigt der Rechn
 Geld). Sie wachsen mit der Beitragsdynamik wie im Einzelvergleich. `combo.ts` ist die **einzige** Rechen-Engine der
 App: Auch jedes Einzelprodukt im Vergleich ist eine Kombi mit nur diesem Teil (`single()` in `analyze.ts`, mit
 `parts: [k]` auch bei 0 €). Die Formeln stammen aus `engine.ts` (Port des Originals, jetzt nur Referenz), ergänzt um die ausschließlich hier
-umgesetzten neuen Fixes, in der Fassung **mit allen Korrekturen** (`docs/abweichungen-vom-original.md`). Gemeinsam gerechnet werden drei Dinge:
+umgesetzten neuen Fixes, in der Fassung **mit allen Korrekturen** (`docs/korrekturen.md`). Gemeinsam gerechnet werden drei Dinge:
 
 1. **Einkommensteuer im Alter.** Steuerpflichtig sind der AVD-Auszahlplan einschließlich der 30-%-Auszahlung, der
    Ertragsanteil der Leibrente und die hälftig steuerpflichtige Kapitalauszahlung der Versicherung (nach 12 Jahren).
@@ -37,7 +37,7 @@ umgesetzten neuen Fixes, in der Fassung **mit allen Korrekturen** (`docs/abweich
 2. **Ein Sparer-Pauschbetrag** von 1.000 € im Jahr gilt für alle Depots zusammen: ETF, aktiver Fonds,
    AVD-Nebendepot, Folge-ETF und Versicherungsleistung. Zuerst Versicherung, dann im Folgejahr zugeflossene Vorabpauschalen, danach Entnahme-/Umschichtungsgewinne. Mit der Umschichtung vor Rentenbeginn (`shift`) zählen die Gewinne der Umschichtungs-Verkäufe
    wie Entnahmegewinne; jedes Fondsdepot hat dann ein sicheres Teil-Depot ohne Teilfreistellung
-   (`docs/abweichungen-vom-original.md`, „Erweiterung: Umschichtung vor Rentenbeginn“).
+   (`docs/korrekturen.md`, „Erweiterung: Umschichtung vor Rentenbeginn“).
 3. **Ein KV/PV-Jahresbuch** bis zur Beitragsbemessungsgrenze, gemeinsam für alle Produkte (Fix E7). Darin stehen
    der AVD-Auszahlplan, die Leibrente, die Kapitalauszahlung als C/10 über 10 Jahre (E8) und die Fondsbasis aller
    Depots (70 % des Gewinns plus 70 % der Vorabpauschale in der Rentenphase, E6). Die AVD-30-%-Auszahlung bleibt
@@ -149,7 +149,7 @@ stimmt sie (S1).
 ### AVD über 150 €
 
 Mit E10 bleibt der Teil über 150 € bis 570 €/Monat ungefördert im Vertrag (AVD-Kosten, keine Steuer in der
-Ansparphase, bei Auszahlung nur der Gewinnanteil, nach 12 Jahren zur Hälfte; `docs/abweichungen-vom-original.md`).
+Ansparphase, bei Auszahlung nur der Gewinnanteil, nach 12 Jahren zur Hälfte; `docs/korrekturen.md`).
 AVD 450 € ist deshalb **nicht** dasselbe wie AVD 150 € + 300 € ETF. Bei Standardwerten mit 450 € liegt das Optimum bei
 280 € AVD + 170 € ETF: so viel ETF, wie der Sparer-Pauschbetrag dessen Gewinne freistellt, der Rest im Vertrag.
 
@@ -305,7 +305,7 @@ im Todesjahr in einem Tarif.
 ## 7. Grenzen
 
 - **Erbfall:** eine Person als Erbe, Verkauf aller Depots im Todesjahr, keine Fünftelregelung (Abschnitt
-  „Erbfall“, offene Punkte in `docs/abweichungen-vom-original.md`).
+  „Erbfall“, offene Punkte in `docs/korrekturen.md`).
 - **Keine Fix-Schalter in der Oberfläche.** Die Kombi-Engine rechnet immer mit allen Korrekturen.
 - Die **Zuordnung je Teil** ist eine Konvention (anteilig); nur die Summe ist eindeutig.
 - **Versicherung:** Kapitalauszahlung oder Leibrente folgt dem Schalter `insLump`. Die Suche schaltet das nicht um.

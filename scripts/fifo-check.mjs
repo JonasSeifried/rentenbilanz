@@ -1,4 +1,4 @@
-// Prüfrechnung zu docs/abweichungen-vom-original.md („Umschichtung vor Rentenbeginn“, FIFO): Wie viel macht es aus,
+// Prüfrechnung zu docs/korrekturen.md („Umschichtung vor Rentenbeginn“, FIFO): Wie viel macht es aus,
 // dass der Rechner Anschaffungskosten als Durchschnitt statt nach FIFO (§ 20 Abs. 4 S. 7 EStG) rechnet?
 // Eigenständig, ohne die Engine: Standardwerte, ETF 150 €/Monat, Alter 22 → Rente 67, Auszahlplan bis 90, jeder
 // Monatsbeitrag ein eigener Kaufposten, ein Sparer-Pauschbetrag je Jahr, ohne Vorabpauschale. Aufruf: node scripts/fifo-check.mjs

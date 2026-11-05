@@ -1,5 +1,5 @@
 // Auswertung und Szenarien: Port des Originals (legacy/index.html: analyze, scenarios) plus dokumentierte
-// Korrekturen (fixes.ts, docs/abweichungen-vom-original.md); mit NO_FIXES bitgleich zum Original (Golden-Test).
+// Korrekturen (fixes.ts, docs/korrekturen.md); mit NO_FIXES bitgleich zum Original (Golden-Test).
 // Gerechnet wird mit der einen Engine combo.ts: jedes Einzelprodukt als Kombi mit nur diesem Teil (I1 in
 // tests/combo.test.ts: bitgleich zu model() in engine.ts, der Referenz des Originals).
 // Die Szenario-Beschriftungen sind neutral formuliert (keine Rechenrelevanz).

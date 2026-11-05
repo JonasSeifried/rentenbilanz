@@ -3,7 +3,7 @@
 Geprüft am 04.11.2026, Rechnung von `main` nach `324e064`. Der beim Prüfstart vorhandene Folgecommit
 `077de83` enthielt nur die Vorfassung dieses Berichts. Keine Änderung der Rechnung.
 
-**Umsetzungsstand:** R1–R8 sind inzwischen umgesetzt; V1–V3 und Auszahlkosten sind als Optionen/Sensitivitäten ergänzt. H1/H2 und offene AVD-Zuordnungen bleiben ausdrücklich begrenzt; siehe [Folgebericht](engine-rest-2026-11.md). Siehe [Abweichungen](abweichungen-vom-original.md#korrekturen-aus-dem-review-november-2026). Die folgenden Messungen beschreiben weiterhin den geprüften Stand vor diesen Änderungen.
+**Umsetzungsstand:** R1–R8 sind inzwischen umgesetzt; V1–V3 und Auszahlkosten sind als Optionen/Sensitivitäten ergänzt. H1/H2 und offene AVD-Zuordnungen bleiben ausdrücklich begrenzt; siehe [Folgebericht](engine-rest-2026-11.md). Siehe [Korrekturen](korrekturen.md#korrekturen-aus-dem-review-november-2026). Die folgenden Messungen beschreiben weiterhin den geprüften Stand vor diesen Änderungen.
 
 ## Befunde nach Schweregrad
 
@@ -39,7 +39,7 @@ Versicherung mit Kapitalauszahlung. DK zusätzlich `kvOn:true`. High zusätzlich
 Alterseinkommen 45.000 €, **alle** Monatsbeiträge und `setAll` 500 €.
 
 Haupttabellen mit **aktuellem Standard 21,1 % KV/PV**. Die früheren Wirkungstests in
-[Abweichungen](abweichungen-vom-original.md) verwenden teils 21,7 %; separate Nachrechnung unten.
+[Korrekturen](korrekturen.md) verwenden teils 21,7 %; separate Nachrechnung unten.
 Der aktive Fonds wurde zusätzlich eingeschaltet, ohne die anderen Einzelbeiträge zu verändern.
 
 | Ausgangslage | ETF | AVD | Versicherung | aktiver Fonds | Vorsprung Erster vor Zweitem |
@@ -218,7 +218,7 @@ Förderrückzahlung: [§ 93 Abs. 1][tod]. **Offen:** Zuordnung verbleibender Fö
 AVD-Raten mit ZfA/BMF klären. Prüfalternative ist keine behauptete Verwaltungsformel.
 **Vorschlag:** Basis-/Förderkonto getrennt vom Marktwert fortschreiben und Zuordnung bestätigen lassen.
 
-Weitere Punkte kurz zu [Abweichungen](abweichungen-vom-original.md) und [Kombi § 6–7](kombi-modus.md):
+Weitere Punkte kurz zu [Korrekturen](korrekturen.md) und [Kombi § 6–7](kombi-modus.md):
 
 - **E4:** offener Soli-Punkt. Dortige Formel mit aktuellem ALL_FIXES: **0 / 0 / −3.552 € AVD**;
   High mit 21,7 % −3.541 €. Kein Siegerwechsel mehr, High bereits ETF; alte Wechsel-Angabe gilt nicht mit E10.

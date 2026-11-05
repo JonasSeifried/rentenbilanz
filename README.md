@@ -54,12 +54,12 @@ Die Rechnung nutzt Werte, die sich jedes Jahr ändern. Nach jeder Änderung: `np
 - [ ] **Beitragsbemessungsgrenze KV/PV** (`KV_BBG` in `core.ts`), **Versicherungspflichtgrenze** und **Zusatzbeitrag/Pflegesatz** (Standard `kvRate`, Texte `kvFreiwillig`/`kvRate` im Glossar).
 - [ ] **Altersvorsorgedepot:** Zulagen, Höchstbeträge, Bonus, Auszahlregeln gegen das aktuelle Gesetz/BMF-Schreiben prüfen; Hinweis zum Start (`avdStart`) entfällt ab 2027 automatisch. Standarddepot: Umschichtungsanteile (`AVD_STD_GLIDE` in `core.ts`, § 1 Abs. 1c Nr. 5 AltZertG; gelten mit dem Schalter „Umschichtung vor Rentenbeginn“ für alle Produkte) und Kostendeckel (§ 2a Abs. 2) mit Glossar (`standarddepot`, `umschichtung`, `avdKosten`) und `src/lib/prosCons.ts` abgleichen. Teilfreistellung (§ 20 InvStG, 30 % Aktienfonds, 0 % sicherer Teil) in `combo.ts` prüfen.
 - [ ] **„Was die Zahlen nicht zeigen“** (`src/lib/prosCons.ts`): Rechtsaussagen mit Fundstelle (§ 12 SGB II, § 93 EStG, AltZertG) gegen den aktuellen Stand prüfen.
-- [ ] Änderungen an der Rechnung bewusst machen: Golden-Tests vergleichen mit `legacy/index.html` (Korrekturen aus), `tests/fixes.test.ts` und `tests/combo*.test.ts` prüfen die aktuelle Rechnung. Abweichungen in `docs/abweichungen-vom-original.md` dokumentieren.
+- [ ] Änderungen an der Rechnung bewusst machen: Golden-Tests vergleichen mit `legacy/index.html` (Korrekturen aus), `tests/fixes.test.ts` und `tests/combo*.test.ts` prüfen die aktuelle Rechnung. Abweichungen von der ersten Fassung in `docs/korrekturen.md` dokumentieren.
 - [ ] Standardwerte ändern sich nur in `DEFAULTS`; die Link-Basis in `link.ts` nie ändern (sonst neue `LINK_VERSION`).
 
 ## Weitere Dokumentation
 
-- `docs/abweichungen-vom-original.md`: Korrekturen an der ursprünglichen Rechnung mit Rechtsquellen und Wirkung.
+- `docs/korrekturen.md`: Korrekturen gegenüber der ersten Fassung (`legacy/index.html`) mit Rechtsquellen und Wirkung.
 - `docs/engine-rest-2026-11.md`: Umsetzung R3/R4/R5/R7, wählbare Annahmen, offene Erbfallgrenzen und aktuelle Vergleichsmessungen.
 - `docs/zulagen-veranlagung-2026-11.md`: E4-Veranlagung mit Primärbelegen, R3-Bilanz, D1-Gegenfall und aktuelle Wirkung.
 - `docs/kombi-modus.md`: Rechenmodell der Kombi (gemeinsame Besteuerung, Suche nach der besten Aufteilung, Einbindung in den Vergleich).

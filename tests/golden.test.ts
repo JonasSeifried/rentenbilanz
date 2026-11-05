@@ -1,6 +1,6 @@
 // Golden-Tests: Original-Engine (legacy/index.html) gegen portierte Engine (src/lib/engine) ohne Korrekturen (NO_FIXES).
 // Beide bekommen exakt dieselben Eingaben; jede Zahl muss auf den Cent übereinstimmen.
-// Die Korrekturen selbst prüft tests/fixes.test.ts (siehe docs/abweichungen-vom-original.md).
+// Die Korrekturen selbst prüft tests/fixes.test.ts (siehe docs/korrekturen.md).
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';

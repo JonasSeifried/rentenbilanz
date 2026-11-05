@@ -1,6 +1,6 @@
 // Korrekturen gegenüber dem Original (legacy/index.html), einzeln schaltbar.
 // Standard überall: ALL_FIXES. Mit NO_FIXES rechnet die Engine bitgleich zum Original (tests/golden.test.ts).
-// Herleitung, Rechtsquellen und Wirkung je Korrektur: docs/abweichungen-vom-original.md.
+// Herleitung, Rechtsquellen und Wirkung je Korrektur: docs/korrekturen.md.
 
 export type FixId = 'soliOnZulage' | 'capitalGuenstiger' | 'vpNextYear' | 'kvGrossIncome' | 'insuranceAllowance' | 'rankReal' | 'heirTax' | 'bonusOutsideSA' | 'kvInvestBase' | 'kvSharedRoom' | 'kvLumpSpread' | 'avdUnsubsidized' | 'kvDeductible' | 'avdSmallContribution' | 'taxRounding' | 'vpTaxSale' | 'insDeathMinimum';
 

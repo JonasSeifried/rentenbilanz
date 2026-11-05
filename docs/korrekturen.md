@@ -1,4 +1,6 @@
-# Abweichungen vom Original
+# Korrekturen an der ersten Fassung
+
+Der Rechner ist aus einer ersten Fassung in einer einzigen HTML-Datei entstanden (`legacy/index.html`, im Text auch „Original“). Sie bleibt unverändert als Referenz für die Golden-Tests. Diese Datei beschreibt jede Stelle, an der die heutige Rechnung bewusst davon abweicht, mit Rechtsquelle und Wirkung.
 
 `src/lib/engine/engine.ts` (`model()`) ist ein 1:1-Port von `legacy/index.html`. Die sieben historischen Korrekturen E1–E10 sind dort ebenfalls enthalten.
 Jede hängt an einem eigenen Schalter (`src/lib/engine/fixes.ts`). Die App rechnet seit dem Umbau „eine Engine“ mit
@@ -621,3 +623,20 @@ Steuerermäßigungen fehlen weiterhin im Eingabemodell. Default/DK unverändert,
 statt 316.109 € real; ETF/Versicherung unverändert. DK bleibt mit 190 € Abstand nicht robust.
 D1 ist durch präzisierte I4-Dokumentation und den gezielten +13,201749-€-Gegenfall behoben.
 Alle Belege und die abschließende Validierung stehen im [Nachtrag](zulagen-veranlagung-2026-11.md).
+
+### R9 – `insDeathMinimum`: Mindest-Todesfallleistung der Versicherung
+
+Fondsgebundene Rentenversicherungen leisten bei Tod vor Rentenbeginn üblicherweise das Vertragsguthaben,
+**mindestens die Summe der eingezahlten Beiträge** (Beitragsrückgewähr; z. B. Bayerische „Hallo Zukunft“,
+Tarif FRVGZB/2601, AVB § 2 Abs. 8). Bisher zahlte der Erbfall vor Rentenbeginn nur das Fondsguthaben.
+Mit R9 gilt bei Tod vor Rentenbeginn (nicht bei Tod genau mit Rentenbeginn) `max(Guthaben, Beitragssumme)` im Einzelprodukt und im gemeinsamen Kombi-Erbfall; der Hinweistext
+nennt die Mindestleistung, wenn sie greift. Ansparphase, Kapital, Rente und Rangfolge bleiben unverändert.
+Wirkung nur bei Nettorendite nahe oder unter null (Standardwerte: keine Änderung). Test: `tests/ins-death-min.test.ts`.
+
+Bewusst nicht umgesetzt (Hinweis im Glossar `effektivkosten` und `erbfallVersicherung`): Effektivkosten wirken
+als fester Abzug von der Rendite. Das genannte Angebot (120 €/Monat, 5 % Dynamik, 43 J. 7 Mon.) nennt 0,88 %
+Effektivkosten; sein Endkapital trifft der feste Abzug mit 0,89 % (6–7 % brutto) bis 0,96 % (1 % brutto),
+mit dem Standard 0,9 % also auf etwa 1 % genau, überschätzt aber das Guthaben zwischendurch (bei 6 % brutto
+Jahr 5 +12 %, Jahr 10 +26 %, Jahr 20 +14 %, Jahr 27 +9 %), weil die Kosten dort überwiegend am Beitrag hängen.
+Ein Modell „Kosten am Beitrag“ ist erst sinnvoll, wenn es an weiteren Tarifen (Nettotarif, kurze Laufzeit,
+ohne Dynamik) geprüft ist.

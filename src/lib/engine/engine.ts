@@ -1,5 +1,5 @@
 // Rechen-Engine: Port des Originals (legacy/index.html, geprüfter Stand, Commit 2ce0d56) plus dokumentierte
-// Korrekturen (fixes.ts, docs/abweichungen-vom-original.md); mit NO_FIXES bitgleich zum Original (Golden-Test).
+// Korrekturen (fixes.ts, docs/korrekturen.md); mit NO_FIXES bitgleich zum Original (Golden-Test).
 // Jede Korrektur hängt an genau einem Schalter (F.*), der Pfad ohne Schalter ist Zeichen für Zeichen das Original.
 // Nur noch Referenz: Die App rechnet mit combo.ts (eine Engine für Einzelprodukte und Kombi). model() bleibt, damit der
 // Golden-Test den Originalpfad gegen legacy/index.html prüfen kann und I1 (tests/combo.test.ts) combo.ts gegen model().
