@@ -22,6 +22,7 @@ Für die Browser-Tests einmalig: `npx playwright install chromium webkit`.
 - Build command: `npm run build`
 - Build output directory: `dist`
 - Node-Version kommt aus `.node-version`.
+- Umgebungsvariablen `IMPRESSUM_STRASSE`, `IMPRESSUM_ORT` und `IMPRESSUM_TELEFON` setzen (Anschrift und Telefon für Impressum und Datenschutz, siehe `.env.example`). Ohne Straße/Ort bricht der Build ab. Lokal stehen die Werte in `.env.local`, die nicht eingecheckt wird.
 
 `public/_headers` setzt die Sicherheits-Header (u. a. CSP ohne fremde Quellen). Alle Pfade sind relativ, die Seite läuft auch in einem Unterordner.
 

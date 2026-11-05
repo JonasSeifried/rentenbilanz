@@ -276,6 +276,10 @@ test('Läuft auch in einem Unterordner', async ({ page }) => {
   await expect(page).toHaveURL(/\/unterordner\/impressum\.html$/);
   await expect(page.getByRole('heading', { name: 'Impressum' })).toBeVisible();
   await expect(page.getByText('Jonas Seifried').first()).toBeVisible();
+  // Anschrift und Telefon kommen beim Build aus den Umgebungsvariablen (playwright.config.ts).
+  await expect(page.getByText('Teststraße 1').first()).toBeVisible();
+  await expect(page.getByText('Telefon: +49 0000 000000')).toBeVisible();
+  await expect(page.getByText('%IMPRESSUM_')).toHaveCount(0);
   await page.getByRole('link', { name: /Zurück zum Rechner/ }).click();
   await expect(page.getByTestId('verdict')).toBeVisible();
 });

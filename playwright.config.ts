@@ -15,7 +15,8 @@ export default defineConfig({
     url: `http://localhost:${PORT}/`,
     reuseExistingServer: false,
     timeout: 180_000,
-    env: { PORT: String(PORT) },
+    // Feste Testwerte für Impressum/Datenschutz; sie gehen einer lokalen .env.local vor.
+    env: { PORT: String(PORT), IMPRESSUM_STRASSE: 'Teststraße 1', IMPRESSUM_ORT: '12345 Teststadt', IMPRESSUM_TELEFON: '+49 0000 000000' },
   },
   projects: [
     { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'] } },
