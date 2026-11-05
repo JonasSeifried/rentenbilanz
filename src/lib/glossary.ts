@@ -24,7 +24,16 @@ export const GLOSSARY = {
     text: [
       'Steuerpflichtiges Einkommen im Ruhestand ohne die hier verglichenen Produkte, zum Beispiel gesetzliche Rente, Betriebsrente oder Mieteinnahmen. Bei Rentenbeginn ab 2058 ist die gesetzliche Rente voll steuerpflichtig.',
       'Dieser Wert ist das zu versteuernde Einkommen ohne die verglichenen Produkte. Beiträge zur Kranken- und Pflegeversicherung auf dieses bisherige Einkommen sind darin bereits abgezogen. Zusätzliche Beiträge auf die verglichenen Produkte zieht der Rechner gesondert ab. Betrag in heutigem Geld.',
-      'Die Renteninformation nennt eine Bruttorente, kein zu versteuerndes Einkommen. Sonstige KV-beitragspflichtige Bruttoeinnahmen werden unter Weitere Einstellungen getrennt eingegeben.',
+      'Die Renteninformation nennt eine Bruttorente, kein zu versteuerndes Einkommen. Unter dem Feld lässt es sich aus der Bruttorente berechnen („Einkommen im Alter aus der Bruttorente berechnen“). Sonstige KV-beitragspflichtige Bruttoeinnahmen werden unter Weitere Einstellungen getrennt eingegeben.',
+    ],
+  },
+  renteZve: {
+    title: 'Von der Bruttorente zum zu versteuernden Einkommen',
+    text: [
+      'Steuerpflichtig ist nur der Besteuerungsanteil der Rente; er hängt vom Jahr des Rentenbeginns ab: 2026 84 %, danach jedes Jahr 0,5 Prozentpunkte mehr, ab 2058 100 % (§ 22 Nr. 1 S. 3 Buchst. a Doppelbuchst. aa EStG). Der Rest ist der Rentenfreibetrag. Er bleibt für die ganze Rentenzeit in Euro gleich; Rentenerhöhungen sind voll steuerpflichtig.',
+      'Abgezogen werden 102 € Werbungskosten-Pauschbetrag (§ 9a S. 1 Nr. 3 EStG), 36 € Sonderausgaben-Pauschbetrag (§ 10c EStG) und die Kranken- und Pflegeversicherung auf die Rente (§ 10 Abs. 1 Nr. 3 EStG). Gesetzlich Versicherte tragen die Hälfte von 14,6 % und vom Zusatzbeitrag (§ 249a SGB V), die Pflegeversicherung allein (§ 59 Abs. 1 SGB XI).',
+      'In heutigem Geld wächst die Rente mit der Inflation. Feste Euro-Beträge (Freibetrag, Pauschbeträge) werden dadurch real kleiner, das zu versteuernde Einkommen steigt über die Rentenjahre. Vorgeschlagen wird der Durchschnitt bis zum Ende des Auszahlplans, auf 100 € gerundet.',
+      'Nicht berücksichtigt: tatsächliche Rentenerhöhungen über der Inflation, Abschläge bei früherem Rentenbeginn, Steuerermäßigungen, Ehegattensplitting.',
     ],
   },
   sparerGenutzt: {

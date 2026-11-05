@@ -18,6 +18,7 @@
   import Heirs from './lib/panels/Heirs.svelte';
   import Settings from './lib/panels/Settings.svelte';
   import KvQuestion from './lib/components/KvQuestion.svelte';
+  import PensionHelper from './lib/components/PensionHelper.svelte';
   import ResultPeek from './lib/components/ResultPeek.svelte';
   import { changedSettings } from './lib/components/AssumptionCheck.svelte';
   import { verdict } from './lib/verdict';
@@ -155,6 +156,7 @@
       <NumberField label="Rentenbeginn mit" value={i.R} onchange={v => setInput('R', v)} min={65} max={70} unit="Jahren" info="rentenbeginn" testid="R"
         clampNote={v => (v < 65 || v > 70 ? 'Gerechnet wird mit ' + Math.min(70, Math.max(65, Math.round(v))) + '.' : null)} />
     </div>
+    <PensionHelper />
     <div class="eck-foot">
       <div class="kv">
         <KvQuestion />

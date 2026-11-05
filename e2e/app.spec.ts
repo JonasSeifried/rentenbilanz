@@ -351,3 +351,26 @@ for (const scheme of ['light', 'dark'] as const) {
     }
   });
 }
+
+test('Hilfsrechnung Bruttorente setzt „Einkommen im Alter“ (zu versteuern, Durchschnitt)', async ({ page }) => {
+  await page.goto('./');
+  await page.getByTestId('pension-helper').locator('summary').click();
+  await setField(page, 'ph-monthly', '1500');
+  await setField(page, 'ph-year', '2040');
+  await expect(page.getByTestId('ph-table')).toContainText('18.000 €');
+  await page.getByTestId('ph-take').click();
+  // Handrechnung siehe tests/pension-tax.test.ts (2 % Inflation, 14 Jahre bis Rentenbeginn wären 14.300 €; hier 45 Jahre)
+  await expect.poll(() => saved(page).then(s => s?.incRet ?? 20000)).not.toBe(20000);
+  const v = (await saved(page))!.incRet;
+  expect(v % 100).toBe(0);
+  expect(v).toBeGreaterThan(13000);
+  expect(v).toBeLessThan(16000);
+  await expect(field(page, 'incRet')).toHaveValue(v.toLocaleString('de-DE'));
+});
+
+test('Sparer-Pauschbetrag schon genutzt: Feld unter Weitere Einstellungen, wird gespeichert', async ({ page }) => {
+  await page.goto('./');
+  await page.click('#tab-settings');
+  await setField(page, 'allowanceUsed', '400');
+  await expect.poll(() => saved(page).then(s => s?.allowanceUsed)).toBe(400);
+});
