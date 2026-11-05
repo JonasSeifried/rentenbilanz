@@ -653,10 +653,14 @@ Tagesgeldzinsen oder Erträge aus anderen Depots hat, trägt den dafür verbrauc
   Bei 2 % Inflation sind 500 € heute nach 35 Jahren rund 1.000 € nominal, der Pauschbetrag ist dann ganz verbraucht.
 - Gilt überall, wo die Person selbst Kapitalerträge hat: Vorabpauschale und Umschichtung in der Ansparphase,
   Entnahmen, Versicherungsleistung (R7), Kapital nach Steuer bei Rentenbeginn. In der Günstigerprüfung (R3) ist das
-  exakt: Die anderen Erträge liegen ganz im Pauschbetrag (Obergrenze 1.000 €), also gilt
-  `andere + eigene − 1.000 = eigene − (1.000 − andere)` auch im Tarif (§ 32d Abs. 6 EStG).
+  exakt, solange `allowanceUsed × I(t) ≤ 1.000 €` (bzw. ≤ indexierter Pauschbetrag): Die anderen Erträge liegen dann
+  ganz im Pauschbetrag, also gilt `andere + eigene − 1.000 = eigene − (1.000 − andere)` auch im Tarif (§ 32d Abs. 6 EStG).
+  Wächst der Betrag nominal darüber (600 € bei 2 % Inflation nach etwa 26 Jahren), stünde der Überschuss der anderen
+  Erträge in der Günstigerprüfung mit im Tarif; das ist nicht modelliert.
 - **Erbfall nicht betroffen:** Verkaufen die Erben, nutzen sie ihren eigenen Pauschbetrag; ihre sonstigen
-  Kapitalerträge sind unbekannt. Gerechnet wird dort wie bisher mit vollen 1.000 €.
+  Kapitalerträge sind unbekannt. Gerechnet wird dort wie bisher mit vollen 1.000 €, auch für den Ehepartner. Erbt
+  dieser ein gemeinsames Tagesgeld mit, ist sein Pauschbetrag in Wirklichkeit ebenfalls teilweise verbraucht; der
+  Erbwert der Depots ist dann leicht zu hoch.
 - Nicht modelliert: andere Kapitalerträge über 1.000 € (sie würden in der Günstigerprüfung mit im Tarif stehen),
   Verluste aus anderen Depots.
 

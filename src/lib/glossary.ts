@@ -33,7 +33,7 @@ export const GLOSSARY = {
       'Steuerpflichtig ist nur der Besteuerungsanteil der Rente; er hängt vom Jahr des Rentenbeginns ab: 2026 84 %, danach jedes Jahr 0,5 Prozentpunkte mehr, ab 2058 100 % (§ 22 Nr. 1 S. 3 Buchst. a Doppelbuchst. aa EStG). Der Rest ist der Rentenfreibetrag. Er bleibt für die ganze Rentenzeit in Euro gleich; Rentenerhöhungen sind voll steuerpflichtig.',
       'Abgezogen werden 102 € Werbungskosten-Pauschbetrag (§ 9a S. 1 Nr. 3 EStG), 36 € Sonderausgaben-Pauschbetrag (§ 10c EStG) und die Kranken- und Pflegeversicherung auf die Rente (§ 10 Abs. 1 Nr. 3 EStG). Gesetzlich Versicherte tragen die Hälfte von 14,6 % und vom Zusatzbeitrag (§ 249a SGB V), die Pflegeversicherung allein (§ 59 Abs. 1 SGB XI).',
       'In heutigem Geld wächst die Rente mit der Inflation. Feste Euro-Beträge (Freibetrag, Pauschbeträge) werden dadurch real kleiner, das zu versteuernde Einkommen steigt über die Rentenjahre. Vorgeschlagen wird der Durchschnitt bis zum Ende des Auszahlplans, auf 100 € gerundet.',
-      'Nicht berücksichtigt: tatsächliche Rentenerhöhungen über der Inflation, Abschläge bei früherem Rentenbeginn, Steuerermäßigungen, Ehegattensplitting.',
+      'Nicht berücksichtigt: tatsächliche Rentenerhöhungen über der Inflation, Abschläge oder Zuschläge bei einem Rentenbeginn vor oder nach der Regelaltersgrenze (die Renteninformation nennt die Rente zur Regelaltersgrenze), Steuerermäßigungen, Ehegattensplitting.',
     ],
   },
   sparerGenutzt: {
@@ -41,7 +41,7 @@ export const GLOSSARY = {
     text: [
       'Kapitalerträge bis 1.000 € im Jahr sind steuerfrei (§ 20 Abs. 9 EStG), aber nur einmal für alle Konten und Depots zusammen. Zinsen auf Tagesgeld, Dividenden oder Gewinne aus anderen Depots verbrauchen ihn zuerst; für die hier verglichenen Depots bleibt dann weniger.',
       'Einzutragen ist, wie viel davon andere Kapitalerträge im Jahr verbrauchen (nach Teilfreistellung), höchstens 1.000 €. Die Jahressteuerbescheinigung jeder Bank nennt den „in Anspruch genommenen Sparer-Pauschbetrag“; die Summe über alle Banken ist der Wert.',
-      'Betrag in heutigem Geld: Er wächst im Modell mit der Inflation, der Pauschbetrag bleibt nominal 1.000 €. Dadurch ist er später stärker verbraucht als heute. Gilt in Anspar- und Auszahlphase; die Erben haben ihren eigenen Pauschbetrag.',
+      'Betrag in heutigem Geld: Er wächst im Modell mit der Inflation, der Pauschbetrag bleibt nominal 1.000 €. Dadurch ist er später stärker verbraucht als heute. Gilt in Anspar- und Auszahlphase. Die Erben, auch ein Ehepartner, haben im Modell ihren eigenen vollen Pauschbetrag; erbt der Ehepartner auch das Tagesgeld, ist sein Pauschbetrag in Wirklichkeit ebenfalls teilweise verbraucht.',
     ],
   },
   rendite: {

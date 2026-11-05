@@ -374,3 +374,12 @@ test('Sparer-Pauschbetrag schon genutzt: Feld unter Weitere Einstellungen, wird 
   await setField(page, 'allowanceUsed', '400');
   await expect.poll(() => saved(page).then(s => s?.allowanceUsed)).toBe(400);
 });
+
+test('Hilfsrechnung Bruttorente: bei freiwilliger KV auch KV-Brutto übernehmbar', async ({ page }) => {
+  await page.goto('./');
+  await page.getByTestId('kv-1').check();
+  await page.getByTestId('pension-helper').locator('summary').click();
+  await setField(page, 'ph-monthly', '2000');
+  await page.getByTestId('ph-take-kv').click();
+  await expect.poll(() => saved(page).then(s => s?.kvGrossRet)).toBe(24000);
+});

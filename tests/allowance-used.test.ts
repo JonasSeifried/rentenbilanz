@@ -58,6 +58,29 @@ describe('Sparer-Pauschbetrag schon genutzt – Wirkung', () => {
     }
   });
 
+  it('mit indexAllowance: (1.000 − genutzt) × Inflationsfaktor bleibt frei', () => {
+    const a = combo(P({ ...base, infl: 2, indexAllowance: true }), S({ etf: 150 })), b = combo(P({ ...base, infl: 2, indexAllowance: true, allowanceUsed: 300 }), S({ etf: 150 }));
+    for (let t = a.n; t < a.tH; t++) expect(a.net[t] - b.net[t]).toBeCloseTo(300 * Math.pow(1.02, t) * 0.26375, 6);
+  });
+
+  it('Günstigerprüfung (R3): bei niedrigem Einkommen im Alter erstattet der Tarif einen Teil der Mehrsteuer', () => {
+    const lo = { ...base, incRet: 0, infl: 0 };
+    const a = combo(P(lo), S({ etf: 150 })), b = combo(P({ ...lo, allowanceUsed: 1000 }), S({ etf: 150 }));
+    const d = a.net[a.n] - b.net[a.n];
+    expect(d).toBeGreaterThanOrEqual(0);
+    expect(d).toBeLessThan(1000 * 0.26375 - 1e-6);
+    // ohne Günstigerprüfung (Originalpfad) die volle Abgeltungsteuer
+    const a0 = combo(P(lo), S({ etf: 150 }), { fixes: NO_FIXES }), b0 = combo(P({ ...lo, allowanceUsed: 1000 }), S({ etf: 150 }), { fixes: NO_FIXES });
+    expect(a0.net[a0.n] - b0.net[a0.n]).toBeCloseTo(1000 * 0.26375, 6);
+  });
+
+  it('Umschichtung: Verkäufe vor der Rente mit kleinerem Pauschbetrag kosten mehr Steuer', () => {
+    const sh = { ...base, infl: 0, shift: true };
+    const a = combo(P(sh), S({ etf: 150 })), b = combo(P({ ...sh, allowanceUsed: 1000 }), S({ etf: 150 }));
+    const pre = (c: typeof a) => c.abgTax.slice(c.n - 6, c.n).reduce((x, y) => x + y, 0);
+    expect(pre(b)).toBeGreaterThan(pre(a));
+  });
+
   it('eigener Verkauf bei Rentenbeginn: Kapital nach Steuer sinkt um 26,375 % des verbrauchten Teils', () => {
     const a = combo(P({ ...base, infl: 0 }), S({ etf: 150 })), b = combo(P({ ...base, infl: 0, allowanceUsed: 400 }), S({ etf: 150 }));
     expect(a.capNet - b.capNet).toBeCloseTo(400 * 0.26375, 6);
@@ -69,6 +92,13 @@ describe('Sparer-Pauschbetrag schon genutzt – Wirkung', () => {
       const a = combo(P({ ...base, infl: 0 }), S({ etf: 150 }), opts), b = combo(P({ ...base, infl: 0, allowanceUsed: 1000 }), S({ etf: 150 }), opts);
       for (const idx of [1, 10, a.n - 1]) expect(b.heir(idx).val).toBe(a.heir(idx).val);
       expect(b.parts.etf!.heir(5).val).toBe(a.parts.etf!.heir(5).val);
+    }
+    // Kombi mit AVD-Nebendepot und mehreren Depots, auch Ehepartner
+    const kb = { ...base, avdOn: true, infl: 0 };
+    const a = combo(P(kb), S({ etf: 150, avd: 300 })), b = combo(P({ ...kb, allowanceUsed: 1000 }), S({ etf: 150, avd: 300 }));
+    for (const idx of [5, a.n - 1]) {
+      expect(b.heir(idx).val).toBe(a.heir(idx).val);
+      expect(b.heirMarried!(idx).val).toBe(a.heirMarried!(idx).val);
     }
   });
 
