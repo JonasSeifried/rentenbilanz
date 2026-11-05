@@ -227,7 +227,7 @@ steht „(in heutiger Kaufkraft)“ dabei. Die Wortwahl ist neutral: nie „opti
 
 Historische Messwerte in Node auf einem Apple-M-Rechner. Die aktuellen Tests prüfen die Obergrenzen
 nach eigenständigem Warm-up in einem separaten Prozess (`npm run test:perf`); aktuelle Messbedingungen
-stehen im [Umsetzungsnachtrag](engine-rest-2026-11.md#nachbesserung-nach-dem-unabhängigen-review-von-882adbe).
+stehen im [Umsetzungsnachtrag](engine-rest-2026-11.md#nachbesserung-nach-dem-unabhängigen-review-von-2ab0140).
 Die historische Median-Grenze von 30 ms für Robustheitszeilen wurde mit R3 auf 50 ms geändert.
 
 | | Zeit |

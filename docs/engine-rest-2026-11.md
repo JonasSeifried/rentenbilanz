@@ -1,10 +1,10 @@
 # Umsetzung der restlichen Review-Punkte, 04.11.2026
 
-**Folgestand:** E4 und D1 sind nach der unabhängigen Freigabe von c2b6672 umgesetzt;
+**Folgestand:** E4 und D1 sind nach der unabhängigen Freigabe von c43a261 umgesetzt;
 [Herleitung, aktuelle High-Werte und Prüfung](zulagen-veranlagung-2026-11.md).
 Die folgenden Messungen und die ursprüngliche E4-Zurückstellung beschreiben den Stand vor E4.
 
-Ausgangspunkt: tatsächlich geprüfter HEAD `8168de3abc98d472fff15928d73518a5aef2e047`.
+Ausgangspunkt: tatsächlich geprüfter HEAD `8c85158843a9586e2b50449388ac4c96887ca1e2`.
 R1/R2/R6/R8 waren bereits enthalten. Alle neuen Steuerkorrekturen stehen ausschließlich in `combo.ts`,
 einzeln abschaltbar in `fixes.ts`. `engine.ts` und `legacy/index.html` bleiben unverändert.
 Dieser Bericht beschreibt eine Implementierung mit eigenen gezielten Prüfungen, kein weiteres unabhängiges Review.
@@ -265,9 +265,9 @@ Eine Einzelrechnung bleibt <0,5 ms, Suche 4 Produkte/500 € <30 ms, `analyzeCom
 `npm run check`: **0 Fehler, 0 Warnungen**. Produktionsbuild erfolgreich; die vorhandenen Vite-Hinweise zum
 klassischen `theme.js` auf den drei HTML-Seiten bleiben unverändert. Keine Browser-/e2e-Prüfung.
 
-## Nachbesserung nach dem unabhängigen Review von 882adbe
+## Nachbesserung nach dem unabhängigen Review von 2ab0140
 
-Ein unabhängiges Review von 882adbe fand drei fachliche Lücken F1–F3
+Ein unabhängiges Review von 2ab0140 fand drei fachliche Lücken F1–F3
 und die instabile Laufzeitmessung F4. Korrekturen:
 
 - **F1:** Auch die alternative Kapitalauszahlung eines Vertrags unter zwölf Jahren nutzt den Pauschbetrag.

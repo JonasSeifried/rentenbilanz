@@ -608,7 +608,7 @@ Pauschbetragsindexierung und getrennte Auszahlkosten. Standardpauschbetrag bleib
 H1 und H2 im geförderten Vertragsteil bleiben ausdrücklich ungenaue Erbwertmodelle; keine neue gesetzliche
 Förderkonto-Zuordnung behauptet. Im ungeförderten Vertragsteil bleibt die getrennte Restbasis erhalten.
 
-### E4 und D1 nach Freigabe von c2b6672
+### E4 und D1 nach Freigabe von c43a261
 
 `soliOnZulage` berücksichtigt die reguläre Zulage in der festzusetzenden ESt und deren Soli-Basis.
 Die Entscheidung über den Sonderausgabenabzug nutzt die tarifliche ESt-Differenz; R3 prüft dieselbe

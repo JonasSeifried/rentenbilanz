@@ -205,7 +205,7 @@ describe('V2 – Erbfall bei Förderverzug', () => {
   });
 });
 
-// Regressionen aus dem unabhängigen Review von 882adbe (F1–F3).
+// Regressionen aus dem unabhängigen Review von 2ab0140 (F1–F3).
 describe('R7 – alternative Kapitalanzeige mit eigenem gemeinsamem Pauschbetrag', () => {
   it('kurzer Vertrag: alternative und tatsächliche Anfangsauszahlung stimmen überein, auch mit KV', () => {
     for (const kvOn of [false, true]) for (const incRet of [0, 60000]) {

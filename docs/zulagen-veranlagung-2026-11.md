@@ -1,7 +1,7 @@
 # E4 und D1: Zulagen-Veranlagung und I4-Dokumentation, 04.11.2026
 
-Ausgangs-HEAD: `c2b6672228ea94f751b81ba4093f142940f57287`, Arbeitskopie bei Beginn sauber.
-Ein unabhängiges Review von c2b6672 hat F1–F4 und das geprüfte
+Ausgangs-HEAD: `c43a261f35cff1815cb7f4bf9c698877f4f25cef`, Arbeitskopie bei Beginn sauber.
+Ein unabhängiges Review von c43a261 hat F1–F4 und das geprüfte
 R-Paket freigegeben; dieser Nachtrag ist die anschließende eigene Implementierung, kein weiteres unabhängiges Review.
 
 ## E4: Herleitung aus amtlichen Primärquellen
@@ -139,7 +139,7 @@ nominale Indexierung über alle Ansparjahre, Beiträge 0/108/120/300/1.800/6.840
 Wiederanlage und Förderverzug, gemeinsame R3-Jahresbilanz mit tatsächlichem Wechsel der SA-Entscheidung.
 
 128 temporäre eigene Gegenproben bestanden: 64 gemischte Fälle sind mit ausgeschaltetem E4 direkt bitgleich
-zum Code des geprüften HEADs c2b6672, einschließlich Kapital-, Zahlungs-, Steuer-, Förder- und Erbwerten;
+zum Code des geprüften HEADs c43a261, einschließlich Kapital-, Zahlungs-, Steuer-, Förder- und Erbwerten;
 weitere 64 Fälle ohne AVD sind auch mit E4 bitgleich. Enthalten sind R3/R8/E3 an/aus, Umschichtung,
 Förderverzug, KV, beide Versicherungsmodi, Auszahlprofil, Indexierung und eigene Auszahlkosten.
 Der abschließende direkte Vergleich erhält auch
