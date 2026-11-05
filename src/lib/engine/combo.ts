@@ -46,6 +46,12 @@ export interface ComboPart extends ProductResult {
   heirMarried?: (idx: number) => HeirValue;
   capAVD?: number; sideR?: number; sideOwn?: number; sideOwnReal?: number; unsubOwn?: number; unsubOwnReal?: number;
   zul?: number; zulReal?: number; ref?: number; refReal?: number; noElig?: number;
+  /**
+   * Mittelbare Grundzulage auf den Vertrag des Partners (§ 79 S. 2, § 84 S. 3–4 EStG n. F.), nominal summiert. Entsteht nur
+   * durch die eigenen geförderten Beiträge, fließt aber in den Partner-Vertrag und ist nicht im Ergebnis enthalten.
+   * Nur gesetzt, wenn > 0 (avdSpouse, Partner ohne eigenes Einkommen).
+   */
+  zulSpouse?: number;
   // Versicherung
   kapNet?: number; annual?: number; lump?: boolean; lifelong?: boolean;
 }
@@ -291,6 +297,23 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     return assessed + soli(assessed / I(t)) * I(t);
   };
   const dynF = (t: number) => Math.pow(1 + p.dyn, t);
+  // Partner mit eigenem gefördertem Vertrag (avdSpouse, nur verheiratet; docs/kirchensteuer-splitting.md). 0 ⇒ bitgleich.
+  // Hat der Partner ein eigenes zvE (incSpouse > 0), gilt er als unmittelbar förderberechtigt (Annahme: in der Rentenversicherung
+  // pflichtversichert, Beamter oder nach § 10a Abs. 1 S. 5 n. F. selbständig): eigene Zulage aus eigenem Beitrag, eigener
+  // Höchstbetrag 1.800 €; die Günstigerprüfung vergleicht die Summe beider Abzüge mit beiden Zulagen (§ 10a Abs. 3 S. 1 und 5,
+  // BMF 05.10.2023 Rn. 110). Der Partner-Vertrag besteht in jedem verglichenen Produkt; er ist die Ausgangslage (saDed/saZ).
+  // Ohne eigenes zvE: mittelbar zulageberechtigt (§ 79 S. 2), nur wenn auch die Person selbst einen Vertrag hat (BMF Rn. 27):
+  // siehe AVD-Block.
+  const spouseAvd = p.married && p.avdSpouse > 0, spouseDirect = spouseAvd && p.incSpouse > 0;
+  const spouseE = (t: number) => t < n ? p.avdSpouse * 12 * dynF(t) : 0;
+  const grundOf = (e: number) => 0.5 * Math.min(e, 360) + 0.25 * Math.max(0, Math.min(e, 1800) - 360); // § 84 S. 1 n. F.
+  const spD = new Array<number>(T).fill(0), spZ = new Array<number>(T).fill(0); // Abzug und Zulage des Partners allein
+  if (spouseDirect) for (let t = 0; t < n; t++) {
+    const e = Math.min(spouseE(t), AVD_SUB_MAX); // eigener Höchstbetrag des Partners (§ 10a Abs. 1 S. 1 n. F.)
+    if (!(e >= 120 || (F.small && e > 0))) continue; // Mindesteigenbeitrag 120 € (§ 86 n. F.); darunter mit R6 nur Abzug
+    const z = e >= 120 ? grundOf(e) : 0; // nur Grundzulage (Kinder bei der Person, kein Bonus: der zählt nicht, E3)
+    spD[t] = e + z; spZ[t] = z; saDed[t] = e + z; saZ[t] = z;
+  }
   const annuityDue = (V: number, rr: number, rem: number) => rem <= 1 ? V : (Math.abs(rr) < 1e-9 ? V / rem : V * rr / ((1 + rr) * (1 - Math.pow(1 + rr, -rem))));
   const zero = () => new Array<number>(T).fill(0);
   const monthlyArr = (m: number) => Array.from({ length: T }, (_, t) => t < n ? m * dynF(t) : 0);
@@ -311,13 +334,15 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     valsU: number[]; basesU: number[]; ownU: number; ownUReal: number;
     owns: number[]; zuls: number[]; foer: number[]; // für den Erbfall (wie in model())
     own: number; ownReal: number; zul: number; zulReal: number; ref: number; refReal: number; noElig: number;
+    /** Diesem Vertrag zugerechnete Steuerermäßigung (§ 10a Abs. 4 S. 3–4), Teil des Rückzahlungsbetrags; ohne Partner-Vertrag = ref. */
+    refBack: number; zulSpouse: number;
   } = null;
   if (on('avd')) {
     const cost = zeroCost ? 0 : p.avdCost, avdM = split.avd;
-    let V = 0, own = 0, ownReal = 0, zul = 0, zulReal = 0, ref = 0, refReal = 0, bonusUsed = false, noElig = 0;
+    let V = 0, own = 0, ownReal = 0, zul = 0, zulReal = 0, ref = 0, refReal = 0, bonusUsed = false, noElig = 0, refBack = 0, zulSpouse = 0;
     let Vu = 0, Bu = 0, ownU = 0, ownUReal = 0;
     const vals = [0], W = zero(), L = zero(), payY = zero(), paying = new Array<boolean>(T).fill(false), refunds = zero(), overflow = zero();
-    const delayedZ = zero();
+    const delayedZ = zero(), backs = zero();
     const xW = zero(), Lu = zero(), tb = zero(), cash = zero(), kvW = zero(), valsU = [0], basesU = [0], owns = [0], zuls = [0], foer = [0];
     for (let t = 0; t < T; t++) {
       const age = p.a0 + t, accum = t < n;
@@ -358,18 +383,40 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
         const zSA = F.bonus ? grund + kind : z; // Günstigerprüfung ohne Bonus (E3); hängt nur am AVD-Teil
         if (p.fundingDelay) delayedZ[t + 1] = z; else V += z;
         zul += z; zulReal += z / I(t + (p.fundingDelay ? 1 : 0));
-        saDed[t] = E + zSA; saZ[t] = zSA;
-        const extra = F.soliZ
-          ? taxNom(incAt(t) * I(t), t) - avdLiability(incAt(t) * I(t), E + zSA, zSA, t)
-          : Math.max(0, taxSave(incAt(t), E + zSA, t) - zSA);
+        let extra: number, back: number;
+        // Mittelbar zulageberechtigter Partner (§ 79 S. 2): eigener Vertrag, ≥ 120 € eigener Beitrag (Nr. 4 n. F.), Grundzulage
+        // aus den eigenen geförderten Beiträgen, höchstens 175 € (§ 84 S. 3–4 n. F.). Bei der Person zählen beide Beiträge
+        // (eigene vorrangig, Höchstbetrag + 120 €, § 10a Abs. 3 S. 2–4 n. F.) und beide Zulagen. Ohne eigenen Vertrag der
+        // Person gäbe es weder Zulage noch Abzug des Partners (BMF 05.10.2023 Rn. 26/27): Ausgangslage ohne Abzug.
+        const eM = spouseAvd && !spouseDirect && hasAllowance ? spouseE(t) : 0;
+        if ((spouseDirect && spD[t] > 0) || eM >= 120) {
+          const x = incAt(t) * I(t);
+          const eP = spouseDirect ? spD[t] - spZ[t] : Math.min(eM, AVD_SUB_MAX + 120 - E);
+          const zP = spouseDirect ? spZ[t] : Math.min(175, grund);
+          const ded = E + zSA + eP + zP, zz = zSA + zP;
+          saDed[t] = ded; saZ[t] = zz;
+          const joint = avdLiability(x, ded, zz, t);
+          // Erstattung = Änderung der gemeinsamen Steuer durch den eigenen Vertrag (Partner-Vertrag in beiden Fällen gleich).
+          extra = (spouseDirect ? avdLiability(x, spD[t], spZ[t], t) : taxNom(x, t)) - joint;
+          // Zurechnung der festgestellten Steuerermäßigung im Verhältnis der geförderten Eigenbeiträge (§ 10a Abs. 4 S. 3–4, Rn. 116/118).
+          back = Math.max(0, taxNom(x, t) - joint) * (E / (E + eP));
+          if (!spouseDirect) zulSpouse += zP;
+        } else {
+          saDed[t] = E + zSA; saZ[t] = zSA;
+          extra = F.soliZ
+            ? taxNom(incAt(t) * I(t), t) - avdLiability(incAt(t) * I(t), E + zSA, zSA, t)
+            : Math.max(0, taxSave(incAt(t), E + zSA, t) - zSA);
+          back = extra;
+        }
         refunds[t + (p.fundingDelay ? 1 : 0)] = extra; ref += extra; refReal += extra / I(t + (p.fundingDelay ? 1 : 0));
+        backs[t + (p.fundingDelay ? 1 : 0)] = back; refBack += back;
       }
       if (p.fundingDelay) V += delayedZ[t];
       // Erbfall: nur bereits gutgeschriebene Förderung zurückfordern (bei Verzug fehlt die des laufenden Jahres noch).
-      const pendZ = p.fundingDelay ? delayedZ[t + 1] : 0, pendR = p.fundingDelay ? refunds[t + 1] : 0;
-      vals.push(V); valsU.push(Vu); basesU.push(Bu); owns.push(own); zuls.push(zul - pendZ); foer.push(zul + ref - pendZ - pendR);
+      const pendZ = p.fundingDelay ? delayedZ[t + 1] : 0, pendR = p.fundingDelay ? backs[t + 1] : 0;
+      vals.push(V); valsU.push(Vu); basesU.push(Bu); owns.push(own); zuls.push(zul - pendZ); foer.push(zul + refBack - pendZ - pendR);
     }
-    avd = { vals, W, L, payY, paying, refunds, overflow, xW, Lu, tb, cash, kvW, valsU, basesU, ownU, ownUReal, owns, zuls, foer, own, ownReal, zul, zulReal, ref, refReal, noElig };
+    avd = { vals, W, L, payY, paying, refunds, overflow, xW, Lu, tb, cash, kvW, valsU, basesU, ownU, ownUReal, owns, zuls, foer, own, ownReal, zul, zulReal, ref, refReal, noElig, refBack, zulSpouse };
   }
 
   // ---------- 2) Versicherung, Ansparphase ----------
@@ -647,7 +694,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       ...(F.unsub ? { unsubOwn: avd.ownU, unsubOwnReal: avd.ownUReal } : {}),
       capR: (avd.vals[n] + Vu) + side.vals[n], capAVD: avd.vals[n] + Vu, sideR: side.vals[n],
       capNet: (avd.vals[n] + Vu) - latentTax(avd.vals[n] + gU, n) + sellFunds(side.members, n, p.incRet, true),
-      zul: avd.zul, zulReal: avd.zulReal, ref: avd.ref, refReal: avd.refReal,
+      zul: avd.zul, zulReal: avd.zulReal, ref: avd.ref, refReal: avd.refReal, ...(avd.zulSpouse > 0 ? { zulSpouse: avd.zulSpouse } : {}),
       foerder: avd.zul + avd.ref, foerderReal: avd.zulReal + avd.refReal, cost: 0, payEnd: p.H, noElig: avd.noElig, lumpNet,
       incTax: taxAvd, abgTax: side.abg, kv: aKv, taxBase: avd.tb,
       heir: () => ({ val: 0, note: '' }),
@@ -665,7 +712,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       const V = a.vals[idx], age = p.a0 + idx, C0 = a.vals[n];
       let back: number, ownR: number, zulR: number;
       if (idx <= n) { back = a.foer[idx]; ownR = a.owns[idx]; zulR = a.zuls[idx]; }
-      else { const f = C0 > 0 ? V / C0 : 0; back = (a.zul + a.ref) * f; ownR = a.owns[n] * f; zulR = a.zul * f; }
+      else { const f = C0 > 0 ? V / C0 : 0; back = (a.zul + a.refBack) * f; ownR = a.owns[n] * f; zulR = a.zul * f; }
       const halb = F.heir ? p.heirHalf && idx >= 12 : p.heirHalf && age >= 62 && idx >= 12;
       const rest = Math.max(0, V - back), gain = Math.max(0, V - ownR - zulR) * (halb ? 0.5 : 1);
       const incDeath = F.heir ? p.incHeir : idx < n ? incAt(idx) : p.incRet;
@@ -834,7 +881,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       else {
         let ownR: number, zulR: number;
         if (idx <= n) { back = a.foer[idx]; ownR = a.owns[idx]; zulR = a.zuls[idx]; }
-        else { const f = C0 > 0 ? V / C0 : 0; back = (a.zul + a.ref) * f; ownR = a.owns[n] * f; zulR = a.zul * f; }
+        else { const f = C0 > 0 ? V / C0 : 0; back = (a.zul + a.refBack) * f; ownR = a.owns[n] * f; zulR = a.zul * f; }
         gross += Math.max(0, V - back) + a.valsU[idx];
         X += Math.max(0, V - ownR - zulR) * (halbAvd ? 0.5 : 1) + gU(halbAvd);
       }

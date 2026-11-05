@@ -415,6 +415,25 @@ test('Steuerprofil und genutzter Pauschbetrag: Eingaben, Annahmen-Check, Badge, 
   await expect(page.getByTestId('verdict')).not.toContainText(/vorne|Favorit|Gewinner|Sieger|lohnt/);
 });
 
+test('Partner-Vertrag: Feld nur verheiratet, Ergebnis wie die Engine, Link', async ({ page }) => {
+  await page.goto('./');
+  await page.click('#tab-settings');
+  await expect(page.getByTestId('avdSpouse')).toHaveCount(0);
+  await page.getByTestId('married').check();
+  await setField(page, 'incSpouse', '0');
+  await setField(page, 'avdSpouse', '50');
+  await expect.poll(() => saved(page).then(s => [s?.married, s?.incSpouse, s?.avdSpouse])).toEqual([true, 0, 50]);
+  await expect(page.getByTestId('avdSpouse').locator('xpath=ancestor::div[contains(concat(" ", @class, " "), " field ")][1]')).toContainText('mittelbar');
+  await page.click('#tab-overview');
+  const inp = { ...DEFAULTS, married: true, incSpouse: 0, avdSpouse: 50 };
+  const A = analyze(readParamsCore(inp));
+  await expect(page.getByTestId('tile-avd')).toContainText(eur(A.stats.avd!.avgMonthly));
+  await expect(page.getByTestId('ac-tax')).toContainText('zahlt 50 €/Monat');
+  await page.goto('./#v=1&married=1&incSpouse=38000&avdSpouse=150');
+  const B = analyze(readParamsCore({ ...DEFAULTS, married: true, incSpouse: 38000, avdSpouse: 150 }));
+  await expect(page.getByTestId('tile-avd')).toContainText(eur(B.stats.avd!.avgMonthly));
+});
+
 test('Link mit Steuerprofil und genutztem Pauschbetrag wird übernommen', async ({ page }) => {
   await page.goto('./#v=1&kist=8&married=1&incSpouse=20000&incSpouseRet=5000&allowanceUsed=300');
   const A = analyze(readParamsCore({ ...DEFAULTS, kist: 8, married: true, incSpouse: 20000, incSpouseRet: 5000, allowanceUsed: 300 }));

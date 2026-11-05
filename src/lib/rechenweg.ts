@@ -25,6 +25,7 @@ const LABELS: Readonly<Record<InputKey, readonly [string, string]>> = Object.fre
   kist: ['Kirchensteuersatz (0 = keine)', '%'], married: ['Verheiratet, zusammen veranlagt (Splitting)', ''],
   incSpouse: ['Partner: zu versteuerndes Einkommen vor dem eigenen Rentenbeginn (heutiges Geld)', '€/Jahr'],
   incSpouseRet: ['Partner: zu versteuerndes Einkommen ab dem eigenen Rentenbeginn (heutiges Geld)', '€/Jahr'],
+  avdSpouse: ['Partner: eigener Beitrag in seinen geförderten Altersvorsorgevertrag (nur verheiratet)', '€/Monat'],
   studyEnd: ['Ausbildung/Studium bis', 'Alter (16 = keine)'], incStudy: ['Zu versteuerndes Einkommen in der Ausbildung', '€/Jahr'],
   eligStudy: ['In der Ausbildung zulageberechtigt', ''], kvRate: ['KV/PV-Satz im Alter', '%'],
   infl: ['Inflation', '% p. a.'], dyn: ['Beitragsdynamik', '% p. a.'], basis: ['Basiszins Vorabpauschale', '%'],
@@ -49,9 +50,10 @@ const LABELS: Readonly<Record<InputKey, readonly [string, string]>> = Object.fre
 });
 
 /** Modellgrenzen, die man beim Nachprüfen kennen muss (Stand wie unter „Weitere Einstellungen“), passend zu den Schaltern. */
-const limitsText = (p: Params) => [
+const limitsText = (p: Params, zulSpouse = 0) => [
   'Konstante Rendite jedes Jahr, keine Schwankungen und kein Sequenzrisiko.',
   taxText(p),
+  ...(p.married ? [spouseAvdText(p, zulSpouse)] : []),
   salaryText(p),
   'Abgeltungsteuer ' + (p.kist > 0 ? pct((1.055 + p.kist) / (4 + p.kist)) + ' % einschließlich Soli und Kirchensteuer (§ 32d Abs. 1 S. 4 EStG: 25 % ermäßigt auf e/(4 + k))' : '26,375 %') +
     ', Teilfreistellung 30 % (Aktienfonds), Sparer-Pauschbetrag ' + (p.married ? '2.000 € (zusammen veranlagt; Partner ohne eigene Kapitalerträge außer den unten genannten angenommen) ' : '1.000 € ') +
@@ -76,6 +78,16 @@ function taxText(p: Params): string {
   const heirs = (p.kist > 0 || p.married ? ' Erben (incHeir) versteuern einzeln im Grundtarif mit 1.000 € Pauschbetrag' + (p.kist > 0 ? ' und demselben Kirchensteuersatz' : '') + '.' : '') +
     (p.married ? ' Erbt der Partner: Todesjahr gemeinsam veranlagt mit dem Partner-Einkommen (Splitting, 2.000 €, Einkommen der verstorbenen Person im Todesjahr 0); spätere Steuer auf das übertragene AVD mit incSpouseRet im Grundtarif.' : '');
   return tariff + ', mit Solidaritätszuschlag; Tarifgrenzen wachsen mit der Inflation; ' + church + '.' + (p.married ? '' : ' Kein Ehegattensplitting.') + heirs;
+}
+
+/** Partner-Vertrag (avdSpouse) in Worten, passend zum AVD-Block in combo.ts. */
+function spouseAvdText(p: Params, zulSpouse: number): string {
+  if (!(p.avdSpouse > 0)) return 'Partner ohne eigenen geförderten Altersvorsorgevertrag: Günstigerprüfung nur mit den eigenen Beiträgen und der eigenen Zulage (§ 10a Abs. 3 S. 1 EStG).';
+  const m = n2(p.avdSpouse) + ' €/Monat (× (1 + Dynamik)^Jahr bis vor Rentenbeginn)';
+  const tail = ' Die AVD-Erstattung ist die Änderung der gemeinsamen Steuer durch den eigenen Vertrag; der Partner-Vertrag selbst ist nicht im Vergleich, seine Auszahlungen gehören in das Partner-Einkommen ab Rentenbeginn. Zurechnung für die Förderrückzahlung im Erbfall im Verhältnis der geförderten Eigenbeiträge (§ 10a Abs. 4 S. 3–4).';
+  if (p.incSpouse > 0) return 'Partner zahlt ' + m + ' in einen eigenen geförderten Vertrag; mit eigenem Einkommen als unmittelbar förderberechtigt angenommen (rentenversichert, verbeamtet oder selbständig, § 10a Abs. 1 EStG n. F.): eigene Grundzulage aus dem eigenen Beitrag (ab 120 €/Jahr, § 84 S. 1, § 86 n. F.), eigener Höchstbetrag 1.800 €. Die Günstigerprüfung vergleicht die Steuerersparnis beider Abzüge mit beiden Zulagen (§ 10a Abs. 3 S. 5; BMF 05.10.2023 Rn. 110). Diese Ausgangslage gilt für alle Produkte (auch in der Günstigerprüfung der Kapitalerträge).' + tail;
+  return 'Partner zahlt ' + m + ' in einen eigenen geförderten Vertrag; ohne eigenes Einkommen als mittelbar zulageberechtigt angenommen (§ 79 S. 2 EStG; nur in Jahren mit eigenem gefördertem Beitrag ab 120 € und einem Partner-Beitrag ab 120 €/Jahr). Partner-Grundzulage aus den eigenen geförderten Beiträgen, höchstens 175 € (§ 84 S. 3–4 n. F.); bei der eigenen Veranlagung zählen beide Beiträge (eigene vorrangig, zusammen bis 1.920 €) und beide Zulagen (§ 10a Abs. 3 S. 2–4 n. F.; BMF Rn. 109). Ohne eigenen Vertrag gäbe es keine Zulage und keinen Abzug für den Partner (BMF Rn. 26/27).' +
+    (zulSpouse > 0 ? ' Die Partner-Zulage fließt in den Partner-Vertrag und ist nicht im Ergebnis enthalten: zusammen ' + n0(zulSpouse) + ' € nominal.' : ' Partner-Zulage im gerechneten Zeitraum: 0 €.') + tail;
 }
 
 /** Gehaltsverlauf in Worten, passend zu incomeAt (core.ts) einschließlich der Randfälle. */
@@ -157,7 +169,8 @@ export function rechenweg(inputs: Inputs, A: Analysis, url: string, today = new 
     out.push(`Die Kombi wird mit dieser Aufteilung gerechnet (auf den Monatsbeitrag ${n2(splitSum(sp))} € skaliert): ` +
       `ETF ${n2(sp.etf)} €, AVD ${n2(sp.avd)} €, Versicherung ${n2(sp.ins)} €, aktiver Fonds ${n2(sp.fond)} € im Monat.`, '');
   }
-  out.push('## Modellgrenzen', '', ...limitsText(p).map(x => '- ' + x), '');
+  const zulSpouse = Number(A.res.avd?.zulSpouse ?? 0);
+  out.push('## Modellgrenzen', '', ...limitsText(p, zulSpouse).map(x => '- ' + x), '');
 
   out.push('## Ergebnis', '');
   out.push(`Zeitraum für den Vergleich: Rentenbeginn mit ${p.R} bis zum Ende des Auszahlplans mit ${p.H} (${tH - n} Jahre). ` +

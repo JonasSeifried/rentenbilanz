@@ -260,8 +260,17 @@ export const GLOSSARY = {
     title: 'Verheiratet, zusammen veranlagt',
     text: [
       'Ehepaare zahlen die Einkommensteuer gemeinsam auf beide Einkommen (Splittingtarif): Steuer auf die Hälfte, mal zwei. Verdient der Partner weniger, sinkt der Steuersatz, bei der Steuererstattung des Altersvorsorgedepots in der Ansparphase wie auf die Auszahlungen im Alter. Dazu gibt es 2.000 € Sparerpauschbetrag statt 1.000 € und eine doppelte Freigrenze beim Solidaritätszuschlag.',
-      'Gerechnet wird mit dem zu versteuernden Einkommen des Partners vor und ab deinem Rentenbeginn, in heutigem Geld. Angenommen: Der Partner hat keine eigenen Kapitalerträge außer dem unter „Sparer-Pauschbetrag schon genutzt“ eingetragenen gemeinsamen Verbrauch und keinen eigenen geförderten Vertrag. Hat er einen, bekäme er unter Umständen selbst eine Zulage (als mittelbar Berechtigter bis 175 € im Jahr, ab 120 € eigenem Beitrag) und die Günstigerprüfung umfasst beide Verträge. Das ist nicht gerechnet.',
+      'Gerechnet wird mit dem zu versteuernden Einkommen des Partners vor und ab deinem Rentenbeginn, in heutigem Geld. Angenommen: Der Partner hat keine eigenen Kapitalerträge außer dem unter „Sparer-Pauschbetrag schon genutzt“ eingetragenen gemeinsamen Verbrauch. Einen eigenen geförderten Vertrag des Partners trägst du unter „Partner zahlt selbst ins Altersvorsorgedepot“ ein (siehe dort).',
       'Die Krankenversicherung bleibt je Person. Andere Erben versteuern im Grundtarif mit ihrem eigenen Einkommen. Erbt der Partner, ist das Todesjahr noch gemeinsam veranlagt (Splitting, 2.000 €, mit seinem Einkommen); die spätere Steuer auf ein übernommenes Altersvorsorgedepot ist mit seinem Einkommen im Alter im Grundtarif geschätzt.',
+    ],
+  },
+  partnerVertrag: {
+    title: 'Eigener geförderter Vertrag des Partners',
+    text: [
+      'Bei zusammen veranlagten Ehepaaren prüft das Finanzamt beide Verträge gemeinsam: Die Steuerersparnis aus den Beiträgen beider samt Zulagen wird mit den Zulagen beider verglichen (§ 10a Abs. 3 EStG; BMF-Schreiben vom 05.10.2023, Rn. 109 f.). Deshalb ändert ein Vertrag des Partners deine Steuererstattung, auch wenn er selbst nicht im Vergleich steht.',
+      'Hat der Partner ein eigenes zu versteuerndes Einkommen, rechnet der Rechner ihn als selbst förderberechtigt (angenommen: rentenversichert, verbeamtet oder selbständig): eigene Grundzulage aus seinem Beitrag (ab 120 € im Jahr), eigener Höchstbetrag 1.800 €. Sein Vertrag gilt für jedes verglichene Produkt gleich; gezeigt wird, was dein eigener Vertrag an der gemeinsamen Steuer ändert.',
+      'Hat der Partner kein eigenes Einkommen, rechnet der Rechner ihn als mittelbar zulageberechtigt (§ 79 S. 2 EStG): nur wenn du selbst einen Vertrag hast und er mindestens 120 € im Jahr selbst einzahlt. Seine Grundzulage richtet sich nach deinen geförderten Beiträgen, höchstens 175 € im Jahr (§ 84 S. 3–4 EStG ab 2027); bei dir zählen beide Beiträge (zusammen bis 1.920 €) und beide Zulagen. Diese Zulage fließt in den Vertrag des Partners und ist nicht im Ergebnis des Altersvorsorgedepots enthalten; ihre Summe steht im Rechenweg.',
+      'Nicht gerechnet: Kinderzulagen und Berufseinsteigerbonus des Partners, ein anderer Rentenbeginn des Partners. Die Auszahlungen aus dem Partner-Vertrag gehören in sein Einkommen ab deinem Rentenbeginn.',
     ],
   },
   erbschaftsteuer: {

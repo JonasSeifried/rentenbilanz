@@ -39,6 +39,8 @@ const BASES: Record<string, Inputs & { avdStd: boolean; avdSafe: number }> = {
     kist: 0, married: false, incSpouse: 38000, incSpouseRet: 20000,
     // Später angehängt: ganzer Sparer-Pauschbetrag frei (bisheriges Verhalten).
     allowanceUsed: 0,
+    // Später angehängt: Partner ohne eigenen geförderten Vertrag (bisheriges Verhalten).
+    avdSpouse: 0,
   },
 };
 /** Die eingefrorene Basis von Version 1 (Tests und Speicher-Migration). */

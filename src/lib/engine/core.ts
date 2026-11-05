@@ -94,6 +94,12 @@ export interface Params {
    * (heutiges Geld) vor bzw. ab Rentenbeginn der Person. Neu, nicht im Original; aus = Grundtarif wie bisher.
    */
   married: boolean; incSpouse: number; incSpouseRet: number;
+  /**
+   * Eigener Beitrag des Partners in seinen geförderten Altersvorsorgevertrag (€/Monat, wächst mit der Dynamik wie der
+   * eigene Beitrag). Nur mit married. Wirkt auf die gemeinsame Günstigerprüfung (§ 10a Abs. 3 EStG), der Partner-Vertrag
+   * selbst wird nicht verglichen. Neu, nicht im Original; 0 = bisheriges Verhalten (docs/kirchensteuer-splitting.md).
+   */
+  avdSpouse: number;
   real: boolean;
   on: Record<ProductKey, boolean>;
 }
@@ -129,6 +135,7 @@ export function readParams(inp: Inputs): Params {
     // Fehlen (Eingaben des Originals) ⇒ keine Kirchensteuer, ledig.
     kist: inp.kist == null ? 0 : pct('kist', 0, 10), married: chk('married'),
     incSpouse: Math.max(0, num('incSpouse')), incSpouseRet: Math.max(0, num('incSpouseRet')),
+    avdSpouse: Math.max(0, num('avdSpouse')), // fehlt ⇒ 0 (kein Partner-Vertrag)
     real: chk('real'),
     on: { etf: chk('etfOn'), avd: chk('avdOn'), ins: chk('insOn'), fond: chk('fondOn') }
   };

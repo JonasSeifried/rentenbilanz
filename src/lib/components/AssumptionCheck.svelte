@@ -45,8 +45,8 @@
     });
     out.push({
       key: 'tax', label: 'Steuer', tab: 'settings', id: 'f-married',
-      value: (i.married ? 'verheiratet, Partner ' + de(i.incSpouse) + ' / ' + de(i.incSpouseRet) + ' € (vor / ab Rentenbeginn)' : 'ledig') + ', ' + (i.kist > 0 ? 'Kirchensteuer ' + de(i.kist) + ' %' : 'keine Kirchensteuer'),
-      changed: i.married !== DEFAULTS.married || i.kist !== DEFAULTS.kist,
+      value: (i.married ? 'verheiratet, Partner ' + de(i.incSpouse) + ' / ' + de(i.incSpouseRet) + ' € (vor / ab Rentenbeginn)' + (i.avdSpouse > 0 ? ', zahlt ' + de(i.avdSpouse) + ' €/Monat in einen eigenen geförderten Vertrag' : '') : 'ledig') + ', ' + (i.kist > 0 ? 'Kirchensteuer ' + de(i.kist) + ' %' : 'keine Kirchensteuer'),
+      changed: i.married !== DEFAULTS.married || i.kist !== DEFAULTS.kist || (i.married && i.avdSpouse !== DEFAULTS.avdSpouse),
     });
     out.push({
       key: 'allowance', label: 'Sparer-Pauschbetrag schon genutzt', tab: 'settings', id: 'f-allowanceUsed',

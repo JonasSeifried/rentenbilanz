@@ -143,7 +143,12 @@
         <NumberField label="Partner: zu versteuerndes Einkommen bis zu deinem Rentenbeginn" value={i.incSpouse} onchange={v => setInput('incSpouse', v)} min={0} step={1000} unit="€/Jahr" info="zve" testid="incSpouse"
           limits={LIMITS.incSpouse} effective={p.incSpouse} />
         <NumberField label="Partner: … ab deinem Rentenbeginn" value={i.incSpouseRet} onchange={v => setInput('incSpouseRet', v)} min={0} step={1000} unit="€/Jahr" testid="incSpouseRet"
-          limits={LIMITS.incSpouseRet} effective={p.incSpouseRet} hint="Heutiges Geld, ohne die verglichenen Produkte. Gerechnet wird angenommen, dass der Partner keinen eigenen geförderten Vertrag und keine eigenen Kapitalerträge außer dem unter „Andere Kapitalerträge“ eingetragenen Verbrauch hat." />
+          limits={LIMITS.incSpouseRet} effective={p.incSpouseRet} hint="Heutiges Geld, ohne die verglichenen Produkte, aber mit Auszahlungen aus einem eigenen Vertrag des Partners. Angenommen: keine eigenen Kapitalerträge des Partners außer dem unter „Andere Kapitalerträge“ eingetragenen Verbrauch." />
+        <NumberField id="f-avdSpouse" label="Partner zahlt selbst ins Altersvorsorgedepot" value={i.avdSpouse} onchange={v => setInput('avdSpouse', v)} min={0} step={10} unit="€/Monat" info="partnerVertrag" testid="avdSpouse"
+          limits={LIMITS.avdSpouse} effective={p.avdSpouse}
+          hint={i.avdSpouse <= 0 ? '0 = kein eigener geförderter Vertrag des Partners.'
+            : p.incSpouse > 0 ? 'Mit eigenem Einkommen gilt der Partner als selbst förderberechtigt (rentenversichert, verbeamtet oder selbständig): eigene Zulage, gemeinsame Günstigerprüfung beider Verträge. Sein Vertrag ist nicht im Vergleich; gerechnet wird, was er an deiner Erstattung ändert.'
+            : 'Ohne eigenes Einkommen gilt der Partner als mittelbar zulageberechtigt (nur mit deinem eigenen Vertrag, ab 120 € im Jahr): Zulage bis 175 € im Jahr auf seinen Vertrag, nicht im Ergebnis enthalten; gemeinsame Günstigerprüfung bei dir.'} />
       {/if}
     </div>
     <div class="grp" role="group" aria-labelledby="s-cap">
