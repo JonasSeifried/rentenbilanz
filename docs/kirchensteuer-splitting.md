@@ -22,8 +22,8 @@ Gesetzestexte direkt von gesetze-im-internet.de, AVRG als amtliches PDF (BGBl. 2
 | Splitting: 2 × Tarif der Hälfte des gemeinsamen zvE | [§ 32a Abs. 5 EStG](https://www.gesetze-im-internet.de/estg/__32a.html), § 26b | eigener Haushalt; zvE und Steuer der Hälfte auf volle Euro abgerundet (R8) |
 | Soli-Freigrenze 40.700 € bei § 32a Abs. 5/6, sonst 20.350 €; Bemessung wie § 51a | [§ 3 Abs. 2, 3 SolZG](https://www.gesetze-im-internet.de/solzg_1995/__3.html), [§ 4](https://www.gesetze-im-internet.de/solzg_1995/__4.html) | `2 × soli(E/2)` = min(5,5 % E; 11,9 % (E − 40.700)) |
 | Gemeinsamer Sparer-Pauschbetrag 2.000 €, Übertrag auf den anderen Ehegatten | [§ 20 Abs. 9 S. 2–3 EStG](https://www.gesetze-im-internet.de/estg/__20.html) | 2.000 € für die verglichenen Produkte (Partner ohne eigene Kapitalerträge) |
-| § 10a-Abzug jedem Ehegatten gesondert; mittelbar Berechtigter: Beiträge und Zulagen beider beim unmittelbar Berechtigten, Höchstbetrag + 120 € (AVRG); beide unmittelbar: Zulage beider in der Günstigerprüfung | [§ 10a Abs. 3 EStG](https://www.gesetze-im-internet.de/estg/__10a.html), AVRG Art. 2 Nr. 1 c | Partner ohne eigenen geförderten Vertrag ⇒ nur die eigene Zulage; S. 2–5 nicht gerechnet (offen) |
-| Mittelbare Zulageberechtigung bleibt: eigener Vertrag des Partners, ≥ 120 € (bisher 60 €) eigener Beitrag, Grundzulage höchstens 175 €, bemessen an den geförderten Beiträgen des unmittelbar Berechtigten | [§ 79 S. 2 EStG](https://www.gesetze-im-internet.de/estg/__79.html); AVRG Art. 2 Nr. 4 a, Nr. 7 (§ 84 S. 3–4 n. F.), Nr. 8 (§ 85 S. 2 n. F.) | nicht gerechnet: wäre ein zweiter Vertrag mit eigenem Beitrag des Partners (offen) |
+| § 10a-Abzug jedem Ehegatten gesondert; mittelbar Berechtigter: Beiträge und Zulagen beider beim unmittelbar Berechtigten, Höchstbetrag + 120 € (AVRG); beide unmittelbar: Zulage beider in der Günstigerprüfung | [§ 10a Abs. 3 EStG](https://www.gesetze-im-internet.de/estg/__10a.html), AVRG Art. 2 Nr. 1 c | Standard ohne Partner-Vertrag ⇒ nur die eigene Zulage; mit `avdSpouse` S. 1–5 gerechnet (Abschnitt unten) |
+| Mittelbare Zulageberechtigung bleibt: eigener Vertrag des Partners, ≥ 120 € (bisher 60 €) eigener Beitrag, Grundzulage höchstens 175 €, bemessen an den geförderten Beiträgen des unmittelbar Berechtigten | [§ 79 S. 2 EStG](https://www.gesetze-im-internet.de/estg/__79.html); AVRG Art. 2 Nr. 4 a, Nr. 7 (§ 84 S. 3–4 n. F.), Nr. 8 (§ 85 S. 2 n. F.) | mit `avdSpouse` gerechnet, wenn das Partner-zvE 0 ist (Abschnitt unten) |
 | Günstigerprüfung nach tariflicher ESt | BFH X R 11/21 (siehe E4) | Vergleich `b.est − a.est > z` mit Splitting-ESt; KiSt-Abzug jeweils im eigenen Fall |
 
 Kirchensteuersätze: 8 % in Bayern und Baden-Württemberg, 9 % in den übrigen Ländern (Kirchensteuerbeschlüsse nach
@@ -93,6 +93,93 @@ Jahresproben (Inflation 0, 1.800 € Beitrag, 540 € Zulage, 60 → 65): Erstat
 mit KiSt 9 % 182,03 €; verheiratet 38.000 € + Partner 0 € 26,00 €; 38.000 + 38.000 € 180,00 €; 110.000 € + 0 €
 318,00 € (kein Soli wegen 40.700-€-Freigrenze; ledig 495,717 €).
 
+## Partner mit eigenem gefördertem Vertrag (`avdSpouse`, 05.11.2026)
+
+Eingabe „Partner zahlt selbst ins Altersvorsorgedepot“ (€/Monat, nur bei „verheiratet“, wächst mit der Beitragsdynamik).
+Standard 0 ⇒ bitgleich (Test `tests/partner-avd.test.ts`, Golden-Test, I1). Rechnung nur in `combo.ts`
+(`spouseAvd`, `spD`/`spZ`, AVD-Block), Parameter in `core.ts`. Der Partner-Vertrag ist kein verglichenes Produkt;
+gerechnet wird nur, wie er die eigenen Zahlen ändert.
+
+### Primärquellen (abgerufen am 05.11.2026)
+
+- [§ 10a Abs. 3 EStG](https://www.gesetze-im-internet.de/estg/__10a.html): S. 1 Abzug je Ehegatte gesondert; S. 2–4
+  mittelbar berechtigter Ehegatte: beide Beiträge und beide Zulagen beim unmittelbar Berechtigten, Höchstbetrag + 60 €
+  (AVRG Art. 2 Nr. 1 c: 120 €), eigene Beiträge vorrangig, mindestens 60 € (120 €) des Partners; S. 5 beide unmittelbar:
+  Zulage beider in der Günstigerprüfung. Abs. 4 S. 3–4: Zurechnung der festgestellten Steuerermäßigung im Verhältnis der
+  berücksichtigten Beiträge, der Anteil auf Beiträge des mittelbar Berechtigten gehört zu dessen Vertrag.
+- [§ 79 S. 2 EStG](https://www.gesetze-im-internet.de/estg/__79.html) mit AVRG Art. 2 Nr. 4 a (60 → 120 €);
+  § 84 n. F. (AVRG Art. 2 Nr. 7): Grundzulage 50 % bis 360 €, 25 % bis 1.800 €; mittelbar Berechtigte „höchstens
+  175 Euro“, bemessen an den geförderten Beiträgen des unmittelbar berechtigten Ehegatten (S. 3–4); § 86 n. F. (Nr. 9):
+  Mindesteigenbeitrag 120 €. AVRG als amtliches PDF, MD5 `c0120027357f7d9ccfe433a59979c9f9`, Art. 14 Abs. 2:
+  Art. 2 gilt ab 01.01.2027.
+- [BMF-Schreiben vom 05.10.2023](https://www.steuerschroeder.de/blog/wp-content/uploads/2023/10/2023-10-05-stl-foerderung-private-altersvorsorge.pdf)
+  (IV C 3 – S 2015/22/10001 :001, BStBl 2023 I S. 1726; Riester, Normstruktur gleich): Rn. 26 (mittelbare Berechtigung
+  gibt keinen eigenen Sonderausgabenabzug), Rn. 27 (mittelbar nur, wenn **beide** Ehegatten einen eigenen Vertrag haben),
+  Rn. 109 (mittelbar: Steuerermäßigung beider Beiträge samt Zulagen gegen beide Zulagen), Rn. 110 (beide unmittelbar:
+  Summe beider Abzüge gegen beide Zulagen, auch wenn nur einer den Abzug beantragt), Rn. 113 (Rechenbeispiel),
+  Rn. 116/118–120 (Zurechnung im Verhältnis der geförderten Eigenbeiträge).
+
+### Welcher Fall gilt (Annahme ohne zweite Frage)
+
+Nach § 10a Abs. 1 n. F. sind unmittelbar begünstigt: Pflichtversicherte der Rentenversicherung, Beamte und gleichgestellte
+und neu Selbständige unter 67 mit Steuererklärung (S. 5 n. F.). Damit ist fast jeder Partner mit eigenem Erwerbseinkommen
+unmittelbar begünstigt. Regel im Rechner: **Partner-zvE vor dem eigenen Rentenbeginn (`incSpouse`) > 0 ⇒ unmittelbar,
+= 0 ⇒ mittelbar.** Falsch ist das z. B. bei einem Partner mit nur Miet- oder Kapitaleinkünften (wäre mittelbar) oder in
+Elternzeit mit Kindererziehungszeiten ohne zvE (wäre unmittelbar). Steht im Hinweis am Feld und im Glossar.
+
+### Rechnung je Ansparjahr (nominal; x = gemeinsames zvE, L(x, D, Z) = Belastung nach Günstigerprüfung wie bisher)
+
+- **Unmittelbar:** Partner eP = min(Beitrag, 1.800 €), zP = Grundzulage(eP) ab 120 € (darunter mit R6 nur Abzug, zP = 0),
+  ohne Kinderzulage und Bonus (Bonus zählt nicht, E3). Ausgangslage aller Produkte: L(x, eP + zP, zP) (auch in der
+  Günstigerprüfung der Kapitalerträge R3). Mit eigenem Vertrag: L(x, E + z + eP + zP, z + zP).
+  **Eigene Erstattung = L(x, eP + zP, zP) − L(x, E + z + eP + zP, z + zP)** (Änderung der gemeinsamen Steuer durch den
+  eigenen Vertrag). Eigene Zulage unverändert.
+- **Mittelbar** (nur, wenn der eigene geförderte Beitrag E ≥ 120 € und der Partner-Beitrag ≥ 120 € ist): zP = min(175 €,
+  Grundzulage(E)); vom Partner-Beitrag zählt min(Beitrag, 1.920 € − E). Ohne eigenen Vertrag gäbe es für den Partner
+  weder Zulage noch Abzug (Rn. 26/27), Ausgangslage daher ohne Abzug: **Erstattung = Steuer(x) − L(x, E + z + eP + zP, z + zP)**.
+  Die Partner-Zulage zP fließt in den Partner-Vertrag und ist **nicht** im Ergebnis enthalten (Summe als `zulSpouse`
+  unter „Rente im Detail“ und im Rechenweg). Andere Produkte unverändert.
+- **Erbfall (Rückzahlungsbetrag § 93 Abs. 1):** zurückgefordert wird die diesem Vertrag zugerechnete Steuerermäßigung
+  (Steuer(x) − gemeinsame Belastung) · E / (E + eP) statt der Erstattung (§ 10a Abs. 4 S. 3–4, Rn. 116/118); ohne
+  Partner-Vertrag identisch mit der Erstattung.
+
+Handproben (Inflation 0, 1.800 € eigener Beitrag, 540 € Zulage): beide 38.000 €, Partner 10 €/Monat: Partner allein
+spart 56 € < 60 € Zulage (kein Abzug), gemeinsam 774 € > 600 € ⇒ eigene Erstattung 174 € statt 180 €.
+110.000 € + 0 €, Partner 50 €/Monat (mittelbar): Abzug 1.800 + 120 + 540 + 175 = 2.635 €, Ersparnis 966 € − 715 € ⇒ 251 €
+statt 858 − 540 = 318 €; Partner-Zulage 175 €/Jahr.
+
+### Wirkung (cumH heutige Kaufkraft, eigener Beitrag 150 €/Monat, KV/PV 21,1 %)
+
+| Fall | Partner €/Monat | ETF | AVD | Versicherung | AVD-Erstattung nominal | Partner-Zulage nominal (nicht enthalten) |
+|---|---:|---:|---:|---:|---:|---:|
+| verheiratet, beide 38.000 €, Partner im Alter 20.000 € | 0 | 159.807 | 177.174 | 131.201 | 8.162 | – |
+| | 10 | 159.807 | 176.696 | 131.201 | 7.940 | – |
+| | 50 | 159.807 | 176.908 | 131.201 | 8.056 | – |
+| | 150 | 159.807 | 176.456 | 131.201 | 7.872 | – |
+| verheiratet, Partner 0/0 € (mittelbar) | 0 | 176.707 | 199.696 | 138.223 | 1.246 | – |
+| | 10 / 50 / 150 | 176.707 | 197.055 | 138.223 | 0 | 7.875 |
+| High (110.000 €, 500 €/Monat, kvOn), Partner 0/0 € | 0 | 337.801 | 316.913 | 273.176 | 11.802 | – |
+| | 10 / 50 / 150 | 337.801 | 312.581 | 273.176 | 9.321 | 6.475 |
+
+Beobachtungen ohne Wertung: Unmittelbar ändert der Partner-Vertrag die eigene Erstattung nur über die gemeinsame Prüfung
+und den Progressionsverlauf (−0,15 % bis −0,4 % AVD). Mittelbar senkt er die eigene Erstattung, weil die Partner-Zulage in
+der Günstigerprüfung gegengerechnet wird (Default: Abzug lohnt nicht mehr, −2.641 € AVD real); dem stehen 175 € Zulage im
+Jahr im Partner-Vertrag gegenüber, die nur durch den eigenen Vertrag entstehen, aber nicht in den Zahlen stehen.
+Über 120 € im Jahr hängt das Ergebnis im mittelbaren Fall nicht vom Partner-Beitrag ab (Default: Höchstbetrag mit
+eigenen 1.800 € fast ausgeschöpft, es zählen 120 €).
+
+### Offen (bewusst nicht gerechnet)
+
+- **Wert der mittelbaren Partner-Zulage:** entsteht nur durch den eigenen Vertrag, liegt aber im Partner-Vertrag
+  (eigene Erträge, Auszahlung an den Partner). Nicht im Ergebnis; Summe wird angezeigt. Ob sie dem Vergleich
+  zugerechnet werden soll, ist eine Modellentscheidung, keine Rechtsfrage.
+- Partner-Zulage, wenn der eigene geförderte Beitrag unter 120 € liegt (R6: Abzug ohne Zulage): ob diese Beiträge
+  „geförderte Altersvorsorgebeiträge“ im Sinne von § 84 S. 4 n. F. sind, ist ungeklärt; gerechnet ohne Partner-Wirkung.
+- Kinderzulage beim Partner (§ 85 Abs. 2, Zuordnung zur Mutter), Berufseinsteigerbonus des Partners, Einzelveranlagung,
+  abweichender Rentenbeginn, Fall „Partner ohne zvE, aber unmittelbar begünstigt“ (und umgekehrt).
+- Bestandsverträge (§ 52 Abs. 50a n. F.) und § 90 Abs. 2 S. 7 n. F. (kein mittelbarer Anspruch, wenn der unmittelbar
+  Berechtigte einen Bestandsvertrag hat): nicht abgebildet, der Rechner geht von neuen Verträgen ab 2027 aus.
+
 ## Tests
 
 `tests/kirchensteuer-splitting.test.ts` (14 Tests) mit eigener, von der Engine unabhängiger Veranlagung:
@@ -103,9 +190,7 @@ Bitgleichheit bei ausgeschaltetem Profil, Link/Speicher, Rechenweg, Einstellungs
 
 ## Offene Punkte (bewusst nicht gerechnet)
 
-- **Partner mit eigenem gefördertem Vertrag:** mittelbare Zulage (§ 79 S. 2, bis 175 €, ≥ 120 € eigener Beitrag),
-  gemeinsame Günstigerprüfung (§ 10a Abs. 3 S. 2–5), +120 € Höchstbetrag. Bräuchte einen zweiten Vertrag mit eigenem
-  Beitrag des Partners im fairen Vergleich.
+- **Partner mit eigenem gefördertem Vertrag:** seit `avdSpouse` gerechnet; Restpunkte im Abschnitt oben.
 - **Partner mit eigenen Kapitalerträgen:** teilen sich die 2.000 € Pauschbetrag (§ 20 Abs. 9 S. 3) und die
   Günstigerprüfung beider (§ 32d Abs. 6 S. 4). Gerechnet ist der günstigste Fall (Partner ohne Kapitalerträge).
 - **Kirchensteuer:** Kappung (auf Antrag in den meisten Ländern 2,75–4 % des zvE; wirkt erst bei sehr hohen

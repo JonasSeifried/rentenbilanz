@@ -506,8 +506,9 @@ Kinderfreibetragsrechnung, nominale Rundung und Wirkung stehen im
     eher zu niedrig. Die Auszahlung des AVD wird im Todesjahr angenommen.
   - **Letzte Steuererklärung der verstorbenen Person** (Einkünfte bis zum Tod) ist nicht gerechnet, wie im Einzelfall.
 - **Steuerprofil (Kirchensteuer, Zusammenveranlagung), Details in `kirchensteuer-splitting.md`:**
-  - Partner mit eigenem gefördertem Vertrag: mittelbare Zulage (§ 79 S. 2 EStG, nach AVRG ≥ 120 € eigener Beitrag,
-    Grundzulage bis 175 €, § 84 S. 3–4 n. F.) und gemeinsame Günstigerprüfung (§ 10a Abs. 3 S. 2–5) nicht gerechnet.
+  - Partner mit eigenem gefördertem Vertrag: seit `avdSpouse` gerechnet (unten). Offen: Wert der mittelbaren
+    Partner-Zulage im Vergleich, Partner-Wirkung bei eigenem Beitrag unter 120 €, Kinderzulage/Bonus des Partners,
+    Bestandsverträge (§ 52 Abs. 50a, § 90 Abs. 2 n. F.).
   - Partner mit eigenen Kapitalerträgen (geteilter Pauschbetrag, § 20 Abs. 9 S. 3; § 32d Abs. 6 S. 4) nicht gerechnet.
   - Kirchensteuer-Kappung, Kinderfreibeträge in der Bemessung (§ 51a Abs. 2 S. 1), glaubensverschiedene Ehe/Kirchgeld,
     eigene Konfession der Erben, zeitlicher Versatz des Sonderausgabenabzugs.
@@ -663,7 +664,7 @@ gezahlte KiSt über 36/72 € als Sonderausgabe (§ 10 Abs. 1 Nr. 4, § 10c). Ve
 dem Partner-zvE, Soli-Freigrenze 40.700 € (§ 3 Abs. 3 SolZG), Sparer-Pauschbetrag 2.000 € (§ 20 Abs. 9); Erben weiter
 Grundtarif und 1.000 €; AVD-Übertrag auf den Partner mit dessen Einkommen im Alter. Partner ohne eigenen geförderten
 Vertrag und ohne Kapitalerträge; mittelbare Zulage (§ 79 S. 2, AVRG: ≥ 120 €, bis 175 €) und § 10a Abs. 3 S. 2–5
-bleiben offen.
+blieben offen (inzwischen als Eingabe `avdSpouse` gerechnet, Abschnitt am Ende).
 
 Wirkung cumH real (ETF / AVD / Versicherung): Default 153.289 / 174.856 / 127.694 € → KiSt 9 %
 151.597 / 171.907 / 126.624 €; verheiratet mit Partner 38.000/20.000 € 159.807 / 177.174 / 131.201 €; Partner 0/0 €
@@ -712,3 +713,17 @@ Hier mit KV/PV 21,7 % in DK und High (High zusätzlich `kvGrossRet` 45.000 €);
 Das ETF-Depot verliert bis 8 % (Default −12.933 €), das AVD nur über sein Nebendepot (−2 %). Im DK-Fall wechselt der
 knappe Abstand ETF − AVD schon bei 250 € das Vorzeichen (von +424 € auf −2.533 €). Die Versicherung ist ab 500 € gleich,
 weil der Betrag bis zum Auszahljahr über 1.000 € nominal gewachsen ist.
+
+### Eingabe „Partner zahlt selbst ins Altersvorsorgedepot“ (`avdSpouse`)
+
+Keine Korrektur des Originals, sondern eine neue Eingabe (Standard 0 ⇒ bitgleich, nur mit `married` wirksam; Test
+`tests/partner-avd.test.ts`). Bisher war bei Verheirateten angenommen, dass der Partner keinen eigenen geförderten Vertrag
+hat. Jetzt: gemeinsame Günstigerprüfung nach § 10a Abs. 3 EStG (BMF 05.10.2023 Rn. 109/110). Partner-zvE > 0 ⇒ unmittelbar
+förderberechtigt (eigene Grundzulage, eigener Höchstbetrag), = 0 ⇒ mittelbar (§ 79 S. 2; nur mit eigenem Vertrag der
+Person, Rn. 27; Grundzulage aus den eigenen geförderten Beiträgen, höchstens 175 €, § 84 S. 3–4 n. F.; Höchstbetrag + 120 €).
+Die eigene Erstattung ist die Änderung der gemeinsamen Steuer durch den eigenen Vertrag; die Förderrückzahlung im Erbfall
+nutzt die nach § 10a Abs. 4 S. 3–4 zugerechnete Steuerermäßigung. Die mittelbare Partner-Zulage liegt im Partner-Vertrag
+und ist nicht im Ergebnis enthalten (Summe wird gezeigt). Wirkung bei beiden 38.000 €: AVD 177.174 € → 176.696 / 176.908 /
+176.456 € (Partner 10 / 50 / 150 €/Monat); Partner ohne Einkommen: 199.696 → 197.055 € (Erstattung 1.246 → 0 €, Partner-Zulage
+7.875 € nominal). Quellen, Rechnung, alle Messungen und offene Punkte:
+[kirchensteuer-splitting.md](kirchensteuer-splitting.md#partner-mit-eigenem-gefördertem-vertrag-avdspouse-05112026).
