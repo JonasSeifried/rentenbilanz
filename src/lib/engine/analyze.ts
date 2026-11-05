@@ -125,7 +125,7 @@ export type ScenarioId = 'kv' | 'avdCost' | 'refund' | 'g' | 'incWork' | 'incPat
 export interface ScenarioDef { id: ScenarioId; label: string; p: Params }
 export interface Scenario extends ScenarioDef { a: Analysis }
 
-// „Was das Ergebnis kippen würde“: je Zeile genau eine Annahme geändert. Reihenfolge wie im Original.
+// „Wann sich die Abstände umkehren“: je Zeile genau eine Annahme geändert. Reihenfolge wie im Original.
 // `kombi`: Enthält die Kombi AVD oder Versicherung, kommen deren Zeilen auch ohne das Einzelprodukt dazu.
 // Zeilen, die es im Original nicht gibt (`shift`), kommen nur außerhalb des Originalpfads (NO_FIXES) dazu, damit der
 // Golden-Test die Zeilen des Originals 1:1 vergleicht. Die App rechnet immer mit allen Korrekturen, hat sie also immer.

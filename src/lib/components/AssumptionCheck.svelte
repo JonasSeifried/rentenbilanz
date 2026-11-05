@@ -45,8 +45,12 @@
     });
     out.push({
       key: 'tax', label: 'Steuer', tab: 'settings', id: 'f-married',
-      value: (i.married ? 'verheiratet' : 'ledig') + ', ' + (i.kist > 0 ? 'Kirchensteuer ' + de(i.kist) + ' %' : 'keine Kirchensteuer'),
+      value: (i.married ? 'verheiratet, Partner ' + de(i.incSpouse) + ' / ' + de(i.incSpouseRet) + ' € (vor / ab Rentenbeginn)' : 'ledig') + ', ' + (i.kist > 0 ? 'Kirchensteuer ' + de(i.kist) + ' %' : 'keine Kirchensteuer'),
       changed: i.married !== DEFAULTS.married || i.kist !== DEFAULTS.kist,
+    });
+    out.push({
+      key: 'allowance', label: 'Sparer-Pauschbetrag schon genutzt', tab: 'settings', id: 'f-allowanceUsed',
+      value: i.allowanceUsed > 0 ? de(i.allowanceUsed) + ' €/Jahr' : 'nein', changed: i.allowanceUsed !== DEFAULTS.allowanceUsed,
     });
     out.push({
       key: 'kv', label: 'Krankenversicherung im Alter', tab: app.tab, id: 'f-kv',

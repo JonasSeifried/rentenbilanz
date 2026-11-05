@@ -10,6 +10,7 @@ Zahlen, Abstände und die Annahmen, an denen sie hängen. Die Rechnung selbst is
 | Ergebnis (`verdict.ts`) | „Rechnerisch vorne: …“, „Knapp vorne“, „Kein klarer Favorit“, Farbmarke des Siegers | „Ø netto im Monat (67–90): ETF-Depot …, Altersvorsorgedepot …“ in fester Reihenfolge; je Produkt ein Satz „X zahlt bis 90 rund Y € (Z %) mehr/weniger aus als das ETF-Depot“ |
 | Kacheln | Rand und Badge „vorne“ | ohne Hervorhebung, feste Reihenfolge (ETF, AVD, Versicherung, Fonds, Kombi) |
 | Szenarien | Spalte „Vorne“, fett markierte Zelle, gelb = „anderes Produkt vorne“ | keine Spalte „Vorne“, keine Markierung; gelb = „mindestens ein Abstand zwischen zwei Produkten kehrt sich um“ |
+| Überschrift Szenarien | „Was das Ergebnis kippen würde“ | „Wann sich die Abstände umkehren“ |
 | Robustheit | „Das Ergebnis hält in allen …“, „liegt ein anderes Produkt vorne“ | „In N von M Szenarien kehrt sich mindestens ein Abstand zwischen zwei Produkten um“ |
 | Rente im Detail, Erbfall | fett markierter größter/kleinster Wert | keine Markierung |
 | Mobile Ergebnisleiste | Siegersatz mit Farbmarke | „Ø netto/Monat: ETF … · AVD … · …“ |

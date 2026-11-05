@@ -196,7 +196,7 @@
 {#snippet scenTable()}
   <p class="hint">Jede Zeile ändert genau eine Annahme. Gezeigt wird Ø netto pro Monat bis zum Ende des Auszahlplans. {#if A.canRank}<span class="flipkey">Gelb</span>: Dann kehrt sich mindestens ein Abstand um, ein anderes Produkt zahlt mehr aus als oben.{/if}</p>
   {#if !A.canRank}<p class="hint">Solange der Vergleich oben nicht fair ist, wird hier nichts markiert.</p>{/if}
-  <div class="table-scroll scen-desk" {@attach scrollRegion('Tabelle: Was das Ergebnis kippen würde')}>
+  <div class="table-scroll scen-desk" {@attach scrollRegion('Tabelle: Wann sich die Abstände umkehren')}>
     <table class="scen" data-testid="scenarios">
       <thead>
         <tr><th>Szenario</th>
@@ -241,7 +241,7 @@
 {#if V.kind !== 'needTwo'}
   <section class="card" aria-labelledby="scen-h">
     <div class="card-head">
-      <h2 id="scen-h" tabindex="-1">Was das Ergebnis kippen würde</h2>
+      <h2 id="scen-h" tabindex="-1">Wann sich die Abstände umkehren</h2>
     </div>
     {#if V.kind === 'unequal'}
       <details class="collapsed">

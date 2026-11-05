@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readParams } from '../src/lib/engine/engine';
+import { readParams as readParamsCore } from '../src/lib/engine/core';
 import { analyze } from '../src/lib/engine/analyze';
 import { DEFAULTS } from '../src/lib/engine/inputs';
 import { eur } from '../src/lib/format';
@@ -391,4 +392,36 @@ test('Hilfsrechnung Bruttorente: bei freiwilliger KV auch KV-Brutto übernehmbar
   await setField(page, 'ph-monthly', '2000');
   await page.getByTestId('ph-take-kv').click();
   await expect.poll(() => saved(page).then(s => s?.kvGrossRet)).toBe(24000);
+});
+
+test('Steuerprofil und genutzter Pauschbetrag: Eingaben, Annahmen-Check, Badge, Ergebnis wie die Engine', async ({ page }) => {
+  await page.goto('./');
+  await page.click('#tab-settings');
+  await expect(page.getByTestId('incSpouse')).toHaveCount(0);
+  await page.getByTestId('kist-9').check();
+  await page.getByTestId('married').check();
+  await setField(page, 'incSpouse', '0');
+  await setField(page, 'incSpouseRet', '10000');
+  await setField(page, 'allowanceUsed', '1500');
+  await expect.poll(() => saved(page).then(s => [s?.kist, s?.married, s?.incSpouse, s?.incSpouseRet, s?.allowanceUsed])).toEqual([9, true, 0, 10000, 1500]);
+  await expect(page.getByTestId('settings-badge')).toContainText('5');
+  await page.click('#tab-overview');
+  const inp = { ...DEFAULTS, kist: 9, married: true, incSpouse: 0, incSpouseRet: 10000, allowanceUsed: 1500 };
+  const A = analyze(readParamsCore(inp));
+  for (const pr of A.active) await expect(page.getByTestId('tile-' + pr.key)).toContainText(eur(A.stats[pr.key]!.avgMonthly));
+  await expect(page.getByTestId('ac-tax')).toContainText('verheiratet, Partner 0 / 10.000 €');
+  await expect(page.getByTestId('ac-tax')).toContainText('Kirchensteuer 9 %');
+  await expect(page.getByTestId('ac-allowance')).toContainText('1.500 €/Jahr');
+  await expect(page.getByTestId('verdict')).not.toContainText(/vorne|Favorit|Gewinner|Sieger|lohnt/);
+});
+
+test('Link mit Steuerprofil und genutztem Pauschbetrag wird übernommen', async ({ page }) => {
+  await page.goto('./#v=1&kist=8&married=1&incSpouse=20000&incSpouseRet=5000&allowanceUsed=300');
+  const A = analyze(readParamsCore({ ...DEFAULTS, kist: 8, married: true, incSpouse: 20000, incSpouseRet: 5000, allowanceUsed: 300 }));
+  await expect(page.getByTestId('tile-avd')).toContainText(eur(A.stats.avd!.avgMonthly));
+  await expect(page.getByTestId('ac-tax')).toContainText('Kirchensteuer 8 %');
+  await page.click('#tab-settings');
+  await expect(page.getByTestId('kist-8')).toBeChecked();
+  await expect(page.getByTestId('incSpouse')).toHaveValue('20.000');
+  await expect(page.getByTestId('allowanceUsed')).toHaveValue('300');
 });

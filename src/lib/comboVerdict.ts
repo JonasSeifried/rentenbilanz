@@ -86,7 +86,7 @@ export function comboVerdict(C: ComboAnalysis, robust?: RobustSummary | null, se
     + splitText(B.split) + ': Ø ' + eur(B.stats.avgMonthly) + ' im Monat, ' + bisH + ' zusammen ' + delta(B.deltaUser ?? 0) + ' mehr netto als deine Aufteilung.');
   // Genannt ist eine gleichwertige, einfachere Aufteilung statt des letzten Euros (TIE_REL); das Maximum wird offen genannt.
   if (B.top && !(B.userIsBest && userExact)) lines.push('Genau die höchste Summe ergibt ' + splitText(B.top.split) + ', ' + bisH + ' '
-    + delta(B.top.value - (B.userIsBest ? C.user!.value : B.value)) + (B.userIsBest ? ' mehr als deine Aufteilung' : ' mehr als diese') + '. Das sind weniger als ' + rel + ' und weit unter der Unsicherheit der Annahmen. Bei so kleinen Unterschieden nennt der Rechner die Aufteilung mit weniger Produkten und mehr ETF (jederzeit verfügbar).');
+    + delta(B.top.value - (B.userIsBest ? C.user!.value : B.value)) + (B.userIsBest ? ' mehr als deine Aufteilung' : ' mehr als diese') + '. Das sind weniger als ' + rel + ' und weit unter der Unsicherheit der Annahmen. Bei so kleinen Unterschieden nennt der Rechner die einfachere Aufteilung (weniger Produkte, mehr ETF).');
   // Ungeförderter AVD-Teil: Abstand zu „150 € AVD + Rest“ offen beziffern.
   const cap150 = B.split.avd > AVD_CAP ? B.curve.find(x => x.avd === AVD_CAP) : undefined;
   if (cap150) {

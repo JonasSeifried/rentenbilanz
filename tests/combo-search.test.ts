@@ -341,7 +341,7 @@ describe('Ergebnissätze (comboVerdict)', () => {
     expect(bestOf(C).userIsBest).toBe(true);
     expect(v.headline).toBe('Deine Aufteilung: Ø 1.174 € netto im Monat (67–90).');
     expect(v.lines[0]).toBe('Deine Aufteilung liegt weniger als 0,1 % unter der höchsten Summe bis zum Alter von 90, die der Rechner unter diesen Annahmen findet (gesucht in 10-€-Schritten).');
-    expect(v.lines[1]).toBe('Genau die höchste Summe ergibt 190 € Altersvorsorgedepot + 110 € ETF-Depot, bis zum Alter von 90 rund 285 € mehr als deine Aufteilung. Das sind weniger als 0,1 % und weit unter der Unsicherheit der Annahmen. Bei so kleinen Unterschieden nennt der Rechner die Aufteilung mit weniger Produkten und mehr ETF (jederzeit verfügbar).');
+    expect(v.lines[1]).toBe('Genau die höchste Summe ergibt 190 € Altersvorsorgedepot + 110 € ETF-Depot, bis zum Alter von 90 rund 285 € mehr als deine Aufteilung. Das sind weniger als 0,1 % und weit unter der Unsicherheit der Annahmen. Bei so kleinen Unterschieden nennt der Rechner die einfachere Aufteilung (weniger Produkte, mehr ETF).');
     expect(v.lines.some(l => l.includes('ungefördert im Altersvorsorgedepot (keine'))).toBe(false);
   });
   it('AVD über 150 €: Abstand zu „150 € + Rest“ beziffert (1.000 €, deine Aufteilung = beste)', () => {

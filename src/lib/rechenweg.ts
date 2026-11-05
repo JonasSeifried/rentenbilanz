@@ -56,7 +56,7 @@ const limitsText = (p: Params) => [
   'Abgeltungsteuer ' + (p.kist > 0 ? pct((1.055 + p.kist) / (4 + p.kist)) + ' % einschließlich Soli und Kirchensteuer (§ 32d Abs. 1 S. 4 EStG: 25 % ermäßigt auf e/(4 + k))' : '26,375 %') +
     ', Teilfreistellung 30 % (Aktienfonds), Sparer-Pauschbetrag ' + (p.married ? '2.000 € (zusammen veranlagt; Partner ohne eigene Kapitalerträge außer den unten genannten angenommen) ' : '1.000 € ') +
     (p.indexAllowance ? 'wächst mit der Inflation (hypothetisch, Schalter indexAllowance)' : 'nominal fest') +
-    (p.allowanceUsed > 0 ? '; davon ' + n0(p.allowanceUsed) + ' €/Jahr (heutiges Geld, wächst mit der Inflation) schon durch andere Kapitalerträge genutzt, für die eigenen Depots bleibt nominal ' + (p.married ? '2.000 €' : '1.000 €') + (p.indexAllowance ? ' × Inflationsfaktor' : '') + ' minus dieser Betrag, mindestens 0. Die Erben haben ihren eigenen vollen Pauschbetrag' + (p.married ? '; erbt der Partner, gilt im Todesjahr der gemeinsame Betrag abzüglich des genutzten' : '') : '') +
+    (p.allowanceUsed > 0 ? '; davon ' + n0(p.allowanceUsed) + ' €/Jahr (heutiges Geld, wächst mit der Inflation) schon durch andere Kapitalerträge genutzt, für die eigenen Depots bleibt nominal ' + (p.married ? '2.000 €' : '1.000 €') + (p.indexAllowance ? ' × Inflationsfaktor' : '') + ' minus dieser Betrag, mindestens 0; wächst der Betrag nominal über den Pauschbetrag, fehlt der Überschuss der anderen Erträge in der Günstigerprüfung (§ 32d Abs. 6 EStG). Die Erben haben ihren eigenen vollen Pauschbetrag' + (p.married ? '; erbt der Partner, gilt im Todesjahr der gemeinsame Betrag abzüglich des genutzten' : '') : '') +
     ', Vorabpauschale mit Zufluss im Folgejahr.',
   'Jahresmodell: Beiträge monatlich, Entnahmen jährlich am Jahresanfang; offene Depots ' +
     (p.payResidual ? 'zahlen Restkapital ÷ Restjahre aus.' : 'zahlen eine nominal konstante Annuität aus, das AVD Restkapital ÷ Restjahre.'),
@@ -178,7 +178,8 @@ export function rechenweg(inputs: Inputs, A: Analysis, url: string, today = new 
         `Kostensatz, bei dem die Summe netto bis Alter ${p.H} (heutige Kaufkraft) gleich der des ETF-Depots ist. Gesucht per Bisektion zwischen 0 % und ${pct(Math.max(MAX_COST, ...be.map(b => b.cap)))} % (Suchintervall am Ende höchstens 0,005 Prozentpunkte breit, angegeben ist dessen Mitte, gerundet auf 0,01 Prozentpunkte) mit derselben Rechnung; alle anderen Eingaben unverändert.`, '',
         ...be.map(b => '- ' + breakEvenText(A, b)), '');
     }
-  } else out.push('Kein fairer Vergleich (ungleiche Beiträge oder ausgegebene Steuererstattung): keine Abstände und kein Kosten-Gleichstand.', '');
+  } else if (A.active.length < 2) out.push('Nur ein Produkt im Vergleich: keine Abstände und kein Kosten-Gleichstand.', '');
+  else out.push('Kein fairer Vergleich (ungleiche Beiträge oder ausgegebene Steuererstattung): keine Abstände und kein Kosten-Gleichstand.', '');
 
   if (p.incPeak >= 0) {
     out.push('## Einkommen vor Rentenbeginn', '', 'Zu versteuerndes Einkommen, mit dem die Ansparphase gerechnet ist (Günstigerprüfung AVD, Kapitalerträge), in heutigem Geld.', '',

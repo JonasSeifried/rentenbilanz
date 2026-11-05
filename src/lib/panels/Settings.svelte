@@ -140,15 +140,15 @@
       </fieldset>
       <Switch id="f-married" checked={i.married} testid="married" onchange={v => setInput('married', v)} label="Verheiratet, zusammen veranlagt" info="splitting" />
       {#if i.married}
-        <NumberField layout="row" label="Partner: zu versteuerndes Einkommen bis zu deinem Rentenbeginn" value={i.incSpouse} onchange={v => setInput('incSpouse', v)} min={0} step={1000} unit="€/Jahr" info="zve" testid="incSpouse"
+        <NumberField label="Partner: zu versteuerndes Einkommen bis zu deinem Rentenbeginn" value={i.incSpouse} onchange={v => setInput('incSpouse', v)} min={0} step={1000} unit="€/Jahr" info="zve" testid="incSpouse"
           limits={LIMITS.incSpouse} effective={p.incSpouse} />
-        <NumberField layout="row" label="… ab deinem Rentenbeginn" value={i.incSpouseRet} onchange={v => setInput('incSpouseRet', v)} min={0} step={1000} unit="€/Jahr" testid="incSpouseRet"
+        <NumberField label="Partner: … ab deinem Rentenbeginn" value={i.incSpouseRet} onchange={v => setInput('incSpouseRet', v)} min={0} step={1000} unit="€/Jahr" testid="incSpouseRet"
           limits={LIMITS.incSpouseRet} effective={p.incSpouseRet} hint="Heutiges Geld, ohne die verglichenen Produkte. Gerechnet wird angenommen, dass der Partner keinen eigenen geförderten Vertrag und keine eigenen Kapitalerträge außer dem unter „Andere Kapitalerträge“ eingetragenen Verbrauch hat." />
       {/if}
     </div>
     <div class="grp" role="group" aria-labelledby="s-cap">
       <h3 id="s-cap">Andere Kapitalerträge</h3>
-      <NumberField id="f-allowanceUsed" layout="row" label="Sparer-Pauschbetrag schon genutzt" value={i.allowanceUsed} onchange={v => setInput('allowanceUsed', v)} min={0} max={i.married ? 2000 : 1000} step={100} unit="€/Jahr" info="sparerGenutzt" testid="allowanceUsed"
+      <NumberField id="f-allowanceUsed" layout="row" label="Sparer-Pauschbetrag schon genutzt" value={i.allowanceUsed} onchange={v => setInput('allowanceUsed', v)} min={0} max={2000} step={100} unit="€/Jahr" info="sparerGenutzt" testid="allowanceUsed"
         limits={LIMITS.allowanceUsed} effective={p.allowanceUsed}
         hint={'Zinsen und Erträge außerhalb der verglichenen Produkte, z. B. Tagesgeld. Heutiges Geld; 0 = ganzer Pauschbetrag frei (1.000 €, zusammen veranlagt 2.000 €).' + (!i.married && p.allowanceUsed > 1000 ? ' Mehr als 1.000 € ledig: Pauschbetrag ganz verbraucht.' : '')} />
     </div>
@@ -284,7 +284,7 @@
   </details>
   <details>
     <summary>Szenarien im Überblick</summary>
-    <p>Jede Zeile ändert genau eine Annahme gegenüber den Eingaben, alles andere bleibt gleich. Das Szenario „Steuererstattung ausgegeben“ zählt nicht als Kippen, weil dann kein fairer Vergleich möglich ist.</p>
+    <p>Jede Zeile ändert genau eine Annahme gegenüber den Eingaben, alles andere bleibt gleich. Das Szenario „Steuererstattung ausgegeben“ zählt nicht als Umkehr eines Abstands, weil dann kein fairer Vergleich möglich ist.</p>
   </details>
 </section>
 

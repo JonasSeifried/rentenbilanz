@@ -44,7 +44,7 @@ describe('Ergebnissatz ohne Sieger', () => {
     const A = analyze(P({ fondOn: true }));
     const V = verdict(A, []);
     expect(V.headline).toMatch(/^Ø netto im Monat \(67–90\): ETF-Depot [\d.]+ €, Altersvorsorgedepot [\d.]+ €, Rentenversicherung [\d.]+ €, Aktiver Fonds [\d.]+ €\.$/);
-    expect(V.peek).toMatch(/^Ø netto\/Monat: ETF [\d.]+ € · AVD [\d.]+ € · Versicherung [\d.]+ € · Akt\. Fonds [\d.]+ €$/);
+    expect(V.peek).toMatch(/^Ø netto\/Monat: ETF [\d.]+ € · AVD [\d.]+ € · Vers\. [\d.]+ € · Akt\. Fonds [\d.]+ €$/);
     // Bei Standardwerten zahlt das AVD mehr als das ETF-Depot, steht aber trotzdem an zweiter Stelle.
     expect(A.stats.avd!.cumHReal).toBeGreaterThan(A.stats.etf!.cumHReal);
     expect(V.lines[0]).toMatch(/^Das Altersvorsorgedepot zahlt bis zum Alter von 90 zusammen rund [\d.]+ € \(\d+ %\) mehr aus als das ETF-Depot\.$/);
@@ -138,6 +138,8 @@ describe('Kosten-Gleichstand mit dem ETF-Depot', () => {
     expect(md).toContain('- Gleichstand mit dem ETF-Depot bis zum Alter von 90 bei 0,87 % AVD-Kosten in Anspar- und Auszahlphase');
     expect(md).toContain('Der Rechner bewertet die Produkte nicht.');
     expect(rechenweg({ ...DEFAULTS, avdM: 100 }, analyze(P({ avdM: 100 })), 'x')).toContain('Kein fairer Vergleich');
+    const one = { ...DEFAULTS, avdOn: false, insOn: false };
+    expect(rechenweg(one, analyze(P(one)), 'x')).toContain('Nur ein Produkt im Vergleich');
   });
 });
 

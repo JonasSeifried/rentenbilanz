@@ -110,7 +110,7 @@ export function verdict(A: Analysis, _scen: Scenario[]): Verdict {
   const range = p.R + '–' + p.H;
   // Feste Reihenfolge (PRODUCTS, dann Kombi), nicht nach Ergebnis sortiert.
   const headline = 'Ø netto im Monat (' + range + '): ' + active.map(pr => tileName(pr) + ' ' + eur(stats[pr.key]!.avgMonthly)).join(', ') + '.';
-  const peek = 'Ø netto/Monat: ' + active.map(pr => pr.short + ' ' + eur(stats[pr.key]!.avgMonthly)).join(' · ');
+  const peek = 'Ø netto/Monat: ' + active.map(pr => (pr.key === 'ins' ? 'Vers.' : pr.short) + ' ' + eur(stats[pr.key]!.avgMonthly)).join(' · ');
 
   // Abstände zum ersten Teilnehmer der festen Reihenfolge (meist das ETF-Depot als einfachste Vergleichsgröße).
   const ref = active[0];
