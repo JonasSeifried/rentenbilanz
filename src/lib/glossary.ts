@@ -170,7 +170,7 @@ export const GLOSSARY = {
   },
   avdKosten: {
     title: 'Kosten des Altersvorsorgedepots',
-    text: ['Das Standarddepot ist bis zum Beginn der Auszahlphase auf 1,0 % Effektivkosten gedeckelt (§ 2a Abs. 1–2 AltZertG). Für die Auszahlung sind eigene Kosten einstellbar; standardmäßig wird die Ansparquote weiterverwendet. Es schichtet aber ab 5 Jahre vor Rentenbeginn in sichere Anlagen um. Die Umschichtung lässt sich unter „Markt“ einschalten, dann für alle Produkte gleich. Für andere Altersvorsorgedepots gibt es keinen Kostendeckel. Ein selbst gewähltes Altersvorsorgedepot ist meist günstiger und muss nicht umschichten.'],
+    text: ['Das Standarddepot ist bis zum Beginn der Auszahlphase auf 1,0 % Effektivkosten gedeckelt (§ 2a Abs. 1–2 AltZertG). Für die Auszahlung sind eigene Kosten einstellbar; standardmäßig wird die Ansparquote weiterverwendet. Es schichtet aber ab 5 Jahre vor Rentenbeginn in sichere Anlagen um. Die Umschichtung lässt sich unter „Markt“ einschalten, dann für alle Produkte gleich. Für andere Altersvorsorgedepots (§ 1 Abs. 1b AltZertG) gibt es keinen Kostendeckel; ihre Kosten hängen vom Anbieter und den gewählten Anlagen ab und stehen im Produktinformationsblatt (Effektivkosten, § 2a Abs. 1). Eine gesetzliche Umschichtung vor der Auszahlphase schreibt das Gesetz nur für das Standarddepot vor (§ 1 Abs. 1c Nr. 5), und auch dort kann man andere Anteile verlangen; ob ein anderes Depot vertraglich umschichtet, regelt der jeweilige Vertrag.'],
   },
   standarddepot: {
     title: 'Umschichtung im Standarddepot',
