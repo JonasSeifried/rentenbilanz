@@ -54,6 +54,10 @@ Depots, in der Kombi auch die Restrente) im Splittingtarif mit dem Partner-Einko
 verstorbenen Person 0 (Tod zu Jahresbeginn), 2.000 € Pauschbetrag; `incHeir` wirkt dann nicht. Spätere Steuer auf das
 übertragene AVD mit `incSpouseRet` im Grundtarif (vorher: Einkommen der verstorbenen Person), spätere Restrenten mit dem
 Partner-Einkommen des jeweiligen Jahres; Restzeitraum weiter der der verstorbenen Person (H1). Ledig unverändert.
+Nach dem Merge mit `allowanceUsed`: Der gemeinsame Pauschbetrag ist im eigenen Haushalt und im Todesjahr um den
+anderweitig genutzten Betrag gekürzt. Nach dem Review des Merges gibt es die Ehepartner-Sicht (`heirMarried`) bei
+`married` auch für ETF-Depot, aktiven Fonds, Versicherung und eine Kombi ohne AVD (vorher nur AVD und Kombi mit AVD;
+die Depots standen dort mit dem Erben-Tarif neben der Ehepartner-Zeile des AVD). Ledig bleibt alles unverändert.
 
 **Zeitachse des Partners:** `incSpouse` gilt in allen eigenen Ansparjahren (auch einer eigenen Ausbildung),
 `incSpouseRet` ab dem eigenen Rentenbeginn. Ein abweichender Rentenbeginn des Partners ist nicht abbildbar.
