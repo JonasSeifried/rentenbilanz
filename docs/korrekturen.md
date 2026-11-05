@@ -497,7 +497,8 @@ Kinderfreibetragsrechnung, nominale Rundung und Wirkung stehen im
     Steuer. Ebenso nicht gerechnet: eigene Kapitalerträge der Erben, die den Pauschbetrag schon nutzen.
   - **Ehepartner:** Im Todesjahr ist meist noch Zusammenveranlagung möglich (Pauschbetrag 2.000 €, § 20 Abs. 9 S. 2
     EStG, Splittingtarif). Gerechnet sind 1.000 € und `incHeir` im Grundtarif, wie im Einzelfall, auch mit der
-    Eingabe „verheiratet“ (die Erben sind eine eigene Person mit eigener Eingabe).
+    Eingabe „verheiratet“ für andere Erben. Erbt mit dieser Eingabe der Partner (`heirMarried`), ist das Todesjahr
+    gemeinsam veranlagt (Splitting mit dem Partner-Einkommen, 2.000 €), siehe `kirchensteuer-splitting.md`.
   - **Verkauf im Todesjahr.** Behalten die Erben die Depots, zahlen sie die Steuer erst später; der Erbwert ist dann
     eher zu niedrig. Die Auszahlung des AVD wird im Todesjahr angenommen.
   - **Letzte Steuererklärung der verstorbenen Person** (Einkünfte bis zum Tod) ist nicht gerechnet, wie im Einzelfall.
@@ -507,7 +508,7 @@ Kinderfreibetragsrechnung, nominale Rundung und Wirkung stehen im
   - Partner mit eigenen Kapitalerträgen (geteilter Pauschbetrag, § 20 Abs. 9 S. 3; § 32d Abs. 6 S. 4) nicht gerechnet.
   - Kirchensteuer-Kappung, Kinderfreibeträge in der Bemessung (§ 51a Abs. 2 S. 1), glaubensverschiedene Ehe/Kirchgeld,
     eigene Konfession der Erben, zeitlicher Versatz des Sonderausgabenabzugs.
-  - Witwensplitting (§ 32a Abs. 6 Nr. 1), abweichender Rentenbeginn des Partners, KV-Anrechnung des
+  - Witwensplitting im Folgejahr (§ 32a Abs. 6 S. 1 Nr. 1; das Todesjahr ist gemeinsam veranlagt gerechnet), abweichender Rentenbeginn des Partners, KV-Anrechnung des
     Partner-Einkommens (§ 240 Abs. 5 SGB V).
 - **E2 und E6 für das AVD:** Ein AVD-spezifisches BMF-Schreiben gibt es noch nicht. Übertragen sind die Aussagen
   zur Riester-Rente, weil die Normen dieselben sind. Ob Kassen die Vorabpauschale bei Rentnern tatsächlich

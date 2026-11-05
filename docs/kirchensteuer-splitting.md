@@ -42,12 +42,18 @@ Landes-KiStG, § 51a Abs. 6 EStG). Andere Werte zwischen 0 und 10 % sind über L
 
 Alle bisherigen Differenzrechnungen (Mehrsteuer auf Auszahlungen, R1-KV-Abzug, R3, AVD-Teilauszahlung, latente Steuer)
 laufen über `taxNom` und damit über `assess`. Das eingegebene zvE gilt **vor** dem Kirchensteuer-Abzug.
+Wegen der Euro-Abrundung pendelt der Fixpunkt in rund 3,6 % der Einkommen zwischen zwei um 1 € verschiedenen Werten;
+dann gilt deterministisch der höhere. AVD-Günstigerprüfung: Beide Varianten nutzen dieselbe im Jahr gezahlte
+Kirchensteuer, die des Abzugsfalls (§ 10 Abs. 1 Nr. 4: ein gezahlter Betrag); günstiger ⇒ Abzug, sonst nicht.
 
 **Wer zahlt mit welchem Tarif (`own`):** eigener Haushalt (Ansparphase, Rente, Kapital bei Rentenbeginn) mit Splitting
 und 2.000 € Pauschbetrag; Erben (`incHeir`) einzeln im Grundtarif mit eigenem 1.000-€-Pauschbetrag, aber mit **demselben
-Kirchensteuersatz** (Annahme, keine eigene Eingabe). AVD-Übertrag auf den Partner (`heirMarried`): verheiratet wird die
-spätere Steuer mit `incSpouseRet` im Grundtarif geschätzt (vorher: Einkommen der verstorbenen Person); Restzeitraum
-weiter der der verstorbenen Person (H1 bleibt offen). Ledig bleibt `heirMarried` unverändert.
+Kirchensteuersatz** (Annahme, keine eigene Eingabe). Partner erbt (`heirMarried`, verheiratet): Im Todesjahr lebten
+beide zu Jahresbeginn, daher noch Zusammenveranlagung (§ 26 Abs. 1 EStG): Erträge im Todesjahr (ungeförderter AVD-Teil,
+Depots, in der Kombi auch die Restrente) im Splittingtarif mit dem Partner-Einkommen des Jahres, eigenes Einkommen der
+verstorbenen Person 0 (Tod zu Jahresbeginn), 2.000 € Pauschbetrag; `incHeir` wirkt dann nicht. Spätere Steuer auf das
+übertragene AVD mit `incSpouseRet` im Grundtarif (vorher: Einkommen der verstorbenen Person), spätere Restrenten mit dem
+Partner-Einkommen des jeweiligen Jahres; Restzeitraum weiter der der verstorbenen Person (H1). Ledig unverändert.
 
 **Zeitachse des Partners:** `incSpouse` gilt in allen eigenen Ansparjahren (auch einer eigenen Ausbildung),
 `incSpouseRet` ab dem eigenen Rentenbeginn. Ein abweichender Rentenbeginn des Partners ist nicht abbildbar.
@@ -76,6 +82,10 @@ knappe Reihenfolge ETF/AVD (190 € Abstand vorher, jetzt 662 € in die andere 
 Überlegenheit. Verheiratet mit einem Partner ohne Einkommen fällt die AVD-Erstattung fast weg (Splitting senkt den
 Grenzsteuersatz in der Ansparphase), die Auszahlungen werden aber ebenfalls niedriger besteuert.
 
+Erbwert AVD bei Tod mit 50 (real): Default 108.719 €, Ehepartner erbt 124.715 €; KiSt 9 % 107.520 / 122.629 €;
+verheiratet mit Partner 38.000/20.000 € 108.855 / 125.238 €; High verheiratet mit Partner 0/0 € 316.173 / 414.471 €
+(Nebendepot im Todesjahr gemeinsam veranlagt, spätere AVD-Steuer mit Partner-Einkommen 0).
+
 Jahresproben (Inflation 0, 1.800 € Beitrag, 540 € Zulage, 60 → 65): Erstattung je Jahr ledig 38.000 € 175,00 €,
 mit KiSt 9 % 182,03 €; verheiratet 38.000 € + Partner 0 € 26,00 €; 38.000 + 38.000 € 180,00 €; 110.000 € + 0 €
 318,00 € (kein Soli wegen 40.700-€-Freigrenze; ledig 495,717 €).
@@ -98,7 +108,7 @@ Bitgleichheit bei ausgeschaltetem Profil, Link/Speicher, Rechenweg, Einstellungs
 - **Kirchensteuer:** Kappung (auf Antrag in den meisten Ländern 2,75–4 % des zvE; wirkt erst bei sehr hohen
   Einkommen), Kinderfreibeträge in der Bemessung (§ 51a Abs. 2 S. 1, wie beim Soli), glaubensverschiedene Ehe
   (Halbteilung bzw. besonderes Kirchgeld), unterschiedliche Konfession der Erben; zeitlicher Versatz des SA-Abzugs.
-- **Witwensplitting** (§ 32a Abs. 6 Nr. 1) im Todes- und Folgejahr und ein eigenes Hinterbliebenenprofil (H1).
+- **Witwensplitting** im Folgejahr nach dem Tod (§ 32a Abs. 6 S. 1 Nr. 1) für die spätere AVD-Steuer des Partners und ein eigenes Hinterbliebenenprofil (H1). Das Todesjahr selbst ist gemeinsam veranlagt (§ 26 Abs. 1, siehe oben).
 - **KV:** bleibt je Person (KVdR, freiwillige Versicherung). Die Anrechnung des Partner-Einkommens bei freiwillig
   Versicherten mit privat versichertem Partner (§ 240 Abs. 5 SGB V) ist nicht gerechnet.
 - **Abweichende Rentenbeginne** der Partner; Partner-Einkommen ist je Phase real konstant.

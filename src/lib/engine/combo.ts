@@ -203,35 +203,48 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   // § 20 Abs. 9 S. 2 EStG: gemeinsamer Sparer-Pauschbetrag 2.000 € (Partner ohne eigene Kapitalerträge angenommen).
   const SPB = p.married ? 2000 : 1000;
   const partnerNom = (t: number) => (t < n ? p.incSpouse : p.incSpouseRet) * I(t);
+  // Partner erbt (verheiratet): Im Todesjahr gemeinsame Veranlagung (§ 26 Abs. 1, beide lebten zu Jahresbeginn) mit dem
+  // Partner-Einkommen allein (Tod zu Jahresbeginn), Splitting und 2.000 € Pauschbetrag: own = true mit eigenem Einkommen 0.
+  const spouseHeir = p.married;
   /**
    * Veranlagung mit Steuerprofil, nominal: tarifliche ESt auf das zvE nach Abzug `ded` (eigener Haushalt verheiratet:
    * Splitting § 32a Abs. 5 auf eigenes + Partner-zvE), zuzüglich hinzugerechneter Zulage z (§ 2 Abs. 6), darauf Soli
    * (§ 3 Abs. 2/3 SolZG, Freigrenze bei Splitting 40.700 €) und Kirchensteuer (§ 51a Abs. 2 EStG). Gezahlte
    * Kirchensteuer über dem Sonderausgaben-Pauschbetrag (36 €, Ehegatten 72 €, § 10c) mindert das zvE (§ 10 Abs. 1
    * Nr. 4): Beharrungszustand im selben Jahr, Fixpunkt (Kontraktion k · Grenzsteuersatz < 5 %), bis die ESt stehen bleibt,
-   * höchstens zehn Schritte.
-   * est = tarifliche ESt ohne z (Vergleichsgröße des § 10a Abs. 2, BFH X R 11/21).
+   * höchstens zehn Schritte. Wegen der Euro-Abrundung kann er zwischen zwei um 1 € verschiedenen Werten pendeln: dann
+   * gilt der höhere (unabhängig von der Schrittzahl). `paid` ≥ 0: diese gezahlte KiSt abziehen statt des Fixpunkts
+   * (beide Varianten der Günstigerprüfung mit derselben im Jahr gezahlten Kirchensteuer).
+   * est = tarifliche ESt ohne z (Vergleichsgröße des § 10a Abs. 2, BFH X R 11/21); church = Kirchensteuer.
    */
-  const assess = (xNom: number, t: number, own: boolean, ded = 0, z = 0) => {
+  const assess = (xNom: number, t: number, own: boolean, ded = 0, z = 0, paid = -1) => {
     const sp = own && p.married, index = I(t), k = p.kist, sap = sp ? 72 : 36;
     const zve = xNom + (sp ? partnerNom(t) : 0) - ded;
     const estOf = (x: number) => sp ? 2 * incomeTaxNom(Math.max(0, x) / 2, t) : incomeTaxNom(Math.max(0, x), t);
-    let est = estOf(zve), church = k * (est + z);
-    if (k > 0) for (let i = 0; i < 10; i++) {
-      const next = estOf(zve - Math.max(0, church - sap));
-      if (next === est) break;
-      est = next; church = k * (est + z);
+    let est: number, church: number;
+    if (paid >= 0) { est = estOf(zve - Math.max(0, paid - sap)); church = k * (est + z); }
+    else {
+      est = estOf(zve); church = k * (est + z);
+      let prev = NaN;
+      if (k > 0) for (let i = 0; i < 10; i++) {
+        const next = estOf(zve - Math.max(0, church - sap));
+        if (next === est) break;
+        if (next === prev) { est = Math.max(est, next); church = k * (est + z); break; }
+        prev = est; est = next; church = k * (est + z);
+      }
     }
     const assessed = est + z;
     const so = (sp ? 2 * soli(assessed / index / 2) : soli(assessed / index)) * index;
-    return { est, total: assessed + so + church };
+    return { est, church, total: assessed + so + church };
   };
   const taxNom = (incomeNom: number, t: number, own = true) => fam ? assess(incomeNom, t, own).total
     : F.round ? tax2026(incomeNom, I(t)) : tax(incomeNom / I(t)) * I(t);
   const taxAdd = (incReal: number, addNom: number, t: number, own = true) => addNom <= 0 ? 0 : F.round || fam
     ? taxNom(incReal * I(t) + addNom, t, own) - taxNom(incReal * I(t), t, own)
     : (tax(incReal + addNom / I(t)) - tax(incReal)) * I(t);
-  const taxSave = (incReal: number, dedNom: number, t: number) => F.round || fam
+  const taxSave = (incReal: number, dedNom: number, t: number) => fam
+    ? taxNom(incReal * I(t), t) - taxNom(incReal * I(t) - dedNom, t) // Abzug auch über das eigene Einkommen hinaus (Splitting)
+    : F.round
     ? taxNom(incReal * I(t), t) - taxNom(Math.max(0, incReal * I(t) - dedNom), t)
     : (tax(incReal) - tax(Math.max(0, incReal - dedNom / I(t)))) * I(t);
   const kvRoom = (t: number) => Math.max(0, (KV_BBG - (F.grossKV ? kvGross(p) : p.incRet)) * I(t));
@@ -259,8 +272,10 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       const b = assess(Math.max(0, incomeNom), t, true);
       if (!(ded > 0)) return b.total;
       if (!F.soliZ) return Math.min(b.total, assess(incomeNom, t, true, ded).total + z);
+      // Wie unten: Vergleich der tariflichen ESt. Beide Varianten mit derselben gezahlten Kirchensteuer (§ 10 Abs. 1 Nr. 4),
+      // nämlich der des Ergebnisses: Abzug, wenn er mit der Kirchensteuer des Abzugsfalls günstiger ist; sonst ohne.
       const a = assess(incomeNom, t, true, ded, z);
-      return b.est - a.est <= z ? b.total : a.total; // wie unten: Vergleich der tariflichen ESt
+      return assess(incomeNom, t, true, 0, 0, a.church).est - a.est > z ? a.total : b.total;
     }
     const base = taxNom(Math.max(0, incomeNom), t);
     if (!(ded > 0)) return base;
@@ -635,8 +650,9 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     const unsubNote = (idx: number, tx: number) => a.valsU[idx] > 0 ? '; ungeförderter Teil ' + eur(Rn(a.valsU[idx], idx)) + ' ohne Förderrückzahlung, Steuer der Erben auf dessen Gewinn ca. ' + eur(Rn(tx, idx)) : '';
     parts.avd.heirMarried = idx => {
       const V = a.vals[idx], lt = latentTax(V, idx, true);
-      const halbU = p.heirHalf && idx >= 12, txU = taxAdd(p.incHeir, gainU(idx, halbU), idx, false);
-      return { val: V - lt + (a.valsU[idx] - txU) + sellNet(side, idx), note: 'Ohne Abzug auf einen eigenen AVD-Vertrag übertragbar, später aber voll steuerpflichtig (ca. ' + eur(Rn(lt, idx)) + ' Einkommensteuer, grob geschätzt und abgezogen)' + unsubNote(idx, txU) };
+      const halbU = p.heirHalf && idx >= 12, txU = spouseHeir ? taxAdd(0, gainU(idx, halbU), idx, true) : taxAdd(p.incHeir, gainU(idx, halbU), idx, false);
+      const sideNet = spouseHeir ? sellFunds(side.members, idx, 0, true) : sellNet(side, idx);
+      return { val: V - lt + (a.valsU[idx] - txU) + sideNet, note: 'Ohne Abzug auf einen eigenen AVD-Vertrag übertragbar, später aber voll steuerpflichtig (ca. ' + eur(Rn(lt, idx)) + ' Einkommensteuer, grob geschätzt und abgezogen)' + unsubNote(idx, txU) };
     };
     parts.avd.heir = idx => {
       const V = a.vals[idx], age = p.a0 + idx, C0 = a.vals[n];
@@ -800,6 +816,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       let v = 0; for (const r of list) v += (married && r.heirMarried ? r.heirMarried : r.heir)(idx).val;
       return { val: v, note: 'Teile einzeln versteuert' };
     }
+    const sp = married && spouseHeir; // Partner erbt und war mit der Person zusammen veranlagt
     let gross = 0, X = 0, back = 0, lt = 0, halbAvd = false, rentYears = 0, insMinUsed = false;
     const bits: string[] = [];
     if (avd && (!only || only === 'avd')) {
@@ -821,19 +838,22 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
         rentYears = Math.max(0, p.R + p.gz - (p.a0 + idx));
         const { annual, ea } = ins;
         if (rentYears > 0) { gross += annual; X += annual * ea; }
-        for (let k = 1; k < rentYears; k++) gross += (annual - taxAdd(p.incHeir, annual * ea, idx + k, false)) * (p.real ? I(idx) / I(idx + k) : 1);
+        for (let k = 1; k < rentYears; k++) {
+          const t = idx + k, rent = sp ? taxAdd(t < n ? p.incSpouse : p.incSpouseRet, annual * ea, t, false) : taxAdd(p.incHeir, annual * ea, t, false);
+          gross += (annual - rent) * (p.real ? I(idx) / I(t) : 1);
+        }
       }
     }
-    const tx = taxAdd(p.incHeir, X, idx, false);
+    const tx = sp ? taxAdd(0, X, idx, true) : taxAdd(p.incHeir, X, idx, false);
     const depots = [dEtf, dFond, dSide, idx > n ? dIns : null].filter((d): d is Depot => !!d).flatMap(d => d.members).filter(f => !only || f.part === only);
     let V = 0, minGain = Infinity;
     for (const f of depots) { const g = f.vals[idx] - f.bases[idx]; V += f.vals[idx]; if (g < minGain) minGain = g; }
-    const abg = depots.length ? (F.gp || F.nextVP || p.indexAllowance ? liquidation(depots, idx, p.incHeir, false, X).tax : V - sellFunds(depots, idx)) : 0;
+    const abg = depots.length ? (F.gp || F.nextVP || p.indexAllowance ? liquidation(depots, idx, sp ? 0 : p.incHeir, sp, X).tax : V - sellFunds(depots, idx, sp ? 0 : p.incHeir, sp)) : 0;
     const e = (x: number) => eur(Rn(x, idx));
     if (avd && (!only || only === 'avd')) bits.push(married
       ? 'AVD ohne Abzug auf einen Vertrag des Ehepartners übertragbar (spätere Einkommensteuer ca. ' + e(lt) + ', grob geschätzt und abgezogen)'
       : 'AVD-Förderung ' + e(back) + ' zurück');
-    if (tx > 0 || X > 0) bits.push('Einkommensteuer der Erben ' + e(tx) + ' in einem Tarif (' + [avd && (!only || only === 'avd') ? 'AVD-Erträge' + (halbAvd ? ' hälftig' : '') : '', rentYears > 0 ? 'Ertragsanteil der Restrente' : ''].filter(Boolean).join(' und ') + ')');
+    if (tx > 0 || X > 0) bits.push((sp ? 'Einkommensteuer des Partners (gemeinsam veranlagt im Todesjahr) ' : 'Einkommensteuer der Erben ') + e(tx) + ' in einem Tarif (' + [avd && (!only || only === 'avd') ? 'AVD-Erträge' + (halbAvd ? ' hälftig' : '') : '', rentYears > 0 ? 'Ertragsanteil der Restrente' : ''].filter(Boolean).join(' und ') + ')');
     if (depots.length) bits.push((F.gp ? 'Depots nach Kapitalertragsteuer/Günstigerprüfung bei Verkauf ' : 'Depots nach Abgeltungsteuer bei Verkauf ') + e(abg) + ' (ein Sparer-Pauschbetrag)');
     if (ins && (!only || only === 'ins') && idx <= n) bits.push(insMinUsed ? 'Versicherung zahlt die eingezahlten Beiträge (Mindestleistung), einkommensteuerfrei' : 'Versicherung einkommensteuerfrei');
     if (rentYears > 0) bits.push('Restrente noch ' + rentYears + ' Jahre');

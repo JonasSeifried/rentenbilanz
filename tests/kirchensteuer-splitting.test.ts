@@ -26,19 +26,29 @@ function est(v: number): number {
   return Math.floor(Math.max(0, raw));
 }
 /** Eine Veranlagung: ESt (Splitting: 2 × Tarif der Hälfte), Zulage z hinzugerechnet, Soli und KiSt darauf, KiSt als SA. */
-function assess(x: number, o: { kist?: number; married?: boolean; ded?: number; z?: number } = {}) {
+/** paid: diese gezahlte KiSt als Sonderausgabe; sonst Fixpunkt, bei Pendeln zwischen zwei Werten der höhere. */
+function assess(x: number, o: { kist?: number; married?: boolean; ded?: number; z?: number; paid?: number } = {}) {
   const k = (o.kist ?? 0) / 100, m = !!o.married, ded = o.ded ?? 0, z = o.z ?? 0;
   const tariff = (v: number) => m ? 2 * est(Math.max(0, v) / 2) : est(v);
   const sap = m ? 72 : 36, fg = m ? 40700 : 20350;
-  let E = tariff(x - ded), K = k * (E + z);
-  for (let i = 0; i < 60; i++) { E = tariff(x - ded - Math.max(0, K - sap)); K = k * (E + z); }
+  const step = (K: number) => tariff(x - ded - Math.max(0, K - sap));
+  let E: number, K: number;
+  if (o.paid != null) { E = step(o.paid); K = k * (E + z); }
+  else {
+    const seen: number[] = [tariff(x - ded)];
+    for (let i = 0; i < 60; i++) seen.push(step(k * (seen[seen.length - 1] + z)));
+    const a = seen[seen.length - 1], b = seen[seen.length - 2];
+    E = Math.max(a, b); K = k * (E + z);
+  }
   const A = E + z, soli = Math.max(0, Math.min(.055 * A, .119 * (A - fg)));
   return { est: E, kist: K, soli, total: A + soli + K };
 }
 /** Zusätzliche AVD-Erstattung eines Jahres (§ 10a Abs. 2 nach tariflicher ESt, § 2 Abs. 6). */
+// Beide Varianten mit derselben gezahlten Kirchensteuer, der des Abzugsfalls (§ 10 Abs. 1 Nr. 4).
 function avdRefund(x: number, ded: number, z: number, o: { kist?: number; married?: boolean } = {}) {
   const b = assess(x, o), a = assess(x, { ...o, ded, z });
-  return { useSA: b.est - a.est > z, refund: b.est - a.est > z ? b.total - a.total : 0 };
+  const useSA = assess(x, { ...o, paid: a.kist }).est - a.est > z;
+  return { useSA, refund: useSA ? b.total - a.total : 0 };
 }
 
 describe('Steuerprofil aus: bitgleich', () => {
@@ -147,6 +157,75 @@ describe('Zusammenveranlagung', () => {
     const c = combo(P(x), only('avd', 150)), r = c.parts.avd!, idx = 10, yrs = 85 - 65;
     const V = r.vals[idx]!, lt = yrs * (assess(15000 + V / yrs, { kist: 9 }).total - assess(15000, { kist: 9 }).total);
     expect(r.heirMarried!(idx).val).toBeCloseTo(V - lt, 6);
+  });
+});
+
+describe('Steuerprofil nach Review', () => {
+  it('Kirchensteuer-Fixpunkt: Pendeln um 1 € wird deterministisch aufgelöst (höherer Wert)', () => {
+    // 14.815 € bei 9 % pendelt zwischen zwei ESt-Werten; Mehrsteuer der Leibrente über einen Einkommensbereich
+    let cycles = 0;
+    for (let inc = 14000; inc <= 17000; inc += 37) {
+      const p = P({ infl: 0, insLump: false, incRet: inc, kist: 9, setAll: 50, insM: 50 });
+      const c = combo(p, only('ins', 50)), r = c.parts.ins!, X = r.taxBase[c.n];
+      expect(r.incTax[c.n]).toBeCloseTo(assess(inc + X, { kist: 9 }).total - assess(inc, { kist: 9 }).total, 9);
+    }
+    for (let x = 14000; x <= 17000; x++) {
+      let E = est(x);
+      const seen = new Set<number>();
+      for (let i = 0; i < 20; i++) { E = est(x - Math.max(0, .09 * E - 36)); seen.add(E); }
+      if (seen.size > 1 && est(x - Math.max(0, .09 * E - 36)) !== E) cycles++;
+    }
+    expect(cycles).toBeGreaterThan(0); // es gibt solche Fälle wirklich
+  });
+  it('Partner erbt (verheiratet): Todesjahr gemeinsam veranlagt, unabhängig vom Erben-Einkommen', () => {
+    const x = { a0: 40, R: 65, H: 85, infl: 0, dyn: 0, married: true, incSpouse: 30000, incSpouseRet: 15000, kist: 9, setAll: 600, avdM: 600, etfM: 200 };
+    for (const idx of [10, 30]) {
+      const a = analyze(P({ ...x, incHeir: 0 })), b = analyze(P({ ...x, incHeir: 200000 }));
+      expect(a.res.avd!.heirMarried!(idx).val).toBe(b.res.avd!.heirMarried!(idx).val);
+      const k = { ...emptySplit(), avd: 400, etf: 200 };
+      const ca = combo(P({ ...x, incHeir: 0 }), k), cb = combo(P({ ...x, incHeir: 200000 }), k);
+      expect(ca.heirMarried!(idx).val).toBe(cb.heirMarried!(idx).val);
+      expect(ca.heir(idx).val).toBeGreaterThan(cb.heir(idx).val); // andere Erben: eigenes Einkommen wirkt
+    }
+    // Ungeförderter Teil vor Rentenbeginn: Gewinnsteuer im Todesjahr hängt am Partner-Einkommen (gemeinsam veranlagt)
+    const y = { ...x, avdM: 400, setAll: 400, reinvest: false };
+    const lo = combo(P({ ...y, incSpouse: 0 }), only('avd', 400)).parts.avd!, hi = combo(P({ ...y, incSpouse: 120000 }), only('avd', 400)).parts.avd!;
+    expect(lo.unsubOwn).toBeGreaterThan(0);
+    expect(lo.vals[10]).toBe(hi.vals[10]); // Erstattung nicht angelegt ⇒ gleiches Vermögen
+    expect(lo.heirMarried!(10).val).toBeGreaterThan(hi.heirMarried!(10).val);
+  });
+  it('R3 mit Kirchensteuer: Erstattung bis zur Tarifsteuer einschließlich Kirchensteuer', () => {
+    const x = { a0: 30, R: 67, basis: 3.2, infl: 0, incWork: 14000, kist: 9, etfM: 400, setAll: 400 };
+    const withR3 = combo(P(x), only('etf', 400)).parts.etf!, noR3 = combo(P(x), only('etf', 400), without('capitalGuenstiger')).parts.etf!;
+    let checked = 0;
+    for (let t = 0; t < 37; t++) {
+      const paid = noR3.abgTax[t];
+      if (!(paid > 0)) continue;
+      const K = paid / (1.145 / 4.09);
+      expect(withR3.abgTax[t]).toBeCloseTo(Math.min(paid, assess(14000 + K, { kist: 9 }).total - assess(14000, { kist: 9 }).total), 6);
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(5);
+  });
+  it('Kapitalauszahlung der Versicherung vor 12 Jahren: Abgeltungsteuer mit Kirchensteuer', () => {
+    const x = { a0: 60, R: 65, H: 85, infl: 0, insLump: true, setAll: 500, insM: 500 }, fixes = without('capitalGuenstiger');
+    const a = combo(P(x), only('ins', 500), fixes), b = combo(P({ ...x, kist: 8 }), only('ins', 500), fixes);
+    expect(a.abgTax[a.n]).toBeGreaterThan(0);
+    expect(b.abgTax[b.n]).toBeCloseTo(a.abgTax[a.n] / .26375 * (1.135 / 4.08), 6);
+  });
+  it('Andere Fix-Pfade und Teilauszahlung laufen mit dem Steuerprofil endlich und plausibel', () => {
+    const x = { married: true, kist: 9, einmal: true, kvOn: true, incSpouse: 20000, incSpouseRet: 10000 };
+    for (const fixes of [undefined, without('taxRounding'), without('soliOnZulage'), without('taxRounding', 'soliOnZulage', 'capitalGuenstiger', 'vpNextYear')]) {
+      const A = analyze(P(x), fixes);
+      for (const k of ['etf', 'avd', 'ins'] as const) expect(Number.isFinite(A.stats[k]!.cumHReal)).toBe(true);
+      expect(A.res.avd!.lumpNet!).toBeGreaterThan(0);
+      expect(A.res.avd!.lumpNet!).toBeLessThan(A.res.avd!.vals[A.n]! * 0.3);
+    }
+    // ohne E4: Abzug über das eigene Einkommen hinaus mindert das gemeinsame zvE
+    const p = P({ a0: 60, R: 65, H: 85, infl: 0, dyn: 0, reinvest: false, incWork: 1000, married: true, incSpouse: 80000 });
+    const c = combo(p, only('avd', 150), without('soliOnZulage'));
+    const save = assess(81000, { married: true }).total - assess(81000 - 2340, { married: true }).total;
+    expect(c.parts.avd!.ref! / c.n).toBeCloseTo(Math.max(0, save - 540), 8);
   });
 });
 

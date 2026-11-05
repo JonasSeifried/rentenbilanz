@@ -67,7 +67,8 @@ function taxText(p: Params): string {
   const church = p.kist > 0
     ? 'Kirchensteuer ' + pct(p.kist) + ' % auf die festzusetzende Einkommensteuer einschließlich hinzugerechneter AVD-Zulage (§ 51a Abs. 2 EStG, ohne Kinderfreibeträge und ohne Kappung); gezahlte Kirchensteuer über ' + (p.married ? '72' : '36') + ' € ist im selben Jahr als Sonderausgabe abgezogen (§ 10 Abs. 1 Nr. 4, § 10c EStG)'
     : 'keine Kirchensteuer';
-  const heirs = p.kist > 0 || p.married ? ' Erben' + (p.married ? ' und beim AVD-Übertrag der Partner (mit incSpouseRet)' : '') + ' versteuern einzeln im Grundtarif' + (p.kist > 0 ? ' mit demselben Kirchensteuersatz' : '') + '.' : '';
+  const heirs = (p.kist > 0 || p.married ? ' Erben (incHeir) versteuern einzeln im Grundtarif mit 1.000 € Pauschbetrag' + (p.kist > 0 ? ' und demselben Kirchensteuersatz' : '') + '.' : '') +
+    (p.married ? ' Erbt der Partner: Todesjahr gemeinsam veranlagt mit dem Partner-Einkommen (Splitting, 2.000 €, Einkommen der verstorbenen Person im Todesjahr 0); spätere Steuer auf das übertragene AVD mit incSpouseRet im Grundtarif.' : '');
   return tariff + ', mit Solidaritätszuschlag; Tarifgrenzen wachsen mit der Inflation; ' + church + '.' + (p.married ? '' : ' Kein Ehegattensplitting.') + heirs;
 }
 
