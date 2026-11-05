@@ -25,7 +25,7 @@ function rng(seed: number) {
   const rnd = () => { s |= 0; s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   return { rnd, int: (lo: number, hi: number) => lo + Math.floor(rnd() * (hi - lo + 1)), r1: (lo: number, hi: number) => Math.round((lo + rnd() * (hi - lo)) * 10) / 10 };
 }
-/** Realistische Zufallsszenarien für die Suche (wie /tmp/combo-proto/grid.test.ts). */
+/** Realistische Zufallsszenarien für die Suche (wie im damaligen Prototyp der Suche). */
 function searchCases(count: number, seed = 4711) {
   const { rnd, int, r1 } = rng(seed);
   const out: { inp: Inputs; keys: ProductKey[]; budget: number }[] = [];

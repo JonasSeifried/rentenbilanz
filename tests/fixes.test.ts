@@ -1,6 +1,6 @@
 // Korrekturen gegenüber dem Original (src/lib/engine/fixes.ts, docs/abweichungen-vom-original.md).
-// 1. Wirkung je Fix: NO_FIXES ∪ {f} gegen NO_FIXES, mit den Zahlen aus der Wave-1-Prüfung (Skripte /tmp/engine-review,
-//    engine_var.ts mit OPT-Schaltern). Fälle mit kvOn wie dort mit kvRate 21,7 (damaliger Standard).
+// 1. Wirkung je Fix: NO_FIXES ∪ {f} gegen NO_FIXES, mit den Zahlen aus der Wave-1-Prüfung (damalige Prüfskripte
+//    mit OPT-Schaltern, nicht im Repository). Fälle mit kvOn wie dort mit kvRate 21,7 (damaliger Standard).
 // 2. Eigenschaften über 200 Zufallsszenarien (mulberry32 wie im Golden-Test).
 // 3. Snapshots der Standardwerte mit ALL_FIXES.
 // 4. Ausgewählte Teilmengen der Fixes laufen; Laufzeit separat in performance.test.ts.
