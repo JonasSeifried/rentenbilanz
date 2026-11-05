@@ -700,6 +700,9 @@ Tagesgeldzinsen oder Erträge aus anderen Depots hat, trägt den dafür verbrauc
 
 Wirkung cumH (heutige Kaufkraft), ETF / AVD / Versicherung, bei 0 / 250 / 500 / 1.000 € genutzt:
 
+Hier mit KV/PV 21,7 % in DK und High (High zusätzlich `kvGrossRet` 45.000 €); andere Abschnitte nutzen 21,1 % und High ohne
+`kvGrossRet`, die Zahlen sind daher nicht direkt vergleichbar.
+
 | Fall | 0 € | 250 € | 500 € | 1.000 € |
 |---|---|---|---|---|
 | Default | 153.289 / 174.856 / 127.694 | 148.561 / 173.397 / 126.121 | 144.153 / 172.030 / 125.576 | 140.356 / 171.141 / 125.576 |

@@ -28,7 +28,14 @@
       } else if (pr.key === 'avd') {
         out.push({ name: 'AVD – Ehepartner erbt', short: 'AVD verh.', color: pr.color, f: k => res.avd!.heirMarried!(k) });
         out.push({ name: 'AVD – Kinder / Partner ohne Trauschein', short: 'AVD ledig', color: pr.color, dash: true, f: k => res.avd!.heir(k) });
-      } else out.push({ name: pr.name, short: pr.short, color: pr.color, f: k => res[pr.key as ProductKey]!.heir(k) });
+      } else {
+        const r = res[pr.key as ProductKey]!;
+        // Verheiratet (zusammen veranlagt): Partner erbt mit gemeinsamer Veranlagung im Todesjahr, andere Erben einzeln.
+        if (r.heirMarried) {
+          out.push({ name: pr.name + ' – Ehepartner erbt', short: pr.short + ' verh.', color: pr.color, f: k => r.heirMarried!(k) });
+          out.push({ name: pr.name + ' – andere Erben', short: pr.short + ' ledig', color: pr.color, dash: true, f: k => r.heir(k) });
+        } else out.push({ name: pr.name, short: pr.short, color: pr.color, f: k => r.heir(k) });
+      }
     });
     return out;
   });

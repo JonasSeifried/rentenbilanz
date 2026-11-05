@@ -140,3 +140,14 @@ describe('Kosten-Gleichstand mit dem ETF-Depot', () => {
     expect(rechenweg({ ...DEFAULTS, avdM: 100 }, analyze(P({ avdM: 100 })), 'x')).toContain('Kein fairer Vergleich');
   });
 });
+
+describe('Kosten-Gleichstand des aktiven Fonds mit Umschichtung', () => {
+  it('nennt, dass nur der Aktienteil variiert wird', () => {
+    const A = analyze(P({ fondOn: true, shift: true }));
+    const b = costBreakEven(A, 'fond');
+    expect(b).not.toBeNull();
+    expect(breakEvenText(A, b!)).toContain('Aktienteil; der sichere Teil nach der Umschichtung mit ETF-Kosten');
+    const B = analyze(P({ fondOn: true }));
+    expect(breakEvenText(B, costBreakEven(B, 'fond')!)).not.toContain('Aktienteil');
+  });
+});

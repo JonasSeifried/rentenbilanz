@@ -257,3 +257,25 @@ describe('Texte', () => {
     expect(changedSettings({ ...DEFAULTS, kist: 8 })).toEqual(['kist']);
   });
 });
+
+describe('Erbfall: Ehepartner erbt auch bei den Depots (zusammen veranlagt)', () => {
+  it('ledig: kein heirMarried am ETF-/Fonds-Teil und an einer Kombi ohne AVD (bisheriges Verhalten)', () => {
+    const c = combo(P(), { ...emptySplit(), etf: 150, fond: 150 });
+    expect(c.parts.etf!.heirMarried).toBeUndefined();
+    expect(c.parts.fond!.heirMarried).toBeUndefined();
+    expect(c.heirMarried).toBeUndefined();
+  });
+  it('verheiratet: ETF-Depot im Todesjahr mit Splitting und 2.000 € versteuert; ohne Partner-Einkommen mehr als bei anderen Erben', () => {
+    const p = P({ married: true, incSpouse: 0, incSpouseRet: 0 });
+    for (const opts of [{}, without('capitalGuenstiger', 'vpNextYear')]) {
+      const c = combo(p, only('etf', 150), opts), A = analyze(p, opts);
+      const idx = 50 - p.a0;
+      expect(c.parts.etf!.heirMarried!(idx).val).toBeGreaterThan(c.parts.etf!.heir(idx).val);
+      expect(A.res.etf!.heirMarried!(idx).val).toBe(c.parts.etf!.heirMarried!(idx).val);
+    }
+    // Kombi ohne AVD bekommt ebenfalls die Ehepartner-Sicht
+    const k = combo(p, { ...emptySplit(), etf: 100, fond: 50 });
+    expect(k.heirMarried).toBeDefined();
+    expect(k.heirMarried!(28).val).toBeGreaterThan(k.heir(28).val);
+  });
+});

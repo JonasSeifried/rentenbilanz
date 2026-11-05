@@ -39,8 +39,9 @@ die Summe netto bis H (heutige Kaufkraft) gleich der des ETF-Depots ist.
 
 - **Keine neue Rechnung:** Jede Auswertung ist `single()` aus `analyze.ts`, also dieselbe Einzelrechnung wie im
   Vergleich, nur mit geändertem Kostensatz. Alle anderen Eingaben bleiben gleich, auch die ETF-Kosten.
-- **Verfahren:** Bisektion zwischen 0 % und 3 % (bzw. der angenommenen Kosten, falls höher), Genauigkeit
-  0,005 Prozentpunkte, angezeigt auf 0,01. Der Abstand bei den angenommenen Kosten ist schon bekannt; so sind es je
+- **Verfahren:** Bisektion zwischen 0 % und 3 % (bzw. der angenommenen Kosten, falls höher), bis das
+  Intervall höchstens 0,005 Prozentpunkte breit ist; angegeben ist die Mitte (Fehler höchstens 0,0025 Prozentpunkte),
+  angezeigt auf 0,01. Wegen der Rundung kann die Anzeige an einer Rundungsgrenze um 0,01 abweichen. Der Abstand bei den angenommenen Kosten ist schon bekannt; so sind es je
   Produkt etwa 10 Auswertungen (Laufzeit: Test < 15 ms für drei Produkte).
 - **Auszahlphase:** Beim AVD und beim Fonds gilt der Kostensatz auch in der Auszahlphase, solange dort keine eigenen
   Kosten eingetragen sind (`avdPayCost`/`fondPayTer` = −1). Sonst wird nur die Ansparphase variiert; der Text sagt das.
@@ -48,6 +49,9 @@ die Summe netto bis H (heutige Kaufkraft) gleich der des ETF-Depots ist.
   dort „zwischen 0 und 3 % kein Gleichstand“.
 - **Nur bei fairem Vergleich** (gleiche Beiträge, Erstattung angelegt) und wenn das ETF-Depot im Vergleich ist. Für
   die Kombi wird kein Gleichstand gerechnet.
+- **Aktiver Fonds mit Umschichtung (`shift`):** Der sichere Teil nach der Umschichtung ist ein Renten-/Geldmarkt-ETF mit
+  ETF-Kosten (in der Auszahlphase `etfPayTer`, sonst `etfTer`; Hinweis unter Weitere Einstellungen). Variiert wird nur
+  der Aktienteil; der Text nennt das.
 - **Leibrente:** Der Vergleich endet wie überall mit dem Auszahlplan (H); der Text weist darauf hin, dass die Rente
   danach weiterläuft.
 

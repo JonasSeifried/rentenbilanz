@@ -164,10 +164,10 @@ describe('I1 – ein Produkt = Einzelrechnung (bitgenau, toBe/Object.is)', () =>
     const r = oneProductInvariant(SCENARIOS, REFERENCE_FIXES);
     console.log(`I1 ALL_FIXES: ${r.cases} Fälle, ${r.numbers.toLocaleString('de-DE')} Zahlen bitgleich`);
     expect(r.cases).toBeGreaterThan(1200);
-  });
+  }, 30000); // allein ca. 3 s; parallel mit den übrigen Dateien unter Last länger
   it('NO_FIXES (Original): dieselben Szenarien', () => {
     expect(oneProductInvariant(SCENARIOS, NO_FIXES).cases).toBeGreaterThan(1200);
-  });
+  }, 30000);
   for (const f of REFERENCE_IDS) it(`nur ${f}: benannte + 100 Zufallsszenarien`, () => {
     expect(oneProductInvariant(SCENARIOS.slice(0, NAMED.length + 100), new Set([f])).cases).toBeGreaterThan(450);
   });

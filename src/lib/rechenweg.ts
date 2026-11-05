@@ -175,7 +175,7 @@ export function rechenweg(inputs: Inputs, A: Analysis, url: string, today = new 
     const be = costBreakEvens(A);
     if (be.length) {
       out.push('### Kosten-Gleichstand mit dem ETF-Depot', '',
-        `Kostensatz, bei dem die Summe netto bis Alter ${p.H} (heutige Kaufkraft) gleich der des ETF-Depots ist. Gesucht per Bisektion zwischen 0 % und ${pct(MAX_COST)} % (Genauigkeit 0,01 Prozentpunkte) mit derselben Rechnung; alle anderen Eingaben unverändert.`, '',
+        `Kostensatz, bei dem die Summe netto bis Alter ${p.H} (heutige Kaufkraft) gleich der des ETF-Depots ist. Gesucht per Bisektion zwischen 0 % und ${pct(Math.max(MAX_COST, ...be.map(b => b.cap)))} % (Suchintervall am Ende höchstens 0,005 Prozentpunkte breit, angegeben ist dessen Mitte, gerundet auf 0,01 Prozentpunkte) mit derselben Rechnung; alle anderen Eingaben unverändert.`, '',
         ...be.map(b => '- ' + breakEvenText(A, b)), '');
     }
   } else out.push('Kein fairer Vergleich (ungleiche Beiträge oder ausgegebene Steuererstattung): keine Abstände und kein Kosten-Gleichstand.', '');

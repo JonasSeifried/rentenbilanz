@@ -66,7 +66,7 @@ export interface ComboResult {
   kvClipped: boolean;
   /**
    * Erbwert aller Teile zusammen (nominal), gemeinsam versteuert: eine Einkommensteuer der Erben im Todesjahr, ein
-   * Sparer-Pauschbetrag für alle Depots. heirMarried nur mit AVD-Teil (Ehepartner übernimmt das geförderte Vermögen).
+   * Sparer-Pauschbetrag für alle Depots. heirMarried mit AVD-Teil (Ehepartner übernimmt das geförderte Vermögen) oder bei Zusammenveranlagung (married: Todesjahr gemeinsam veranlagt).
    */
   heir: (idx: number) => HeirValue;
   heirMarried?: (idx: number) => HeirValue;
@@ -614,10 +614,13 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   // ---------- 5) Teile wie in model() zusammensetzen (Netto vor dem gemeinsamen KV-Buch) ----------
   const parts: ComboResult['parts'] = {};
   const fundNote = 'Nach Steuer bei Verkauf. Behalten die Erben, übernehmen sie den Gewinn steuerlich.';
+  const fundNoteSpouse = 'Nach Steuer bei Verkauf im Todesjahr, gemeinsam veranlagt (Splitting, gemeinsamer Sparer-Pauschbetrag). Behält der Partner das Depot, übernimmt er den Gewinn steuerlich.';
   const fundPart = (k: ProductKey, f: Depot): ComboPart => ({
     key: k, vals: f.vals, net: f.net, own: f.own, ownReal: f.ownReal, capR: f.vals[n], capNet: sellFunds(f.members, n, p.incRet, true), cost: 0,
     foerder: 0, foerderReal: 0, payEnd: p.H, lumpNet: 0, incTax: zero(), abgTax: f.abg, kv: f.kvInline, taxBase: zero(),
     heir: idx => ({ val: sellNet(f, idx), note: fundNote }),
+    // Verheiratet: erbt der Partner, ist das Todesjahr noch gemeinsam veranlagt (Splitting, gemeinsamer Pauschbetrag).
+    ...(spouseHeir ? { heirMarried: (idx: number) => ({ val: sellFunds(f.members, idx, 0, true), note: fundNoteSpouse }) } : {}),
   });
   const dEtf = fEtf && depot(fEtf), dFond = fFond && depot(fFond), dSide = fSide && depot(fSide), dIns = fIns && depot(fIns);
   if (dEtf) parts.etf = fundPart('etf', dEtf);
@@ -866,14 +869,14 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
 
   if (F.heir && (F.gp || F.nextVP)) for (const r of list) {
     r.heir = idx => heirJoint(idx, false, r.key);
-    if (r.heirMarried) r.heirMarried = idx => heirJoint(idx, true, r.key);
+    if (r.heirMarried || spouseHeir) r.heirMarried = idx => heirJoint(idx, true, r.key); // verheiratet: jeder Teil auch mit Partner als Erben
   }
   return {
     parts, net, own: sum(r => r.own), ownReal: sum(r => r.ownReal), capR: sum(r => r.capR), capNet, cost: 0,
     foerder: sum(r => r.foerder), foerderReal: sum(r => r.foerderReal), lumpNet,
     incTax, abgTax, kv, kvClipped, T, n, tH, I,
     heir: idx => heirJoint(idx, false),
-    ...(avd ? { heirMarried: (idx: number) => heirJoint(idx, true) } : {}),
+    ...(avd || spouseHeir ? { heirMarried: (idx: number) => heirJoint(idx, true) } : {}),
   };
 }
 

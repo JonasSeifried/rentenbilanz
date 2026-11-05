@@ -153,10 +153,12 @@ const pc2 = (x: number) => (x * 100).toLocaleString('de-DE', { minimumFractionDi
 const pcIn = (x: number) => (+(x * 100).toFixed(4)).toLocaleString('de-DE', { maximumFractionDigits: 2 }) + ' %';
 
 /** Bezeichnung der Kostenannahme je Produkt, passend zu den Eingaben (wirkt sie auch in der Auszahlphase?). */
-function costLabel(b: BreakEven): string {
+function costLabel(b: BreakEven, shift: boolean): string {
   if (b.key === 'avd') return b.payToo ? 'AVD-Kosten in Anspar- und Auszahlphase' : 'AVD-Kosten in der Ansparphase';
   if (b.key === 'ins') return 'Effektivkosten der Versicherung';
-  return b.payToo ? 'laufenden Kosten des aktiven Fonds' : 'laufenden Kosten des aktiven Fonds in der Ansparphase';
+  // Mit Umschichtung hat der sichere Teil des Fonds ETF-Kosten (combo.ts); variiert wird nur der Aktienteil.
+  const part = shift ? ' (Aktienteil; der sichere Teil nach der Umschichtung mit ETF-Kosten)' : '';
+  return (b.payToo ? 'laufenden Kosten des aktiven Fonds' : 'laufenden Kosten des aktiven Fonds in der Ansparphase') + part;
 }
 
 /**
@@ -167,7 +169,7 @@ export function breakEvenText(A: Analysis, b: BreakEven): string {
   const { p } = A;
   const pr = A.active.find(x => x.key === b.key)!;
   const etf = A.active.find(x => x.key === 'etf')!;
-  const label = costLabel(b);
+  const label = costLabel(b, p.shift);
   const extra = (b.key === 'fond' ? '; Ausgabeaufschlag ' + pcIn(p.fondAA) : '') + '; ETF-Kosten ' + pcIn(p.etfTer) + ' unverändert';
   const assumed = ' (angenommen ' + pcIn(b.assumed) + extra + ')';
   // Leibrente: verglichen wird bis zum Ende des Auszahlplans; die Rente zahlt danach weiter (siehe Diagramm).

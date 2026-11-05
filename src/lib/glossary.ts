@@ -236,7 +236,7 @@ export const GLOSSARY = {
     title: 'Erbfall bei einer Kombi',
     text: [
       'Die Erben bekommen alle Teile zusammen und versteuern sie gemeinsam: AVD-Erträge, der Gewinn des ungeförderten AVD-Teils und die erste Restrente der Versicherung zählen im Todesjahr in einem Steuertarif. Das kann mehr Steuer kosten als bei jedem Teil für sich.',
-      'Die Depots (ETF, aktiver Fonds, AVD-Nebendepot) übernehmen die Erben mit den ursprünglichen Anschaffungskosten (§ 20 Abs. 4 S. 6 EStG, § 19 Abs. 1 InvStG). Gerechnet ist ein Verkauf im Todesjahr mit einem Sparer-Pauschbetrag von 1.000 € für alle Depots zusammen (erbt der zusammen veranlagte Ehepartner: 2.000 € und Splittingtarif im Todesjahr). Gerechnet ist eine Person als Erbe; mehrere Erben hätten jeder einen eigenen Tarif und Pauschbetrag.',
+      'Die Depots (ETF, aktiver Fonds, AVD-Nebendepot) übernehmen die Erben mit den ursprünglichen Anschaffungskosten (§ 20 Abs. 4 S. 6 EStG, § 19 Abs. 1 InvStG). Gerechnet ist ein Verkauf im Todesjahr mit einem Sparer-Pauschbetrag von 1.000 € für alle Depots zusammen (erbt der zusammen veranlagte Ehepartner: 2.000 € abzüglich des anderweitig genutzten Betrags und Splittingtarif im Todesjahr, auch bei den Einzelprodukten). Gerechnet ist eine Person als Erbe; mehrere Erben hätten jeder einen eigenen Tarif und Pauschbetrag.',
       'Die Versicherung zahlt vor Rentenbeginn das Fondsguthaben aus, ohne Einkommensteuer (§ 20 Abs. 1 Nr. 6 EStG erfasst nur den Erlebensfall und den Rückkauf).',
     ],
   },
