@@ -2,7 +2,10 @@
 // Szenariozeilen, Link und Speicher. Herleitung: docs/gehaltsentwicklung.md.
 import { describe, expect, it } from 'vitest';
 import { combo, emptySplit, type Split } from '../src/lib/engine/combo';
-import { incomeAt, incomeGrowth, readParams } from '../src/lib/engine/core';
+import { incomeAt, incomeGrowth, incomePathKind, readParams } from '../src/lib/engine/core';
+import { analyze } from '../src/lib/engine/analyze';
+import { rechenweg } from '../src/lib/rechenweg';
+import { changedSettings } from '../src/lib/settingsChanged';
 import { scenarioList } from '../src/lib/engine/analyze';
 import { NO_FIXES } from '../src/lib/engine/fixes';
 import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
@@ -118,5 +121,39 @@ describe('Gehaltsentwicklung – Link und Speicher', () => {
     expect([old.incPeak, old.incPeakAge]).toEqual([-1, 45]);
     expect(sanitize({ incWork: 45000 })!.incPeak).toBe(-1);
     expect(sanitize({ incWork: 45000, incPeak: -7 })!.incPeak).toBe(-1); // außerhalb der Grenzen ⇒ Standard
+  });
+});
+
+describe('Gehaltsentwicklung – Randfälle in Texten und Eingaben (Review)', () => {
+  it('fehlendes incPeakAge bei gesetztem incPeak ⇒ 45 wie der Standard', () => {
+    const { incPeakAge: _a, ...rest } = { ...DEFAULTS, incPeak: 60000 };
+    expect(readParams(rest as Inputs).incPeakAge).toBe(45);
+  });
+  it('Zielgehalt sofort: keine Zeile „bleibt konstant“, „30 % niedriger“ nennt das Zielgehalt', () => {
+    const p = P({ a0: 40, incPeak: 60000, incPeakAge: 30 });
+    expect(incomePathKind(p)).toBe('now');
+    const list = scenarioList(p);
+    expect(list.some(s => s.id === 'incPath')).toBe(false);
+    const w = list.find(s => s.id === 'incWork')!;
+    expect(w.label).toBe('Gehalt 30 % niedriger (42.000 €)');
+    expect(w.p.incPeak).toBe(42000);
+  });
+  it('kein Gehalt: keine Zeile „steigt um 30 %“', () => {
+    expect(scenarioList(P({ incWork: 0 })).some(s => s.id === 'incPath')).toBe(false);
+  });
+  it('Rechenweg beschreibt Verlauf, sofortiges Zielgehalt und Zielalter nach Rentenbeginn so, wie gerechnet wird', () => {
+    const md = (patch: Partial<Inputs>) => { const inp = { ...DEFAULTS, ...patch }; return rechenweg(inp, analyze(readParams(inp)), 'u', new Date(2026, 10, 5)); };
+    expect(md({ incPeak: 60000, incPeakAge: 40 })).toMatch(/ab Berufsbeginn \(Alter 22\) 38\.000 €, bis Alter 40 mit konstantem realem Wachstum \(2,57\d* % p\. a\.\) auf 60\.000 €, danach konstant/);
+    const now = md({ a0: 40, incPeak: 55000, incPeakAge: 30 });
+    expect(now).toContain('durchgehend mit dem Zielgehalt 55.000 €, das Gehalt 38.000 € wirkt nicht');
+    expect(now).toContain('| 0 | 40 | 55.000 |');
+    const late = md({ incPeak: 80000, incPeakAge: 80 });
+    expect(late).toContain('das Zielalter liegt nach Rentenbeginn, zuletzt (Alter 66) ' + Math.round(incomeAt(P({ incPeak: 80000, incPeakAge: 80 }), 66)).toLocaleString('de-DE') + ' €');
+    expect(md({})).toContain('Das Einkommen im Beruf bleibt real gleich');
+  });
+  it('Einstellungs-Badge zählt die Gehaltsentwicklung, das Alter nur, wenn sie an ist', () => {
+    expect(changedSettings({ ...DEFAULTS, incPeakAge: 40 })).toEqual([]);
+    expect(changedSettings({ ...DEFAULTS, incPeak: 60000 })).toEqual(['incPeak']);
+    expect(changedSettings({ ...DEFAULTS, incPeak: 60000, incPeakAge: 40 })).toEqual(['incPeak', 'incPeakAge']);
   });
 });

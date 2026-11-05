@@ -4,7 +4,7 @@
 // tests/combo.test.ts: bitgleich zu model() in engine.ts, der Referenz des Originals).
 // Die Szenario-Beschriftungen sind neutral formuliert (keine Rechenrelevanz).
 import { eur } from '../format';
-import { kvGross, type Params, type ProductKey, type ProductResult } from './core';
+import { incomePathKind, kvGross, type Params, type ProductKey, type ProductResult } from './core';
 import { fixesOf, type EngineOptions } from './fixes';
 import { combo, comboStats, emptySplit, SPLIT_KEYS, type ComboPart, type ComboResult, type Split } from './combo';
 
@@ -143,12 +143,14 @@ export function scenarioList(p: Params, kombi?: Split | null, opts?: EngineOptio
   if (avd && p.reinvest) add('refund', 'Steuererstattung ausgegeben statt angelegt', { reinvest: false });
   add('g', 'Rendite 2 Prozentpunkte niedriger', { g: p.g - 0.02, gPay: p.gPay - 0.02 });
   // Mit Gehaltsentwicklung sinkt der ganze Verlauf (Start- und Zielgehalt); ohne sie wie im Original.
-  add('incWork', 'Gehalt 30 % niedriger (' + eur(p.incWork * 0.7) + (p.incPeak >= 0 ? ', später ' + eur(p.incPeak * 0.7) : '') + ')',
-    p.incPeak >= 0 ? { incWork: p.incWork * 0.7, incPeak: p.incPeak * 0.7 } : { incWork: p.incWork * 0.7 });
+  const path = incomePathKind(p);
+  add('incWork', 'Gehalt 30 % niedriger (' + (path === 'off' ? eur(p.incWork * 0.7) : path === 'now' ? eur(p.incPeak * 0.7) : eur(p.incWork * 0.7) + ', später ' + eur(p.incPeak * 0.7)) + ')',
+    path === 'off' ? { incWork: p.incWork * 0.7 } : { incWork: p.incWork * 0.7, incPeak: p.incPeak * 0.7 });
   // Gehaltsentwicklung (neu, nicht im Original): ein Annahmeszenario, kein statistischer Durchschnittsverlauf (docs/gehaltsentwicklung.md).
+  // Gilt das Zielgehalt sofort, gibt es keinen Verlauf, den man abschalten könnte (incWork wirkt dann nicht): keine Zeile.
   if (fixesOf(opts).size > 0) {
-    if (p.incPeak >= 0) add('incPath', 'Gehalt bleibt konstant bei ' + eur(p.incWork), { incPeak: -1 });
-    else if (p.studyEnd < PATH_AGE) add('incPath', 'Gehalt steigt bis ' + PATH_AGE + ' real um 30 % (auf ' + eur(p.incWork * 1.3) + ')', { incPeak: p.incWork * 1.3, incPeakAge: PATH_AGE });
+    if (path === 'path' || path === 'late') add('incPath', 'Gehalt bleibt konstant bei ' + eur(p.incWork), { incPeak: -1 });
+    else if (path === 'off' && p.incWork > 0 && p.studyEnd < PATH_AGE) add('incPath', 'Gehalt steigt bis ' + PATH_AGE + ' real um 30 % (auf ' + eur(p.incWork * 1.3) + ')', { incPeak: p.incWork * 1.3, incPeakAge: PATH_AGE });
   }
   if (p.incRet >= 15000) add('incRetLow', 'Einkommen im Alter ' + eur(p.incRet - 15000) + ' statt ' + eur(p.incRet), { incRet: p.incRet - 15000 });
   add('incRetHigh', 'Einkommen im Alter ' + eur(p.incRet + 20000) + ' statt ' + eur(p.incRet), { incRet: p.incRet + 20000 });

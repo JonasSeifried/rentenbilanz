@@ -1,28 +1,5 @@
 <script lang="ts" module>
-  import { CONTRIB_KEYS, DEFAULTS, type InputKey, type Inputs } from '../engine/inputs';
-
-  /** Schlüssel, die im Tab „Weitere Einstellungen & Annahmen“ stehen (für das Badge an der Tab-Beschriftung). */
-  export const SETTINGS_KEYS: readonly InputKey[] = [
-    'studyEnd', 'incStudy', 'eligStudy', 'kids', 'kidsFrom', 'kidsYears', 'bonus', 'kvRate',
-    'etfM', 'etfTer', 'avdM', 'avdCost', 'reinvest', 'insM', 'insEff', 'fondM', 'fondAA', 'fondTer',
-    'infl', 'dyn', 'basis',
-  ];
-
-  /**
-   * Geänderte Annahmen im Einstellungs-Tab. Beiträge zählen nur, wenn sie vom gemeinsamen Monatsbeitrag
-   * abweichen (der gemeinsame Beitrag selbst steht in den Eckdaten). Felder, die gerade nichts bewirken
-   * (Kinder-Zeitraum ohne Kinder, Ausbildungs-Details ohne Ausbildung), zählen nicht.
-   */
-  export function changedSettings(i: Inputs): InputKey[] {
-    const inStudy = i.studyEnd > i.a0;
-    return SETTINGS_KEYS.filter(k => {
-      if ((CONTRIB_KEYS as readonly string[]).includes(k)) return i[k] !== i.setAll;
-      if (k === 'studyEnd') return inStudy !== (DEFAULTS.studyEnd > DEFAULTS.a0) || (inStudy && i.studyEnd !== DEFAULTS.studyEnd);
-      if ((k === 'incStudy' || k === 'eligStudy') && !inStudy) return false;
-      if ((k === 'kidsFrom' || k === 'kidsYears') && !(i.kids > 0)) return false;
-      return i[k] !== DEFAULTS[k];
-    });
-  }
+  export { SETTINGS_KEYS, changedSettings } from '../settingsChanged';
 </script>
 
 <script lang="ts">
@@ -30,6 +7,7 @@
   // mit dem aktuellen Wert und einem Direktlink ins passende Feld. Keine Props, liest `app.inputs`
   // (wird auch im Kombi-Modus verwendet). Im Druck als „Unterstellte Annahmen“ ohne Links.
   import { tick } from 'svelte';
+  import { DEFAULTS } from '../engine/inputs';
   import { app, focusField, setTab } from '../state.svelte';
   import type { Tab } from '../link';
   import { KV_KINDS, kvShown } from './KvQuestion.svelte';
@@ -50,6 +28,10 @@
     out.push({
       key: 'study', label: 'Ausbildung / Studium', tab: 'settings', id: 'f-study',
       value: inStudy ? 'bis Alter ' + de(i.studyEnd) : 'nein', changed: inStudy,
+    });
+    out.push({
+      key: 'incPath', label: 'Gehaltsentwicklung', tab: 'settings', id: 'f-path',
+      value: i.incPeak >= 0 ? 'auf ' + de(i.incPeak) + ' € mit ' + de(i.incPeakAge) + ' Jahren' : 'keine (real gleich)', changed: i.incPeak >= 0,
     });
     out.push({
       key: 'kv', label: 'Krankenversicherung im Alter', tab: app.tab, id: 'f-kv',

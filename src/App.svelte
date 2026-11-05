@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { readParams } from './lib/engine/core';
+  import { incomePathKind, readParams, type Params } from './lib/engine/core';
   import { analyze, scenarios, PRODUCTS, KOMBI } from './lib/engine/analyze';
   import { readKombi } from './lib/engine/combo';
   import { splitText } from './lib/comboVerdict';
@@ -25,6 +25,13 @@
   import { DEFAULTS, INPUT_KEYS } from './lib/engine/inputs';
 
   const p = $derived(readParams(app.inputs));
+  /** Hinweis am Gehaltsfeld bei Gehaltsentwicklung, mit den Werten, mit denen die Engine rechnet. */
+  const incomeNote = (q: Params) => {
+    const kind = incomePathKind(q);
+    if (kind === 'off') return null;
+    if (kind === 'now') return 'Gerechnet wird durchgehend mit dem Zielgehalt ' + eur(q.incPeak) + ' (siehe Einstellungen).';
+    return 'Startgehalt; ' + (kind === 'late' ? 'steigt Richtung ' : 'ab ' + q.incPeakAge + ' ') + eur(q.incPeak) + (kind === 'late' ? ' (Zielalter nach Rentenbeginn)' : '') + ' (siehe Einstellungen).';
+  };
   const kombi = $derived(readKombi(app.inputs));
   const A = $derived(analyze(p, undefined, kombi));
   const scen = $derived(scenarios(p, undefined, kombi));
@@ -139,7 +146,7 @@
       <NumberField label="Alter heute" value={i.a0} onchange={v => setInput('a0', v)} min={16} max={60} unit="Jahre" testid="a0"
         clampNote={v => (v < 16 || v > 60 ? 'Gerechnet wird mit ' + Math.min(60, Math.max(16, Math.round(v))) + '.' : null)} />
       <NumberField label="Gehalt, zu versteuern" value={i.incWork} onchange={v => setInput('incWork', v)} min={0} step={1000} unit="€/Jahr" info="zve" testid="incWork"
-        clampNote={() => (i.incPeak >= 0 ? 'Startgehalt; ab ' + Math.round(i.incPeakAge) + ' ' + eur(i.incPeak) + ' (siehe Einstellungen).' : null)} />
+        clampNote={() => incomeNote(p)} />
       <NumberField label="Einkommen im Alter" value={i.incRet} onchange={v => setInput('incRet', v)} min={0} step={1000} unit="€/Jahr" info="incRet" testid="incRet" />
       <NumberField label="Monatsbeitrag je Produkt" value={i.setAll} onchange={v => setInput('setAll', v)} min={0} step={10} unit="€" testid="setAll"
         clampNote={() => (contribDiffer ? 'Einzelbeiträge weichen ab (siehe Einstellungen).' : null)} />

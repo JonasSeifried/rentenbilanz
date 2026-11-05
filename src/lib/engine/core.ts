@@ -96,10 +96,10 @@ export function readParams(inp: Inputs): Params {
   const num = (id: keyof Inputs) => numOf(inp[id]);
   const chk = (id: keyof Inputs) => inp[id] === true;
   const pct = (id: keyof Inputs, lo: number, hi: number) => clamp(num(id), lo, hi) / 100;
-  // incPeak fehlt (z. B. Eingaben des Originals) ⇒ −1, Gehaltsentwicklung aus.
+  // incPeak fehlt (z. B. Eingaben des Originals) ⇒ −1, Gehaltsentwicklung aus; incPeakAge fehlt ⇒ 45 wie DEFAULTS.
   const p: Params = {
     a0: clamp(Math.round(num('a0')), 16, 60), studyEnd: Math.round(num('studyEnd')), incStudy: Math.max(0, num('incStudy')), eligStudy: chk('eligStudy'),
-    incWork: Math.max(0, num('incWork')), incPeak: inp.incPeak == null || num('incPeak') < 0 ? -1 : num('incPeak'), incPeakAge: clamp(Math.round(num('incPeakAge')), 16, 100), incRet: Math.max(0, num('incRet')), R: clamp(Math.round(num('R')), 65, 70), H: Math.round(num('H')),
+    incWork: Math.max(0, num('incWork')), incPeak: inp.incPeak == null || num('incPeak') < 0 ? -1 : num('incPeak'), incPeakAge: inp.incPeakAge == null ? 45 : clamp(Math.round(num('incPeakAge')), 16, 100), incRet: Math.max(0, num('incRet')), R: clamp(Math.round(num('R')), 65, 70), H: Math.round(num('H')),
     kvGrossRet: num('kvGrossRet') < 0 ? -1 : num('kvGrossRet'), payResidual: chk('payResidual'), fundingDelay: chk('fundingDelay'), indexAllowance: chk('indexAllowance'),
     avdPayCost: num('avdPayCost') < 0 ? -1 : pct('avdPayCost', 0, 10),
     etfPayTer: num('etfPayTer') < 0 ? -1 : pct('etfPayTer', 0, 10),
@@ -137,6 +137,16 @@ export function incomeAt(p: Params, age: number): number {
   if (e <= s || age >= e) return p.incPeak;
   const f = (age - s) / (e - s);
   return p.incWork > 0 && p.incPeak > 0 ? p.incWork * Math.pow(p.incPeak / p.incWork, f) : p.incWork + (p.incPeak - p.incWork) * f;
+}
+
+/**
+ * Form der Gehaltsentwicklung für Texte: 'off' (aus), 'now' (Zielalter nicht nach Berufsbeginn: Zielgehalt sofort,
+ * incWork wirkt nicht), 'late' (Zielalter erst ab Rentenbeginn: wird nicht erreicht), sonst 'path'.
+ */
+export function incomePathKind(p: Params): 'off' | 'now' | 'late' | 'path' {
+  if (!(p.incPeak >= 0)) return 'off';
+  if (p.incPeakAge <= p.studyEnd) return 'now';
+  return p.incPeakAge >= p.R ? 'late' : 'path';
 }
 
 /** Reales Wachstum des Gehalts in % p. a. bis zum Zielalter (null ohne Gehaltsentwicklung oder ohne Übergang). */

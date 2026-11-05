@@ -2,7 +2,7 @@
 // durch Menschen oder eine KI (einzelne Jahre prüfen statt das Endergebnis „auf Sicht“ beurteilen).
 // Reine Funktion, liest nur, was die Engine ohnehin liefert; keine eigene Rechnung außer dem Beitrag laut Eingabe.
 import { INPUT_KEYS, type Inputs, type InputKey } from './engine/inputs';
-import { incomeAt, incomeGrowth, type Params, type ProductKey } from './engine/core';
+import { incomeAt, incomeGrowth, incomePathKind, type Params, type ProductKey } from './engine/core';
 import { AMOUNT, type Analysis, type ContenderKey } from './engine/analyze';
 import { splitSum } from './engine/combo';
 import { SITE } from './site';
@@ -46,10 +46,7 @@ const LABELS: Readonly<Record<InputKey, readonly [string, string]>> = Object.fre
 const limitsText = (p: Params) => [
   'Konstante Rendite jedes Jahr, keine Schwankungen und kein Sequenzrisiko.',
   'Einkommensteuer Tarif 2026 (§ 32a EStG), Grundtarif ledig, mit Solidaritätszuschlag; Tarifgrenzen wachsen mit der Inflation. Keine Kirchensteuer, kein Ehegattensplitting.',
-  p.incPeak >= 0
-    ? 'Gehaltsentwicklung: ab Berufsbeginn (Alter ' + p.studyEnd + ') ' + n0(p.incWork) + ' €, bis Alter ' + p.incPeakAge + ' mit konstantem realem Wachstum' +
-      (incomeGrowth(p) != null ? ' (' + pct(incomeGrowth(p)!) + ' % p. a.)' : '') + ' auf ' + n0(p.incPeak) + ' €, danach konstant (heutiges Geld). Werte je Jahr unter „Einkommen vor Rentenbeginn“. Beiträge folgen dem Gehalt nicht (nur der Dynamik).'
-    : 'Das Einkommen im Beruf bleibt real gleich (keine Gehaltsentwicklung), abgesehen von einer Ausbildungsphase.',
+  salaryText(p),
   'Abgeltungsteuer 26,375 %, Teilfreistellung 30 % (Aktienfonds), Sparer-Pauschbetrag 1.000 € ' +
     (p.indexAllowance ? 'wächst mit der Inflation (hypothetisch, Schalter indexAllowance)' : 'nominal fest') + ', Vorabpauschale mit Zufluss im Folgejahr.',
   'Jahresmodell: Beiträge monatlich, Entnahmen jährlich am Jahresanfang; offene Depots ' +
@@ -57,6 +54,17 @@ const limitsText = (p: Params) => [
   p.shift ? 'Alle Produkte schichten vor Rentenbeginn um: ab 5 Jahre vorher 50 %, ab 2 Jahren 30 % Aktien, Rest mit safeRate.' : 'Keine Umschichtung vor Rentenbeginn.',
   'Nicht berücksichtigt: Erbschaftsteuer, Ordergebühren und Spreads, Betriebsrente, andere Kapitalerträge außerhalb der verglichenen Produkte.',
 ];
+
+/** Gehaltsverlauf in Worten, passend zu incomeAt (core.ts) einschließlich der Randfälle. */
+function salaryText(p: Params): string {
+  const kind = incomePathKind(p), gr = incomeGrowth(p);
+  const tail = ' (heutiges Geld). Werte je Jahr unter „Einkommen vor Rentenbeginn“. Beiträge folgen dem Gehalt nicht (nur der Dynamik).';
+  if (kind === 'off') return 'Das Einkommen im Beruf bleibt real gleich (keine Gehaltsentwicklung), abgesehen von einer Ausbildungsphase.';
+  if (kind === 'now') return 'Gehaltsentwicklung: Das Zielalter ' + p.incPeakAge + ' liegt nicht nach dem Berufsbeginn (Alter ' + p.studyEnd + '); gerechnet wird ab Berufsbeginn durchgehend mit dem Zielgehalt ' + n0(p.incPeak) + ' €, das Gehalt ' + n0(p.incWork) + ' € wirkt nicht' + tail;
+  const growth = (gr != null ? ' mit konstantem realem Wachstum (' + pct(gr) + ' % p. a.)' : ' linear');
+  if (kind === 'late') return 'Gehaltsentwicklung: ab Berufsbeginn (Alter ' + p.studyEnd + ') ' + n0(p.incWork) + ' €,' + growth + ' Richtung ' + n0(p.incPeak) + ' € mit Alter ' + p.incPeakAge + '; das Zielalter liegt nach Rentenbeginn, zuletzt (Alter ' + (p.R - 1) + ') ' + n0(incomeAt(p, p.R - 1)) + ' €' + tail;
+  return 'Gehaltsentwicklung: ab Berufsbeginn (Alter ' + p.studyEnd + ') ' + n0(p.incWork) + ' €, bis Alter ' + p.incPeakAge + growth + ' auf ' + n0(p.incPeak) + ' €, danach konstant' + tail;
+}
 
 const pct = (x: number) => String(+(x * 100).toFixed(4)).replace('.', ',');
 const n0 = (x: number) => isFinite(x) ? (Math.round(x) + 0).toLocaleString('de-DE') : '–';

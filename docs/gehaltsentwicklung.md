@@ -32,7 +32,9 @@ Eingaben. Zwischen „heute“ und „Zielalter“ gibt es keine weiteren Stütz
 
 **Abschaltbar, bitgleich:** Ohne Gehaltsentwicklung liefert `incomeAt` exakt den Ausdruck des Originals
 (`a0 + t < studyEnd ? incStudy : incWork`). Die Schlüssel sind keine Originaleingaben (`NEW_KEYS` in `inputs.ts`);
-fehlen sie (Eingaben des Originals, alte Links, alte Speicherstände), ist die Gehaltsentwicklung aus. Weil es eine neue
+fehlen sie (Eingaben des Originals, alte Links, alte Speicherstände), ist die Gehaltsentwicklung aus; fehlt nur
+`incPeakAge`, gilt 45 wie im Standard. Die Referenz `engine.ts` (Port des Originals) kennt die Gehaltsentwicklung
+bewusst nicht; I1 vergleicht nur den ausgeschalteten Pfad. Weil es eine neue
 Eingabe und keine Korrektur einer Originalformel ist, gibt es keinen Schalter in `fixes.ts` (wie bei `shift`).
 Golden-, I1- und Fix-Tests bleiben unverändert grün.
 
@@ -43,8 +45,9 @@ werden mit dem Einkommen des jeweiligen Jahres gerechnet, wie bisher mit dem kon
 
 Unter „Was die Empfehlung kippen würde“ (nur außerhalb des Originalpfads, wie `shift`):
 
-- ohne Gehaltsentwicklung: **„Gehalt steigt bis 45 real um 30 %“**, nur wenn der Berufsbeginn vor 45 liegt,
-- mit Gehaltsentwicklung: **„Gehalt bleibt konstant“**.
+- ohne Gehaltsentwicklung: **„Gehalt steigt bis 45 real um 30 %“**, nur wenn der Berufsbeginn vor 45 liegt und ein Gehalt eingetragen ist,
+- mit Gehaltsentwicklung: **„Gehalt bleibt konstant“** (zurück auf `incWork`). Gilt das Zielgehalt sofort (Zielalter nicht nach
+  Berufsbeginn), gibt es keinen Verlauf und keine solche Zeile; `incWork` wirkt dann nicht.
 
 Die 30 % sind eine **Annahme**, gespiegelt zur bestehenden Zeile „Gehalt 30 % niedriger“, kein statistischer
 Durchschnittsverlauf. Ein amtlicher Beleg wurde gesucht: Die Verdiensterhebung des Statistischen Bundesamts
@@ -53,7 +56,7 @@ zeigen Verdienste nur nach Wirtschaftszweig. Außerdem beschreibt ein Querschnit
 einer einzelnen Person (Kohorten- und Qualifikationseffekte). Darum keine scheinbar amtliche Zahl.
 
 „Gehalt 30 % niedriger“ senkt mit Gehaltsentwicklung den ganzen Verlauf (Start- und Zielgehalt), ohne sie wie bisher nur
-`incWork`.
+`incWork`. Gilt das Zielgehalt sofort, nennt die Zeile dessen 70 %.
 
 ## Wirkung in heutiger Kaufkraft
 
@@ -90,4 +93,6 @@ Diese Zahlen sind Modellvergleiche, keine Prognosen.
 Bitgleichheit bei Zielgehalt = Startgehalt und bei Zielalter vor Berufsbeginn (vier Fälle, fünf Aufteilungen),
 unabhängige Jahresprüfung der AVD-Erstattung (ohne Inflation und Dynamik: Erstattung mit Verlauf = Summe der
 Jahreserstattungen konstanter Läufe mit dem jeweiligen Einkommen), ETF/Versicherung unverändert, Szenariozeilen,
-Link- und Speicher-Rundweg einschließlich alter Links ohne die neuen Schlüssel.
+Link- und Speicher-Rundweg einschließlich alter Links ohne die neuen Schlüssel; nach dem Review außerdem die Randfälle
+(Zielgehalt sofort, Zielalter nach Rentenbeginn, kein Gehalt, fehlendes Zielalter) in Szenariozeilen und Rechenweg sowie
+das Einstellungs-Badge (`src/lib/settingsChanged.ts`).
