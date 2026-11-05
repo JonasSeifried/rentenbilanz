@@ -195,11 +195,11 @@
 
 <AssumptionCheck />
 
-{#snippet rk(r: number)}<span class="rk" class:r1={r === 1}><span class="sr-only">, Platz </span>{r}</span>{/snippet}
+{#snippet rk(r: number)}<span class="sr-only"> (Platz {r})</span>{/snippet}
 
 {#snippet scenTable()}
   <p class="hint">Jede Zeile ändert genau eine Annahme. Gezeigt wird Ø netto pro Monat bis zum Ende des Auszahlplans. {#if A.canRank}<span class="flipkey">Gelb</span>: Dann kehrt sich mindestens ein Abstand um, ein anderes Produkt zahlt mehr aus als oben.
-    Die Zahl im Kreis ist die Reihenfolge in der Zeile: <span class="rk r1" aria-hidden="true">1</span> und fett = höchste Summe netto bis {p.H} in heutiger Kaufkraft, gleiche Zahl = weniger als 1 € Unterschied.{/if}</p>
+    Reihenfolge in der Zeile nach der Summe netto bis {p.H} in heutiger Kaufkraft: <strong>fett</strong> = höchste, normal = zweite, <span class="muted">grau</span> = dritte und dahinter. Weniger als 1 € Unterschied zählt als gleich.{/if}</p>
   {#if !A.canRank}<p class="hint">Solange der Vergleich oben nicht fair ist, wird hier nichts markiert.</p>{/if}
   <div class="table-scroll scen-desk" {@attach scrollRegion('Tabelle: Wann sich die Abstände umkehren')}>
     <table class="scen" data-testid="scenarios">
@@ -215,7 +215,7 @@
             {#each A.active as pr}
               {@const v = s.a.stats[pr.key]}
               {@const r = s.rank[pr.key]}
-              <td data-label={pr.short} class:top={r === 1}>{v ? eur(v.avgMonthly) : '–'}{#if v && r}{@render rk(r)}{/if}</td>
+              <td data-label={pr.short} class:top={r === 1} class:low={!!r && r >= 3}>{v ? eur(v.avgMonthly) : '–'}{#if v && r}{@render rk(r)}{/if}</td>
             {/each}
           </tr>
         {/each}
@@ -229,7 +229,7 @@
         <span class="m-label">{#if s.base}<strong>{s.label}</strong>{:else}{s.label}{/if}{#if s.flip}<span class="sr-only"> (ein Abstand kehrt sich um)</span>{/if}</span>
         {#if s.unfair}<span class="m-chip muted">nicht fair vergleichbar</span>{/if}
       </div>
-      <div class="m-vals">{#each A.active as pr, j}{@const v = s.a.stats[pr.key]}{@const r = s.rank[pr.key]}{#if j > 0}{' · '}{/if}<span class="m-v" class:top={r === 1}>{SHORT[pr.key]} {v ? eur(v.avgMonthly) : '–'}{#if v && r}{@render rk(r)}{/if}</span>{/each}
+      <div class="m-vals">{#each A.active as pr, j}{@const v = s.a.stats[pr.key]}{@const r = s.rank[pr.key]}{#if j > 0}{' · '}{/if}<span class="m-v" class:top={r === 1} class:mid={r === 2}>{SHORT[pr.key]} {v ? eur(v.avgMonthly) : '–'}{#if v && r}{@render rk(r)}{/if}</span>{/each}
         {#if s.id !== 'base' && ADJUST[s.id]}<button type="button" class="linkish adj" onclick={() => focusField('settings', ADJUST[s.id as ScenarioId]!)} aria-label="Kosten anpassen: {s.label}">anpassen</button>{/if}</div>
     </li>
   {/snippet}
@@ -320,15 +320,10 @@
   .scen tr.flip td { background: var(--flip-bg); }
   .scen tr.base td { background: var(--surface-2); }
   .scen th:first-child, .scen td:first-child { padding-left: 8px; }
-  /* Reihenfolge je Zeile: Zahl im Kreis, Platz 1 fett und gefüllt */
+  /* Reihenfolge je Zeile: Platz 1 fett, Platz 2 normal, ab Platz 3 grau (--muted, Kontrast ≥ 4,5:1) */
   .scen td.top, .m-v.top { font-weight: 700; color: var(--text); }
-  .rk {
-    display: inline-flex; align-items: center; justify-content: center; min-width: 1.35em; height: 1.35em;
-    margin-left: 5px; padding: 0 3px; border-radius: 999px; border: 1px solid var(--border);
-    font-size: .68rem; font-weight: 600; line-height: 1; color: var(--text-2); vertical-align: 1px;
-    font-variant-numeric: tabular-nums; box-sizing: border-box;
-  }
-  .rk.r1 { background: var(--accent); border-color: var(--accent); color: var(--on-accent, #fff); }
+  .scen td.low { color: var(--muted); }
+  .m-v.mid { color: var(--text-2); }
   .adj { margin-left: 8px; font-size: .8rem; }
   .small { font-size: .8rem; }
   .collapsed summary { cursor: pointer; color: var(--text-2); font-size: .9rem; padding: 2px 0 6px; }

@@ -59,8 +59,8 @@ test('Startseite rechnet mit den Standardwerten wie die Engine', async ({ page }
   // Reihenfolge je Szenario-Zeile: genau ein Platz 1 in der Ausgangszeile (Standardfall ohne Gleichstand)
   const baseRow = page.locator('.scen tbody tr[data-sid=base]');
   await expect(baseRow.locator('td.top')).toHaveCount(1);
-  await expect(baseRow.locator('.rk')).toHaveCount(3);
-  expect((await baseRow.locator('.rk').allTextContents()).map(t => t.replace(/\D/g, '')).sort()).toEqual(['1', '2', '3']);
+  await expect(baseRow.locator('td.low')).toHaveCount(1);
+  expect((await baseRow.locator('.sr-only').allTextContents()).map(t => t.replace(/\D/g, '')).sort()).toEqual(['1', '2', '3']);
   await expect(page.locator('.tile [data-testid^=contrib]')).toHaveCount(3);
   expect(await page.locator('.tile').evaluateAll(els => els.map(e => e.getAttribute('data-testid')))).toEqual(['tile-etf', 'tile-avd', 'tile-ins']);
   await expect(page.getByTestId('disclaimer')).toContainText('keine Anlageberatung');

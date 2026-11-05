@@ -9,7 +9,7 @@ Zahlen, Abstände und die Annahmen, an denen sie hängen. Die Rechnung selbst is
 |---|---|---|
 | Ergebnis (`verdict.ts`) | „Rechnerisch vorne: …“, „Knapp vorne“, „Kein klarer Favorit“, Farbmarke des Siegers | „Ø netto im Monat (67–90): ETF-Depot …, Altersvorsorgedepot …“ in fester Reihenfolge; je Produkt ein Satz „X zahlt bis 90 rund Y € (Z %) mehr/weniger aus als das ETF-Depot“ |
 | Kacheln | Rand und Badge „vorne“ | ohne Hervorhebung, feste Reihenfolge (ETF, AVD, Versicherung, Fonds, Kombi) |
-| Szenarien | Spalte „Vorne“, fett markierte Zelle, gelb = „anderes Produkt vorne“ | keine Spalte „Vorne“; je Zelle die Reihenfolge der Zeile als Zahl im Kreis, Platz 1 fett (siehe unten); gelb = „mindestens ein Abstand zwischen zwei Produkten kehrt sich um“ |
+| Szenarien | Spalte „Vorne“, fett markierte Zelle, gelb = „anderes Produkt vorne“ | keine Spalte „Vorne“; Reihenfolge der Zeile über die Schrift: Platz 1 fett, Platz 2 normal, ab Platz 3 grau (siehe unten); gelb = „mindestens ein Abstand zwischen zwei Produkten kehrt sich um“ |
 | Überschrift Szenarien | „Was das Ergebnis kippen würde“ | „Wann sich die Abstände umkehren“ |
 | Robustheit | „Das Ergebnis hält in allen …“, „liegt ein anderes Produkt vorne“ | „In N von M Szenarien kehrt sich mindestens ein Abstand zwischen zwei Produkten um“ |
 | Rente im Detail, Erbfall | fett markierter größter/kleinster Wert | keine Markierung |
@@ -28,14 +28,17 @@ Produkt. Gerechnet wird mit der Summe netto bis zum Ende des Auszahlplans in heu
 ### Reihenfolge in der Szenario-Tabelle (Nachtrag 05.11.2026)
 
 Auf Wunsch des Betreibers zeigt die Tabelle „Wann sich die Abstände umkehren“ je Zeile die Reihenfolge der Produkte:
-eine Zahl im Kreis an jedem Betrag, Platz 1 fett und gefüllt (`ranks()` in `verdict.ts`). So sieht man ohne
+Platz 1 fett, Platz 2 normal, ab Platz 3 grau (`--muted`, Kontrast ≥ 4,5:1), für Screenreader „(Platz N)“
+(`ranks()` in `verdict.ts`). Gewählt aus fünf Entwürfen (nur fett, Graustufen, Balken, eigene Spalte, getönte
+Zellen); eine erste Fassung mit Zahl im Kreis war zu unruhig. So sieht man ohne
 Nachrechnen, wie sich die Reihenfolge in jedem Szenario verschiebt. Die Reihenfolge ist eine Eigenschaft der Zahlen,
 keine Bewertung; es gibt kein Wort wie „vorne“ oder „beste“ dazu. Kacheln, Detail und Erbfall bleiben ohne Markierung.
 
 - Größe: Summe netto bis H in heutiger Kaufkraft (`cumHReal`), dieselbe wie bei `isFlip` und den Abständen. Die
   Zelle zeigt den Ø pro Monat; bei Einmalauszahlung (Versicherung mit Kapitalanteil) oder im Nominalmodus kann die
   Reihenfolge der gezeigten Monatswerte davon abweichen. Der Hinweis über der Tabelle nennt die Größe.
-- Gleichstand: weniger als `TIE_EUR` (1 €) unter dem nächsthöheren Wert = gleiche Zahl (Wettkampfzählung 1, 1, 3).
+- Gleichstand: weniger als `TIE_EUR` (1 €) unter dem nächsthöheren Wert = gleicher Platz (Wettkampfzählung 1, 1, 3), also gleiche Schrift.
+- Bei vier oder fünf Produkten sind Platz 3 bis 5 gleich grau; die Reihenfolge dahinter steht nur in den Beträgen.
 - Ohne fairen Vergleich (ungleiche Beiträge, Steuererstattung ausgegeben) keine Zahlen, wie bei der gelben Markierung.
 
 ### Kombi-Suche: opt-in
