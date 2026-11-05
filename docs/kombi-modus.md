@@ -5,13 +5,13 @@
 Eine Kombi verteilt den Monatsbeitrag auf mehrere Produkte. Der Rechner versteuert die Teile gemeinsam, wie es bei
 einer Person auch tatsächlich geschieht. Die Kombi läuft im Vergleich als **eigener Teilnehmer** neben den
 Einzelprodukten mit: Kachel, Ergebnissatz, Szenarien, Diagramme und „Rente im Detail“. Zusammengestellt wird sie im
-Dialog hinter „+ Kombi“ in der Zeile „Vergleichen“. Dort zeigt der Rechner auch die rechnerisch beste Aufteilung.
+Dialog hinter „+ Kombi“ in der Zeile „Vergleichen“. Auf Knopfdruck (opt-in) sucht der Rechner dort die Aufteilung mit der höchsten Summe unter diesen Annahmen; ungefragt nennt er keine ([neutrale Darstellung](neutrale-darstellung.md)).
 
 | Datei | Inhalt |
 |---|---|
 | `src/lib/engine/combo.ts` | Rechenkern `combo()`, Kennzahlen `comboStats()`, Eingaben `readKombi()`, `scaleSplit()`, `readCombo()`, `shareAllowance()` |
 | `src/lib/engine/analyze.ts` | `analyze(p, opts, kombi)`: die Kombi als Teilnehmer `kombi` (`kombiResult()`), Szenarien mit Kombi |
-| `src/lib/components/KombiDialog.svelte` | Dialog „Kombi zusammenstellen“ (Entwurf, beste Aufteilung, Übernehmen) |
+| `src/lib/components/KombiDialog.svelte` | Dialog „Kombi zusammenstellen“ (Entwurf, Suche auf Knopfdruck, Übernehmen) |
 | `src/lib/engine/search.ts` | Suchraum, beste Aufteilung `bestSplit()`, reine Strategien, erschöpfende Suche (Tests) |
 | `src/lib/engine/comboAnalyze.ts` | `analyzeCombo()` (deine Aufteilung, reine Strategien, beste, Wechselwirkung), `robustRows()` |
 | `src/lib/comboVerdict.ts` | Ergebnissätze `comboVerdict()`, `splitText()` |

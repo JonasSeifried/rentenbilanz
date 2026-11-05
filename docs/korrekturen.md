@@ -371,6 +371,9 @@ Laufzeit: `analyze` und `scenarios` mit allen Fixes etwa ×1,03 gegenüber `NO_F
 - Der neue Standardwert `kvRate` 21,1 % statt 21,7 % (Befund E5, ermäßigter Satz nach § 243 SGB V) ist keine
   Engine-Korrektur. Er steht in `inputs.ts`. Beide Engines bekommen im Golden-Test dieselben Eingaben.
 
+- Darstellung ohne Sieger und Kosten-Gleichstand (November 2026): nur Oberfläche und eine Sensitivitätsrechnung mit
+  `single()`, keine Änderung an `combo.ts`; siehe `docs/neutrale-darstellung.md`.
+
 ## Erweiterung: Umschichtung vor Rentenbeginn (`shift`, kein Fix)
 
 Neue Eingabe, kein Befund am Original; Standard **aus**, dann bitgleich (Golden-Test erlaubt nur die neuen Schlüssel
