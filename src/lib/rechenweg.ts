@@ -20,6 +20,9 @@ const LABELS: Readonly<Record<InputKey, readonly [string, string]>> = Object.fre
   gz: ['Versicherung: Rentengarantiezeit', 'Jahre'],
   deathAge: ['Erbfall: Todesalter', 'Alter'], heirHalf: ['Erbfall: Erbe bei Auszahlung mindestens 62', ''],
   incHeir: ['Erbfall: zu versteuerndes Einkommen der Erben (heutiges Geld)', '€/Jahr'],
+  kist: ['Kirchensteuersatz (0 = keine)', '%'], married: ['Verheiratet, zusammen veranlagt (Splitting)', ''],
+  incSpouse: ['Partner: zu versteuerndes Einkommen vor Ihrem Rentenbeginn (heutiges Geld)', '€/Jahr'],
+  incSpouseRet: ['Partner: zu versteuerndes Einkommen ab Ihrem Rentenbeginn (heutiges Geld)', '€/Jahr'],
   studyEnd: ['Ausbildung/Studium bis', 'Alter (16 = keine)'], incStudy: ['Zu versteuerndes Einkommen in der Ausbildung', '€/Jahr'],
   eligStudy: ['In der Ausbildung zulageberechtigt', ''], kvRate: ['KV/PV-Satz im Alter', '%'],
   infl: ['Inflation', '% p. a.'], dyn: ['Beitragsdynamik', '% p. a.'], basis: ['Basiszins Vorabpauschale', '%'],
@@ -45,15 +48,28 @@ const LABELS: Readonly<Record<InputKey, readonly [string, string]>> = Object.fre
 /** Modellgrenzen, die man beim Nachprüfen kennen muss (Stand wie unter „Weitere Einstellungen“), passend zu den Schaltern. */
 const limitsText = (p: Params) => [
   'Konstante Rendite jedes Jahr, keine Schwankungen und kein Sequenzrisiko.',
-  'Einkommensteuer Tarif 2026 (§ 32a EStG), Grundtarif ledig, mit Solidaritätszuschlag; Tarifgrenzen wachsen mit der Inflation. Keine Kirchensteuer, kein Ehegattensplitting.',
+  taxText(p),
   salaryText(p),
-  'Abgeltungsteuer 26,375 %, Teilfreistellung 30 % (Aktienfonds), Sparer-Pauschbetrag 1.000 € ' +
+  'Abgeltungsteuer ' + (p.kist > 0 ? pct((1.055 + p.kist) / (4 + p.kist)) + ' % einschließlich Soli und Kirchensteuer (§ 32d Abs. 1 S. 4 EStG: 25 % ermäßigt auf e/(4 + k))' : '26,375 %') +
+    ', Teilfreistellung 30 % (Aktienfonds), Sparer-Pauschbetrag ' + (p.married ? '2.000 € (zusammen veranlagt; Partner ohne eigene Kapitalerträge angenommen) ' : '1.000 € ') +
     (p.indexAllowance ? 'wächst mit der Inflation (hypothetisch, Schalter indexAllowance)' : 'nominal fest') + ', Vorabpauschale mit Zufluss im Folgejahr.',
   'Jahresmodell: Beiträge monatlich, Entnahmen jährlich am Jahresanfang; offene Depots ' +
     (p.payResidual ? 'zahlen Restkapital ÷ Restjahre aus.' : 'zahlen eine nominal konstante Annuität aus, das AVD Restkapital ÷ Restjahre.'),
   p.shift ? 'Alle Produkte schichten vor Rentenbeginn um: ab 5 Jahre vorher 50 %, ab 2 Jahren 30 % Aktien, Rest mit safeRate.' : 'Keine Umschichtung vor Rentenbeginn.',
   'Nicht berücksichtigt: Erbschaftsteuer, Ordergebühren und Spreads, Betriebsrente, andere Kapitalerträge außerhalb der verglichenen Produkte.',
 ];
+
+/** Steuertarif und Steuerprofil in Worten (Kirchensteuer, Zusammenveranlagung), passend zu assess() in combo.ts. */
+function taxText(p: Params): string {
+  const tariff = p.married
+    ? 'Einkommensteuer Tarif 2026 (§ 32a EStG), Splittingtarif (zusammen veranlagt, § 32a Abs. 5) auf das gemeinsame zu versteuernde Einkommen; Partner ' + n0(p.incSpouse) + ' € vor und ' + n0(p.incSpouseRet) + ' € ab Rentenbeginn (heutiges Geld), Soli-Freigrenze verdoppelt'
+    : 'Einkommensteuer Tarif 2026 (§ 32a EStG), Grundtarif ledig';
+  const church = p.kist > 0
+    ? 'Kirchensteuer ' + pct(p.kist) + ' % auf die festzusetzende Einkommensteuer einschließlich hinzugerechneter AVD-Zulage (§ 51a Abs. 2 EStG, ohne Kinderfreibeträge und ohne Kappung); gezahlte Kirchensteuer über ' + (p.married ? '72' : '36') + ' € ist im selben Jahr als Sonderausgabe abgezogen (§ 10 Abs. 1 Nr. 4, § 10c EStG)'
+    : 'keine Kirchensteuer';
+  const heirs = p.kist > 0 || p.married ? ' Erben (und beim AVD-Übertrag der Partner) versteuern einzeln im Grundtarif' + (p.kist > 0 ? ' mit demselben Kirchensteuersatz' : '') + '.' : '';
+  return tariff + ', mit Solidaritätszuschlag; Tarifgrenzen wachsen mit der Inflation; ' + church + '.' + (p.married ? '' : ' Kein Ehegattensplitting.') + heirs;
+}
 
 /** Gehaltsverlauf in Worten, passend zu incomeAt (core.ts) einschließlich der Randfälle. */
 function salaryText(p: Params): string {
@@ -74,7 +90,7 @@ const n4 = (x: number) => x.toLocaleString('de-DE', { minimumFractionDigits: 4, 
 const fmtVal = (v: Inputs[InputKey]) => typeof v === 'boolean' ? (v ? 'ja' : 'nein') : String(v).replace('.', ',');
 
 /** Eingaben, die als Prozent eingegeben und in Params als Anteil geführt werden. */
-const PCT = new Set<string>(['g', 'gPay', 'infl', 'dyn', 'basis', 'etfTer', 'avdCost', 'insEff', 'fondAA', 'fondTer', 'kvRate', 'safeRate', 'avdPayCost', 'etfPayTer', 'fondPayTer']);
+const PCT = new Set<string>(['g', 'gPay', 'infl', 'dyn', 'basis', 'etfTer', 'avdCost', 'insEff', 'fondAA', 'fondTer', 'kvRate', 'safeRate', 'kist', 'avdPayCost', 'etfPayTer', 'fondPayTer']);
 
 /** Prozentfelder, bei denen −1 „wie die Ansparkosten“ bedeutet; andere dürfen negativ sein (Rendite, Inflation …). */
 const SENTINEL = new Set<string>(['avdPayCost', 'etfPayTer', 'fondPayTer']);
