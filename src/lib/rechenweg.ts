@@ -2,7 +2,7 @@
 // durch Menschen oder eine KI (einzelne Jahre prüfen statt das Endergebnis „auf Sicht“ beurteilen).
 // Reine Funktion, liest nur, was die Engine ohnehin liefert; keine eigene Rechnung außer dem Beitrag laut Eingabe.
 import { INPUT_KEYS, type Inputs, type InputKey } from './engine/inputs';
-import type { Params, ProductKey } from './engine/core';
+import { incomeAt, incomeGrowth, type Params, type ProductKey } from './engine/core';
 import { AMOUNT, type Analysis, type ContenderKey } from './engine/analyze';
 import { splitSum } from './engine/combo';
 import { SITE } from './site';
@@ -10,6 +10,7 @@ import { SITE } from './site';
 /** Beschriftung und Einheit je Eingabe (Einheit leer = Zahl/Schalter ohne Einheit). */
 const LABELS: Readonly<Record<InputKey, readonly [string, string]>> = Object.freeze({
   a0: ['Alter heute', 'Jahre'], incWork: ['Zu versteuerndes Einkommen im Beruf (heutiges Geld)', '€/Jahr'],
+  incPeak: ['Gehaltsentwicklung: Zielgehalt, zu versteuern (heutiges Geld; −1 = aus)', '€/Jahr'], incPeakAge: ['Gehaltsentwicklung: Zielgehalt erreicht mit', 'Alter'],
   incRet: ['Sonstiges zu versteuerndes Einkommen im Alter (heutiges Geld)', '€/Jahr'],
   setAll: ['Monatsbeitrag je Produkt (Vorgabe für alle)', '€/Monat'], g: ['Rendite vor Kosten, Ansparphase', '% p. a.'],
   R: ['Rentenbeginn', 'Alter'], kvOn: ['Im Alter freiwillig gesetzlich versichert (KV/PV auf Kapitalerträge)', ''],
@@ -45,7 +46,10 @@ const LABELS: Readonly<Record<InputKey, readonly [string, string]>> = Object.fre
 const limitsText = (p: Params) => [
   'Konstante Rendite jedes Jahr, keine Schwankungen und kein Sequenzrisiko.',
   'Einkommensteuer Tarif 2026 (§ 32a EStG), Grundtarif ledig, mit Solidaritätszuschlag; Tarifgrenzen wachsen mit der Inflation. Keine Kirchensteuer, kein Ehegattensplitting.',
-  'Das Einkommen im Beruf bleibt real gleich (keine Gehaltsentwicklung), abgesehen von einer Ausbildungsphase.',
+  p.incPeak >= 0
+    ? 'Gehaltsentwicklung: ab Berufsbeginn (Alter ' + p.studyEnd + ') ' + n0(p.incWork) + ' €, bis Alter ' + p.incPeakAge + ' mit konstantem realem Wachstum' +
+      (incomeGrowth(p) != null ? ' (' + pct(incomeGrowth(p)!) + ' % p. a.)' : '') + ' auf ' + n0(p.incPeak) + ' €, danach konstant (heutiges Geld). Werte je Jahr unter „Einkommen vor Rentenbeginn“. Beiträge folgen dem Gehalt nicht (nur der Dynamik).'
+    : 'Das Einkommen im Beruf bleibt real gleich (keine Gehaltsentwicklung), abgesehen von einer Ausbildungsphase.',
   'Abgeltungsteuer 26,375 %, Teilfreistellung 30 % (Aktienfonds), Sparer-Pauschbetrag 1.000 € ' +
     (p.indexAllowance ? 'wächst mit der Inflation (hypothetisch, Schalter indexAllowance)' : 'nominal fest') + ', Vorabpauschale mit Zufluss im Folgejahr.',
   'Jahresmodell: Beiträge monatlich, Entnahmen jährlich am Jahresanfang; offene Depots ' +
@@ -131,6 +135,12 @@ export function rechenweg(inputs: Inputs, A: Analysis, url: string, today = new 
   }
   out.push('', `Ø Monat, Summe bis H und Einmalauszahlung in der Anzeige-Einheit (${p.real ? 'heutige Kaufkraft' : 'nominal'}); Rangfolge immer nach heutiger Kaufkraft.`, '');
 
+  if (p.incPeak >= 0) {
+    out.push('## Einkommen vor Rentenbeginn', '', 'Zu versteuerndes Einkommen, mit dem die Ansparphase gerechnet ist (Günstigerprüfung AVD, Kapitalerträge), in heutigem Geld.', '',
+      '| Jahr | Alter | Zu versteuerndes Einkommen |', '|---:|---:|---:|');
+    for (let t = 0; t < n; t++) out.push(`| ${t} | ${p.a0 + t} | ${n0(incomeAt(p, p.a0 + t))} |`);
+    out.push('');
+  }
   out.push('## Jahreswerte', '');
   out.push('Alle Beträge nominal in €. „Jahr“ zählt ab heute (Jahr 0 = erstes Sparjahr). Beitrag = eigener Beitrag (Monatsbeitrag × 12 × (1 + Dynamik)^Jahr bis vor Rentenbeginn), ohne Zulagen und Steuererstattungen.',
     '„Vermögen“ = Stand am Jahresende vor Steuern bei Verkauf; beim AVD mit Zulagen, ungefördertem Teil und dem Nebendepot der angelegten Steuererstattungen. „Netto“ = Auszahlung im Jahr nach allen Abzügen (vor Rentenbeginn: Erstattungen, die ausgezahlt werden).',

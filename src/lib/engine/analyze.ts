@@ -120,7 +120,10 @@ export function analyze(p: Params, opts?: EngineOptions, kombi?: Split | null): 
 }
 
 /** Stabile Kennung je Szenario-Zeile (für Oberfläche und Kombi-Robustheit; das Label kann sich ändern). */
-export type ScenarioId = 'kv' | 'avdCost' | 'refund' | 'g' | 'incWork' | 'incRetLow' | 'incRetHigh' | 'insMode' | 'insCost' | 'shift' | 'payProfile' | 'fundingDelay' | 'allowance' | 'payCost' | 'kvGross' | 'kvRate';
+export type ScenarioId = 'kv' | 'avdCost' | 'refund' | 'g' | 'incWork' | 'incPath' | 'incRetLow' | 'incRetHigh' | 'insMode' | 'insCost' | 'shift' | 'payProfile' | 'fundingDelay' | 'allowance' | 'payCost' | 'kvGross' | 'kvRate';
+
+/** Szenario „Gehalt steigt“: Zielalter. */
+const PATH_AGE = 45;
 
 export interface ScenarioDef { id: ScenarioId; label: string; p: Params }
 export interface Scenario extends ScenarioDef { a: Analysis }
@@ -139,7 +142,14 @@ export function scenarioList(p: Params, kombi?: Split | null, opts?: EngineOptio
     : 'AVD-Ansparkosten 1,0 % (Deckel Standarddepot)', { avdCost: 0.01 });
   if (avd && p.reinvest) add('refund', 'Steuererstattung ausgegeben statt angelegt', { reinvest: false });
   add('g', 'Rendite 2 Prozentpunkte niedriger', { g: p.g - 0.02, gPay: p.gPay - 0.02 });
-  add('incWork', 'Gehalt 30 % niedriger (' + eur(p.incWork * 0.7) + ')', { incWork: p.incWork * 0.7 });
+  // Mit Gehaltsentwicklung sinkt der ganze Verlauf (Start- und Zielgehalt); ohne sie wie im Original.
+  add('incWork', 'Gehalt 30 % niedriger (' + eur(p.incWork * 0.7) + (p.incPeak >= 0 ? ', später ' + eur(p.incPeak * 0.7) : '') + ')',
+    p.incPeak >= 0 ? { incWork: p.incWork * 0.7, incPeak: p.incPeak * 0.7 } : { incWork: p.incWork * 0.7 });
+  // Gehaltsentwicklung (neu, nicht im Original): ein Annahmeszenario, kein statistischer Durchschnittsverlauf (docs/gehaltsentwicklung.md).
+  if (fixesOf(opts).size > 0) {
+    if (p.incPeak >= 0) add('incPath', 'Gehalt bleibt konstant bei ' + eur(p.incWork), { incPeak: -1 });
+    else if (p.studyEnd < PATH_AGE) add('incPath', 'Gehalt steigt bis ' + PATH_AGE + ' real um 30 % (auf ' + eur(p.incWork * 1.3) + ')', { incPeak: p.incWork * 1.3, incPeakAge: PATH_AGE });
+  }
   if (p.incRet >= 15000) add('incRetLow', 'Einkommen im Alter ' + eur(p.incRet - 15000) + ' statt ' + eur(p.incRet), { incRet: p.incRet - 15000 });
   add('incRetHigh', 'Einkommen im Alter ' + eur(p.incRet + 20000) + ' statt ' + eur(p.incRet), { incRet: p.incRet + 20000 });
   if (ins) add('insMode', p.insLump ? 'Versicherung als lebenslange Rente' : 'Versicherung mit Kapitalauszahlung', { insLump: !p.insLump });

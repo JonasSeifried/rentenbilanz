@@ -63,6 +63,7 @@ Die Rechnung nutzt Werte, die sich jedes Jahr ändern. Nach jeder Änderung: `np
 - `docs/korrekturen.md`: Korrekturen gegenüber der ersten Fassung (`legacy/index.html`) mit Rechtsquellen und Wirkung.
 - `docs/engine-rest-2026-11.md`: Umsetzung R3/R4/R5/R7, wählbare Annahmen, offene Erbfallgrenzen und aktuelle Vergleichsmessungen.
 - `docs/zulagen-veranlagung-2026-11.md`: E4-Veranlagung mit Primärbelegen, R3-Bilanz, D1-Gegenfall und aktuelle Wirkung.
+- `docs/gehaltsentwicklung.md`: Gehaltsverlauf bis zur Rente (Zielgehalt und Alter), abschaltbar, mit Wirkung auf die AVD-Erstattung.
 - `docs/kombi-modus.md`: Rechenmodell der Kombi (gemeinsame Besteuerung, Suche nach der besten Aufteilung, Einbindung in den Vergleich).
 
 ## Speichern und Teilen

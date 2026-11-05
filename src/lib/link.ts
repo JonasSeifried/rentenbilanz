@@ -33,6 +33,8 @@ const BASES: Record<string, Inputs & { avdStd: boolean; avdSafe: number }> = {
     // R5: −1 = wie incRet (bisheriges Verhalten), bis ein eigener Bruttowert eingegeben wird.
     kvGrossRet: -1, payResidual: false, fundingDelay: false, indexAllowance: false,
     avdPayCost: -1, etfPayTer: -1, fondPayTer: -1,
+    // Später angehängt: Gehaltsentwicklung aus (bisheriges Verhalten: Gehalt bleibt konstant).
+    incPeak: -1, incPeakAge: 45,
   },
 };
 /** Die eingefrorene Basis von Version 1 (Tests und Speicher-Migration). */

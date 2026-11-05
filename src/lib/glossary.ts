@@ -11,6 +11,14 @@ export const GLOSSARY = {
       'Als Faustregel liegt es bei Angestellten bei etwa 80 % des Bruttogehalts.',
     ],
   },
+  gehaltsentwicklung: {
+    title: 'Gehaltsentwicklung',
+    text: [
+      'Das Gehalt bestimmt den Steuersatz in der Sparphase und damit vor allem die Steuererstattung beim Altersvorsorgedepot: Je höher das Gehalt, desto mehr bringt der Sonderausgabenabzug über die Zulagen hinaus.',
+      'Ohne diese Angabe bleibt das Gehalt das ganze Berufsleben real gleich. Mit ihr steigt (oder sinkt) es ab Berufsbeginn jedes Jahr um denselben Prozentsatz bis zum Zielgehalt und bleibt danach gleich. Beträge in heutigem Geld, also ohne Inflationsausgleich.',
+      'Die Monatsbeiträge steigen dadurch nicht automatisch mit. Dafür gibt es die Beitragsdynamik bei den Produkten.',
+    ],
+  },
   incRet: {
     title: 'Einkommen im Alter',
     text: [

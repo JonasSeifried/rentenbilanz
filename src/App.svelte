@@ -138,7 +138,8 @@
     <div class="eck-grid">
       <NumberField label="Alter heute" value={i.a0} onchange={v => setInput('a0', v)} min={16} max={60} unit="Jahre" testid="a0"
         clampNote={v => (v < 16 || v > 60 ? 'Gerechnet wird mit ' + Math.min(60, Math.max(16, Math.round(v))) + '.' : null)} />
-      <NumberField label="Gehalt, zu versteuern" value={i.incWork} onchange={v => setInput('incWork', v)} min={0} step={1000} unit="€/Jahr" info="zve" testid="incWork" />
+      <NumberField label="Gehalt, zu versteuern" value={i.incWork} onchange={v => setInput('incWork', v)} min={0} step={1000} unit="€/Jahr" info="zve" testid="incWork"
+        clampNote={() => (i.incPeak >= 0 ? 'Startgehalt; ab ' + Math.round(i.incPeakAge) + ' ' + eur(i.incPeak) + ' (siehe Einstellungen).' : null)} />
       <NumberField label="Einkommen im Alter" value={i.incRet} onchange={v => setInput('incRet', v)} min={0} step={1000} unit="€/Jahr" info="incRet" testid="incRet" />
       <NumberField label="Monatsbeitrag je Produkt" value={i.setAll} onchange={v => setInput('setAll', v)} min={0} step={10} unit="€" testid="setAll"
         clampNote={() => (contribDiffer ? 'Einzelbeiträge weichen ab (siehe Einstellungen).' : null)} />

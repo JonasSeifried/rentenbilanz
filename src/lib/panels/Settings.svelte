@@ -1,7 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { app, setInput, resetToDefaults, forgetSaved } from '../state.svelte';
-  import { kvGross, readParams } from '../engine/core';
+  import { incomeGrowth, kvGross, readParams } from '../engine/core';
   import { LIMITS } from '../engine/inputs';
   import { SITE } from '../site';
   import NumberField from '../components/NumberField.svelte';
@@ -49,6 +49,15 @@
     };
   });
 
+  // Gehaltsentwicklung: Einschalten startet mit +30 % bis 45 (wie das Szenario), Ausschalten setzt −1.
+  const pathOn = $derived(i.incPeak >= 0);
+  const growth = $derived(incomeGrowth(p));
+  function togglePath(v: boolean) {
+    if (!v) { setInput('incPeak', -1); return; }
+    setInput('incPeakAge', Math.max(45, p.studyEnd + 1));
+    setInput('incPeak', Math.round(i.incWork * 1.3 / 1000) * 1000);
+  }
+
   type OnKey = 'etfOn' | 'avdOn' | 'insOn' | 'fondOn';
 </script>
 
@@ -79,6 +88,19 @@
             limits={LIMITS.incStudy} effective={p.incStudy} />
           <Switch checked={i.eligStudy} onchange={v => setInput('eligStudy', v)} label="Bis dahin förderberechtigt" info="foerderberechtigt" />
         </div>
+      {/if}
+    </div>
+    <div class="grp" role="group" aria-labelledby="s-path">
+      <h3 id="s-path">Gehaltsentwicklung</h3>
+      <Switch id="f-path" checked={pathOn} testid="incPath" onchange={togglePath} label="Gehalt ändert sich bis zu einem Alter" info="gehaltsentwicklung" />
+      {#if pathOn}
+        <NumberField id="f-incPeak" layout="row" label="Zielgehalt, zu versteuern" value={i.incPeak} onchange={v => setInput('incPeak', v)} min={0} step={1000} unit="€/Jahr" info="zve" testid="incPeak"
+          limits={LIMITS.incPeak} effective={p.incPeak} hint="Heutiges Geld. Gilt ab dem Zielalter bis Rentenbeginn." />
+        <NumberField layout="row" label="… erreicht mit" value={i.incPeakAge} onchange={v => setInput('incPeakAge', v)} min={16} max={100} unit="Jahren" testid="incPeakAge"
+          limits={LIMITS.incPeakAge} effective={p.incPeakAge}
+          hint={growth != null
+            ? 'Ab Berufsbeginn (' + p.studyEnd + ') real ' + (growth >= 0 ? '+' : '') + (Math.round(growth * 1000) / 10).toLocaleString('de-DE') + ' % pro Jahr, danach konstant.'
+            : 'Das Zielalter liegt nicht nach dem Berufsbeginn: Das Zielgehalt gilt sofort.'} />
       {/if}
     </div>
     <div class="grp" role="group" aria-labelledby="s-kids">
@@ -190,7 +212,7 @@
   </details>
   <details>
     <summary>Einkommensteuer</summary>
-    <p>Einkommensteuer nach Tarif 2026 (§ 32a EStG, Grundtarif, ledig) inkl. Solidaritätszuschlag; die Tarifgrenzen wachsen mit der Inflation mit, der Sparerpauschbetrag bleibt bei 1.000 €. Keine Kirchensteuer, kein Ehegattensplitting. Die Steuerreform 2027 ist noch nicht beschlossen.</p>
+    <p>Einkommensteuer nach Tarif 2026 (§ 32a EStG, Grundtarif, ledig) inkl. Solidaritätszuschlag; die Tarifgrenzen wachsen mit der Inflation mit, der Sparerpauschbetrag bleibt bei 1.000 €. Keine Kirchensteuer, kein Ehegattensplitting. Die Steuerreform 2027 ist noch nicht beschlossen. Das Gehalt bleibt bis zur Rente real gleich, außer unter „Gehaltsentwicklung“ ist ein Zielgehalt eingetragen.</p>
   </details>
   <details>
     <summary>ETF und Fonds</summary>

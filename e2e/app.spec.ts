@@ -52,7 +52,7 @@ test('Startseite rechnet mit den Standardwerten wie die Engine', async ({ page }
   await expect(page.getByTestId('disclaimer')).toContainText('Rechtsstand 26.05.2026');
   await expect(field(page, 'a0')).toHaveValue('22');
   await expect(field(page, 'incWork')).toHaveValue('38.000');
-  await expect(page.locator('.scen tbody tr')).toHaveCount(15); // Ausgangslage + 9 Zeilen des Originals + Umschichtung + Auszahlprofil, Förderverzug, AVD-Auszahlkosten, Pauschbetrag
+  await expect(page.locator('.scen tbody tr')).toHaveCount(16); // Ausgangslage + 9 Zeilen des Originals + Gehaltsentwicklung + Umschichtung + Auszahlprofil, Förderverzug, AVD-Auszahlkosten, Pauschbetrag
 });
 
 test('Eingaben werden gespeichert und beim nächsten Besuch wiederhergestellt', async ({ page }) => {
@@ -218,6 +218,26 @@ test('Umschichtung vor Rentenbeginn: Schalter unter „Markt“, Szenario-Zeile,
   const A = analyze(readParams({ ...DEFAULTS, shift: true, safeRate: 1.5 }));
   await expect(page.getByTestId('tile-etf')).toContainText(eur(A.stats.etf!.avgMonthly));
   await expect(page.getByTestId('tile-avd')).toContainText(eur(A.stats.avd!.avgMonthly));
+});
+
+test('Gehaltsentwicklung: Schalter unter „Deine Situation“, Szenario-Zeile, Ergebnis wie die Engine', async ({ page }) => {
+  await page.goto('./');
+  await expect(page.getByTestId('scenarios')).toContainText('Gehalt steigt bis 45 real um 30 %');
+  await page.click('#tab-settings');
+  await expect(page.getByTestId('incPeak')).toHaveCount(0);
+  await page.getByTestId('incPath').check();
+  await expect(page.getByTestId('incPeak')).toHaveValue('49.000');
+  await setField(page, 'incPeak', '60000');
+  await setField(page, 'incPeakAge', '40');
+  await expect(page.locator('#panel-settings')).toContainText('real +2,6 % pro Jahr');
+  await expect.poll(() => saved(page).then(s => [s?.incPeak, s?.incPeakAge])).toEqual([60000, 40]);
+  await page.click('#tab-overview');
+  await expect(page.getByTestId('scenarios')).toContainText('Gehalt bleibt konstant bei 38.000 €');
+  const A = analyze(readParams({ ...DEFAULTS, incPeak: 60000, incPeakAge: 40 }));
+  await expect(page.getByTestId('tile-avd')).toContainText(eur(A.stats.avd!.avgMonthly));
+  await page.click('#tab-settings');
+  await page.getByTestId('incPath').uncheck();
+  await expect.poll(() => saved(page).then(s => s?.incPeak)).toBe(-1);
 });
 
 test('Kaufkraft-Umschalter ändert die Beträge', async ({ page }) => {

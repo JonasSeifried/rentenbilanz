@@ -61,6 +61,11 @@ export type ProductKey = 'etf' | 'avd' | 'ins' | 'fond';
 export interface Params {
   a0: number; studyEnd: number; incStudy: number; eligStudy: boolean;
   incWork: number; incRet: number; R: number; H: number;
+  /**
+   * Gehaltsentwicklung (neu, nicht im Original): zu versteuerndes Zielgehalt in heutigem Geld, erreicht mit Alter incPeakAge.
+   * −1 = aus (Gehalt bleibt incWork). Verlauf: incomeAt().
+   */
+  incPeak: number; incPeakAge: number;
   kvOn: boolean; kvRate: number;
   /** −1: wie incRet (auch in Szenarien, die incRet ändern); sonst eigene KV-Bruttobasis. */
   kvGrossRet: number; payResidual: boolean; fundingDelay: boolean; indexAllowance: boolean;
@@ -91,9 +96,10 @@ export function readParams(inp: Inputs): Params {
   const num = (id: keyof Inputs) => numOf(inp[id]);
   const chk = (id: keyof Inputs) => inp[id] === true;
   const pct = (id: keyof Inputs, lo: number, hi: number) => clamp(num(id), lo, hi) / 100;
+  // incPeak fehlt (z. B. Eingaben des Originals) ⇒ −1, Gehaltsentwicklung aus.
   const p: Params = {
     a0: clamp(Math.round(num('a0')), 16, 60), studyEnd: Math.round(num('studyEnd')), incStudy: Math.max(0, num('incStudy')), eligStudy: chk('eligStudy'),
-    incWork: Math.max(0, num('incWork')), incRet: Math.max(0, num('incRet')), R: clamp(Math.round(num('R')), 65, 70), H: Math.round(num('H')),
+    incWork: Math.max(0, num('incWork')), incPeak: inp.incPeak == null || num('incPeak') < 0 ? -1 : num('incPeak'), incPeakAge: clamp(Math.round(num('incPeakAge')), 16, 100), incRet: Math.max(0, num('incRet')), R: clamp(Math.round(num('R')), 65, 70), H: Math.round(num('H')),
     kvGrossRet: num('kvGrossRet') < 0 ? -1 : num('kvGrossRet'), payResidual: chk('payResidual'), fundingDelay: chk('fundingDelay'), indexAllowance: chk('indexAllowance'),
     avdPayCost: num('avdPayCost') < 0 ? -1 : pct('avdPayCost', 0, 10),
     etfPayTer: num('etfPayTer') < 0 ? -1 : pct('etfPayTer', 0, 10),
@@ -115,6 +121,28 @@ export function readParams(inp: Inputs): Params {
   p.studyEnd = clamp(p.studyEnd, p.a0, p.R);
   p.deathAge = clamp(p.deathAge, p.a0 + 1, 100);
   return p;
+}
+
+/**
+ * Zu versteuerndes Einkommen vor Rentenbeginn im Alter `age` (heutiges Geld).
+ * Ausbildung: incStudy. Danach incWork; mit Gehaltsentwicklung (incPeak ≥ 0) ab Berufsbeginn (studyEnd, nach readParams
+ * mindestens a0) mit konstantem realem Wachstum bis incPeakAge auf incPeak, danach konstant. Liegt incPeakAge nicht nach
+ * dem Berufsbeginn, gilt incPeak sofort. Ist ein Endpunkt 0, wird linear statt geometrisch übergeleitet.
+ * Ohne Gehaltsentwicklung exakt der Ausdruck des Originals (Golden-Test).
+ */
+export function incomeAt(p: Params, age: number): number {
+  if (age < p.studyEnd) return p.incStudy;
+  if (!(p.incPeak >= 0)) return p.incWork;
+  const s = p.studyEnd, e = p.incPeakAge;
+  if (e <= s || age >= e) return p.incPeak;
+  const f = (age - s) / (e - s);
+  return p.incWork > 0 && p.incPeak > 0 ? p.incWork * Math.pow(p.incPeak / p.incWork, f) : p.incWork + (p.incPeak - p.incWork) * f;
+}
+
+/** Reales Wachstum des Gehalts in % p. a. bis zum Zielalter (null ohne Gehaltsentwicklung oder ohne Übergang). */
+export function incomeGrowth(p: Params): number | null {
+  if (!(p.incPeak >= 0) || p.incPeakAge <= p.studyEnd || !(p.incWork > 0) || !(p.incPeak > 0)) return null;
+  return Math.pow(p.incPeak / p.incWork, 1 / (p.incPeakAge - p.studyEnd)) - 1;
 }
 
 export interface HeirValue {

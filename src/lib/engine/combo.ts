@@ -18,7 +18,7 @@
 // also mit ALL_FIXES. Ohne kvSharedRoom wird (wie im Original) jeder KV-Strom einzeln bis zur BBG begrenzt.
 
 import { eur } from '../format';
-import { est, soli, kvGross, tax, tax2026, contractGrowth, riskyShare, AVD_MAX, AVD_SUB_MAX, ERTRAG, KV_BBG, numOf, type HeirValue, type Params, type ProductKey, type ProductResult } from './core';
+import { est, soli, incomeAt, kvGross, tax, tax2026, contractGrowth, riskyShare, AVD_MAX, AVD_SUB_MAX, ERTRAG, KV_BBG, numOf, type HeirValue, type Params, type ProductKey, type ProductResult } from './core';
 import { fixesOf, type EngineOptions } from './fixes';
 import type { Inputs } from './inputs';
 
@@ -192,7 +192,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   const T = 100 - p.a0, n = p.R - p.a0, tH = p.H - p.a0;
   const I = (t: number) => Math.pow(1 + p.infl, t);
   const Rn = (x: number, t: number) => p.real ? x / I(t) : x; // für Beträge in Hinweistexten (gleiche Basis wie die Anzeige)
-  const incAt = (t: number) => (p.a0 + t < p.studyEnd ? p.incStudy : p.incWork);
+  const incAt = (t: number) => incomeAt(p, p.a0 + t); // Ausbildung, Beruf, optional Gehaltsentwicklung (core.ts)
   const taxNom = (incomeNom: number, t: number) => F.round ? tax2026(incomeNom, I(t)) : tax(incomeNom / I(t)) * I(t);
   const taxAdd = (incReal: number, addNom: number, t: number) => addNom <= 0 ? 0 : F.round
     ? taxNom(incReal * I(t) + addNom, t) - taxNom(incReal * I(t), t)
