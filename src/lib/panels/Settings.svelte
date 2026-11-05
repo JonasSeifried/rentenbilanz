@@ -132,7 +132,7 @@
 <section class="card" aria-labelledby="s-model">
   <h2 id="s-model">Modellannahmen und Sensitivitäten</h2>
   <Switch checked={i.payResidual} onchange={v => setInput('payResidual', v)} label="Offene Depots wie das AVD: jährlich Restkapital ÷ Restlaufzeit" />
-  <p class="hint">Sonst nominal konstante vorschüssige Annuität für Depots. Das Entnahmeprofil beeinflusst die Summe der realen Zahlungen und die Rangfolge.</p>
+  <p class="hint">Sonst nominal konstante vorschüssige Annuität für Depots. Das Entnahmeprofil beeinflusst die Summe der realen Zahlungen und die Abstände zwischen den Produkten.</p>
   <Switch checked={i.fundingDelay} onchange={v => setInput('fundingDelay', v)} label="AVD-Zulagen und Erstattungen ein Jahr später (Sensitivität)" />
   <p class="hint">Standard: Ende des Beitragsjahres. Ein Jahr Verzug ist ein Szenario, keine gesetzliche Bearbeitungsfrist. Die letzte Gutschrift kommt am Ende des ersten Rentenjahres.</p>
   <Switch checked={i.indexAllowance} onchange={v => setInput('indexAllowance', v)} label="Sparer-Pauschbetrag wächst mit Inflation (hypothetische Sensitivität)" />
@@ -230,7 +230,7 @@
   </details>
   <details>
     <summary>Heutige Kaufkraft</summary>
-    <p>Einzahlungen und Förderung werden Jahr für Jahr in heutige Kaufkraft umgerechnet, Kapitalwerte zum jeweiligen Zeitpunkt. Die Ø-Monatsrente wird für alle Produkte über denselben Zeitraum (Rentenbeginn bis Auszahlplan-Ende) gemittelt. Welches Produkt vorne liegt, wird immer in heutiger Kaufkraft verglichen, auch wenn nominale Beträge angezeigt werden.</p>
+    <p>Einzahlungen und Förderung werden Jahr für Jahr in heutige Kaufkraft umgerechnet, Kapitalwerte zum jeweiligen Zeitpunkt. Die Ø-Monatsrente wird für alle Produkte über denselben Zeitraum (Rentenbeginn bis Auszahlplan-Ende) gemittelt. Abstände zwischen den Produkten werden immer in heutiger Kaufkraft gerechnet, auch wenn nominale Beträge angezeigt werden.</p>
   </details>
   <details>
     <summary>Erbfall</summary>

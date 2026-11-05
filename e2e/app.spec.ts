@@ -47,7 +47,16 @@ test('Startseite rechnet mit den Standardwerten wie die Engine', async ({ page }
   for (const pr of A.active) {
     await expect(page.getByTestId('tile-' + pr.key)).toContainText(eur(A.stats[pr.key]!.avgMonthly));
   }
-  await expect(page.getByTestId('verdict')).toContainText('Rechnerisch vorne');
+  // Neutral: Beträge in fester Reihenfolge, Abstände, Kosten-Gleichstand; kein Sieger, keine Hervorhebung
+  await expect(page.getByTestId('verdict').locator('h2')).toHaveText(/^Ø netto im Monat \(67–90\): ETF-Depot [\d.]+ €, Altersvorsorgedepot [\d.]+ €, Rentenversicherung [\d.]+ €\.$/);
+  await expect(page.getByTestId('verdict')).toContainText('mehr aus als das ETF-Depot');
+  await expect(page.getByTestId('break-even')).toContainText('Gleichstand mit dem ETF-Depot bis zum Alter von 90 bei 0,87 % AVD-Kosten');
+  await expect(page.getByTestId('verdict')).not.toContainText(/vorne|Favorit|Gewinner|Sieger|lohnt/);
+  await expect(page.locator('.tiles')).not.toContainText('vorne');
+  await expect(page.locator('td.best, .tile.lead, .badge')).toHaveCount(0);
+  await expect(page.getByTestId('scenarios').locator('thead')).not.toContainText('Vorne');
+  await expect(page.locator('.tile [data-testid^=contrib]')).toHaveCount(3);
+  expect(await page.locator('.tile').evaluateAll(els => els.map(e => e.getAttribute('data-testid')))).toEqual(['tile-etf', 'tile-avd', 'tile-ins']);
   await expect(page.getByTestId('disclaimer')).toContainText('keine Anlageberatung');
   await expect(page.getByTestId('disclaimer')).toContainText('Rechtsstand 26.05.2026');
   await expect(field(page, 'a0')).toHaveValue('22');
@@ -195,15 +204,15 @@ test('Warnungen bei unfairen Vergleichen mit Korrektur per Klick', async ({ page
   await page.click('#tab-overview');
   await expect(page.getByTestId('verdict')).toContainText('nicht bei allen Produkten gleich');
   await page.getByRole('button', { name: /Alle auf 150 €/ }).click();
-  await expect(page.getByTestId('verdict')).toContainText('vorne');
+  await expect(page.getByTestId('verdict')).toContainText('Ø netto im Monat');
 
   await page.click('#tab-settings');
   await page.getByTestId('reinvest').uncheck();
   await page.click('#tab-overview');
-  await expect(page.getByTestId('verdict')).toContainText('keinen fairen Gewinner');
+  await expect(page.getByTestId('verdict')).toContainText('kein fairer Vergleich möglich');
   await expect(page.locator('.note').first()).toContainText('Steuererstattung ausgegeben');
   await page.getByRole('button', { name: 'Steuererstattung anlegen' }).click();
-  await expect(page.getByTestId('verdict')).toContainText('vorne');
+  await expect(page.getByTestId('verdict')).toContainText('Ø netto im Monat');
 });
 
 test('Umschichtung vor Rentenbeginn: Schalter unter „Markt“, Szenario-Zeile, Ergebnis wie die Engine', async ({ page }) => {
@@ -291,7 +300,7 @@ test('Farbschema umschalten bleibt erhalten', async ({ page }) => {
 
 test('Läuft auch in einem Unterordner', async ({ page }) => {
   await page.goto('/unterordner/');
-  await expect(page.getByTestId('verdict')).toContainText('vorne');
+  await expect(page.getByTestId('verdict')).toContainText('Ø netto im Monat');
   await page.getByRole('link', { name: 'Impressum' }).click();
   await expect(page).toHaveURL(/\/unterordner\/impressum\.html$/);
   await expect(page.getByRole('heading', { name: 'Impressum' })).toBeVisible();

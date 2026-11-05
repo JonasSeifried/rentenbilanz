@@ -1,7 +1,8 @@
 <script lang="ts">
   // Dialog „Kombi zusammenstellen“: der Monatsbeitrag, auf mehrere Produkte aufgeteilt. Gearbeitet wird an einem
   // Entwurf; erst „Übernehmen“ schreibt ihn in die Eingaben. Die Kombi läuft dann im Vergleich als eigener
-  // Teilnehmer mit (analyze(), gemeinsam versteuert). Hier gibt es dazu die rechnerisch beste Aufteilung.
+  // Teilnehmer mit (analyze(), gemeinsam versteuert). Auf Wunsch (Knopf, opt-in) sucht der Rechner die Aufteilung mit
+  // der höchsten Summe unter diesen Annahmen; ungefragt nennt er keine andere Aufteilung (keine Empfehlung).
   import { untrack } from 'svelte';
   import { PRODUCTS } from '../engine/analyze';
   import { readParams, type ProductKey } from '../engine/core';
@@ -20,6 +21,8 @@
 
   let budget = $state(0);
   let draft = $state<Split>(emptySplit());
+  /** Suche angefordert? Gilt, bis der Dialog geschlossen wird. */
+  let searched = $state(false);
 
   /** Gleichmäßig auf die verglichenen Produkte (mindestens ETF und AVD), in 10-€-Schritten; der Rest ans erste. */
   function evenSplit(b: number, on: Record<ProductKey, boolean>): Split {
@@ -33,6 +36,7 @@
 
   function init() {
     budget = Math.max(0, i.setAll);
+    searched = false;
     const stored = storedSplit(i);
     draft = splitSum(stored) > 0 ? scaleSplit(stored, budget) : evenSplit(budget, p.on);
   }
@@ -46,9 +50,9 @@
   // Gesucht wird unter den verglichenen Produkten und denen, die in der Kombi stecken.
   const keyStr = $derived(SPLIT_KEYS.filter(k => p.on[k] || draft[k] > 0).join(','));
   const keys = $derived(keyStr ? (keyStr.split(',') as ProductKey[]) : []);
-  const best = $derived(app.kombiOpen && keys.length >= 2 && budget > 0 ? bestSplit(p, budget, keys) : null);
+  const best = $derived(app.kombiOpen && searched && keys.length >= 2 && budget > 0 ? bestSplit(p, budget, keys) : null);
   const C = $derived(app.kombiOpen ? analyzeCombo(p, { budget, split: draft, keys }, best) : null);
-  const V = $derived(C ? comboVerdict(C) : null);
+  const V = $derived(C ? comboVerdict(C, null, searched) : null);
   const B = $derived(C?.best && C.best !== 'pending' ? C.best : null);
 
   const sum = $derived(splitSum(draft));
@@ -134,7 +138,10 @@
       <div class="result" aria-live="polite" data-testid="kombi-result">
         <p class="hl">{V.headline}</p>
         {#each V.lines as l}<p>{l}</p>{/each}
-        {#if B && !B.userIsBest && C?.canRank}
+        {#if !searched && C?.canRank}
+          <button class="btn small" type="button" onclick={() => (searched = true)} data-testid="kombi-search">Aufteilung mit der höchsten Summe berechnen</button>
+          <p class="fine">Optional. Sucht in 10-€-Schritten die Aufteilung mit der höchsten Summe netto bis {p.H} unter diesen Annahmen. Das ist keine Empfehlung: Verfügbarkeit, Bindung und Absicherung stecken nicht in der Summe.</p>
+        {:else if B && !B.userIsBest && C?.canRank}
           <button class="btn small" type="button" onclick={() => (draft = { ...B.split })} data-testid="kombi-use-best">Diese Aufteilung verwenden</button>
         {/if}
       </div>
@@ -173,6 +180,7 @@
   .result p { margin: 0 0 6px; }
   .result .hl { color: var(--text); font-weight: 600; }
   .result .btn { margin-top: 2px; }
+  .result .fine { font-size: .78rem; color: var(--muted); margin: 6px 0 0; }
   .foot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 20px; border-top: 1px solid var(--grid); background: var(--surface); }
   .foot .sp { flex: 1; }
   .foot .btn[disabled] { opacity: .5; cursor: not-allowed; }

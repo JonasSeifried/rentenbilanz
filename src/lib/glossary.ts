@@ -63,7 +63,7 @@ export const GLOSSARY = {
     text: [
       'Alle Beträge werden mit der angenommenen Inflation in heutiges Geld umgerechnet. So lassen sich Beträge aus verschiedenen Jahrzehnten vergleichen.',
       'Beispiel: 1.000 € in 40 Jahren sind bei 2 % Inflation heute nur rund 450 € wert.',
-      'Welches Produkt vorne liegt, wird immer in heutiger Kaufkraft verglichen. In knappen Fällen kann das vorne liegende Produkt in der nominalen Ansicht die kleinere Summe zeigen.',
+      'Abstände zwischen den Produkten werden immer in heutiger Kaufkraft gerechnet. In knappen Fällen kann ein Produkt, das in heutiger Kaufkraft mehr auszahlt, in der nominalen Ansicht die kleinere Summe zeigen.',
     ],
   },
   avd: {
@@ -91,14 +91,14 @@ export const GLOSSARY = {
     title: 'Günstigerprüfung',
     text: [
       'Das Finanzamt prüft automatisch, ob es günstiger ist, die Beiträge samt Zulagen als Sonderausgaben abzuziehen. Spart das mehr Steuern, als die Zulagen wert sind, gibt es die Differenz als zusätzliche Steuererstattung.',
-      'Das lohnt sich vor allem bei höherem Einkommen. Ein Teil davon ist nur Steuerstundung, weil die Auszahlung später voll steuerpflichtig ist.',
+      'Eine zusätzliche Erstattung gibt es vor allem bei höherem Einkommen. Ein Teil davon ist nur Steuerstundung, weil die Auszahlung später voll steuerpflichtig ist.',
     ],
   },
   reinvest: {
     title: 'Steuererstattung anlegen',
     text: [
       'Die zusätzliche Steuererstattung aus der Günstigerprüfung landet nicht im Altersvorsorgedepot, sondern auf dem Konto. Für einen fairen Vergleich rechnet der Rechner sie standardmäßig in einem ETF-Nebendepot weiter.',
-      'Wird sie ausgegeben, fließt beim AVD netto weniger eigenes Geld hinein als bei den anderen Produkten. Dann gibt es keinen fairen Gewinner.',
+      'Wird sie ausgegeben, fließt beim AVD netto weniger eigenes Geld hinein als bei den anderen Produkten. Dann ist kein fairer Vergleich möglich.',
     ],
   },
   nebendepot: {
@@ -175,7 +175,7 @@ export const GLOSSARY = {
   },
   einmal: {
     title: '30 % Einmalauszahlung',
-    text: ['Beim Altersvorsorgedepot dürfen bei Rentenbeginn bis zu 30 % auf einmal ausgezahlt werden. Das wird in einem Jahr voll versteuert und lohnt sich deshalb meist nicht.'],
+    text: ['Beim Altersvorsorgedepot dürfen bei Rentenbeginn bis zu 30 % auf einmal ausgezahlt werden. Dieser Betrag wird in einem einzigen Jahr voll versteuert. Durch den progressiven Tarif ist die Steuer darauf meist höher als bei Auszahlung über den Auszahlplan.'],
   },
   kapitalauszahlung: {
     title: 'Kapitalauszahlung oder Leibrente',

@@ -141,8 +141,6 @@ th, td { padding: 8px 10px; border-bottom: 1px solid var(--grid); text-align: ri
 th:first-child, td:first-child { text-align: left; white-space: normal; padding-left: 0; }
 thead th { color: var(--text-2); font-weight: 600; font-size: .8rem; border-bottom-color: var(--axis); }
 tbody tr:last-child td { border-bottom: 0; }
-td.best { font-weight: 700; }
-td.best::after { content: ''; }
 .th-key { display: inline-flex; align-items: center; gap: 6px; }
 
 /* Hinweise */
