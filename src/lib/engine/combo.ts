@@ -187,6 +187,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     gp: fx.has('capitalGuenstiger'), nextVP: fx.has('vpNextYear'),
     grossKV: fx.has('kvGrossIncome'), insAllowance: fx.has('insuranceAllowance'),
     vpSale: fx.has('vpTaxSale'),     // R2
+    insMin: fx.has('insDeathMinimum'), // R9
   };
   const T = 100 - p.a0, n = p.R - p.a0, tH = p.H - p.a0;
   const I = (t: number) => Math.pow(1 + p.infl, t);
@@ -311,17 +312,25 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   }
 
   // ---------- 2) Versicherung, Ansparphase ----------
-  let ins: null | { vals: (number | null)[]; own: number; ownReal: number; C: number; annual: number; ea: number; gain: number; halb: boolean } = null;
+  let ins: null | { vals: (number | null)[]; paid: number[]; own: number; ownReal: number; C: number; annual: number; ea: number; gain: number; halb: boolean } = null;
   if (on('ins')) {
     const eff = zeroCost ? 0 : p.insEff;
-    let V = 0, own = 0, ownReal = 0; const vals: (number | null)[] = [0];
+    let V = 0, own = 0, ownReal = 0; const vals: (number | null)[] = [0], paid = [0];
     for (let t = 0; t < T; t++) {
-      if (t < n) { const c = split.ins * dynF(t), rm = Math.pow(1 + contractGrowth(p, t, n) - eff, 1 / 12) - 1; for (let m = 0; m < 12; m++) { V += c; own += c; V *= 1 + rm; } ownReal += 12 * c / I(t); vals.push(V); }
+      if (t < n) { const c = split.ins * dynF(t), rm = Math.pow(1 + contractGrowth(p, t, n) - eff, 1 / 12) - 1; for (let m = 0; m < 12; m++) { V += c; own += c; V *= 1 + rm; } ownReal += 12 * c / I(t); vals.push(V); paid.push(own); }
       else vals.push(null);
     }
     const C = vals[n] as number;
-    ins = { vals, own, ownReal, C, annual: C / 10000 * p.rf * 12, ea: ERTRAG[p.R] / 100, gain: Math.max(0, C - own), halb: n >= 12 };
+    ins = { vals, paid, own, ownReal, C, annual: C / 10000 * p.rf * 12, ea: ERTRAG[p.R] / 100, gain: Math.max(0, C - own), halb: n >= 12 };
   }
+
+  // Fix insDeathMinimum (R9): Tod vor Rentenbeginn (idx < n) zahlt mindestens die eingezahlten Beiträge (Beitragsrückgewähr).
+  // idx = n (Tod mit Rentenbeginn) bleibt beim Guthaben, wie die Kapitalabfindung zu diesem Zeitpunkt.
+  const insDeath = (idx: number) => {
+    const v = ins!.vals[idx] as number, b = ins!.paid[idx];
+    const min = F.insMin && idx < n && b > v;
+    return { val: min ? b : v, min, note: min ? 'Eingezahlte Beiträge (Mindestleistung, über dem Fondsguthaben), einkommensteuerfrei (nur Erbschaftsteuer)' : 'Fondsguthaben, einkommensteuerfrei (nur Erbschaftsteuer)' };
+  };
 
   // ---------- 3) Gemeinsame Einkommensteuer im Alter (hängt nicht an den Fonds, daher vorab) ----------
   const incTax = zero(), abgTax = zero(), kv = zero(), taxAvd = zero(), taxIns = zero(), xIns = zero();
@@ -610,7 +619,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       const iv = ins.vals;
       parts.ins = {
         ...base, vals: iv.map((v, i) => i <= n ? v : f.vals[i]), net: f.net, payEnd: p.H, lifelong: false, abgTax: f.abg, kv: iKv,
-        heir: idx => idx <= n ? { val: iv[idx] as number, note: 'Fondsguthaben, einkommensteuerfrei (nur Erbschaftsteuer)' }
+        heir: idx => idx <= n ? insDeath(idx)
                               : { val: sellNet(f, idx), note: 'ETF aus der Kapitalauszahlung. ' + fundNote },
       };
     } else {
@@ -624,7 +633,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       parts.ins = {
         ...base, vals: iv, net, payEnd: 100, lifelong: true, abgTax: zero(), kv: iKv,
         heir: idx => {
-          if (idx <= n) return { val: iv[idx] as number, note: 'Fondsguthaben, einkommensteuerfrei (nur Erbschaftsteuer)' };
+          if (idx <= n) return insDeath(idx);
           const rest = Math.max(0, p.R + p.gz - (p.a0 + idx));
           // Restrenten der Garantiezeit einzeln versteuert; Fix heirTax (E2): mit dem Einkommen der Erben.
           const heirNet = (t: number) => F.heir ? annual - taxAdd(p.incHeir, annual * ea, t) : annualNet(t);
@@ -740,7 +749,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       let v = 0; for (const r of list) v += (married && r.heirMarried ? r.heirMarried : r.heir)(idx).val;
       return { val: v, note: 'Teile einzeln versteuert' };
     }
-    let gross = 0, X = 0, back = 0, lt = 0, halbAvd = false, rentYears = 0, insFree = 0;
+    let gross = 0, X = 0, back = 0, lt = 0, halbAvd = false, rentYears = 0, insMinUsed = false;
     const bits: string[] = [];
     if (avd && (!only || only === 'avd')) {
       const a = avd, V = a.vals[idx], C0 = a.vals[n];
@@ -756,7 +765,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       }
     }
     if (ins && (!only || only === 'ins')) {
-      if (idx <= n) { insFree = ins.vals[idx] as number; gross += insFree; }
+      if (idx <= n) { const d = insDeath(idx); insMinUsed = d.min; gross += d.val; }
       else if (!p.insLump) {
         rentYears = Math.max(0, p.R + p.gz - (p.a0 + idx));
         const { annual, ea } = ins;
@@ -775,7 +784,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
       : 'AVD-Förderung ' + e(back) + ' zurück');
     if (tx > 0 || X > 0) bits.push('Einkommensteuer der Erben ' + e(tx) + ' in einem Tarif (' + [avd && (!only || only === 'avd') ? 'AVD-Erträge' + (halbAvd ? ' hälftig' : '') : '', rentYears > 0 ? 'Ertragsanteil der Restrente' : ''].filter(Boolean).join(' und ') + ')');
     if (depots.length) bits.push((F.gp ? 'Depots nach Kapitalertragsteuer/Günstigerprüfung bei Verkauf ' : 'Depots nach Abgeltungsteuer bei Verkauf ') + e(abg) + ' (ein Sparer-Pauschbetrag)');
-    if (ins && (!only || only === 'ins') && idx <= n) bits.push('Versicherung einkommensteuerfrei');
+    if (ins && (!only || only === 'ins') && idx <= n) bits.push(insMinUsed ? 'Versicherung zahlt die eingezahlten Beiträge (Mindestleistung), einkommensteuerfrei' : 'Versicherung einkommensteuerfrei');
     if (rentYears > 0) bits.push('Restrente noch ' + rentYears + ' Jahre');
     return { val: gross - tx + (V - abg), note: 'Gemeinsam versteuert: ' + bits.join('; '), detail: { incomeTax: tx, abgTax: abg, minDepotGain: minGain } };
   };

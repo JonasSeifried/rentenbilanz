@@ -11,7 +11,7 @@ export const SITE = {
   /** Kontakt für „Fehler melden“ (steht auch im Impressum und in der Datenschutzerklärung). */
   contact: 'legal@jonasseifried.com',
   /** Öffentliche Adresse der Seite (ohne Schrägstrich am Ende). Leer = keine canonical-/og:url-Angaben. */
-  url: 'https://rente.jonasseifried.co',
+  url: 'https://rente.jonasseifried.com',
   /** Öffentliches Quellcode-Repository (Link in der Fußzeile). */
   repo: 'https://github.com/JonasSeifried/rentenbilanz',
   /** Start des Altersvorsorgedepots; der Hinweis in der Oberfläche schaltet sich ab diesem Datum selbst ab. */

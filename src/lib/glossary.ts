@@ -127,11 +127,20 @@ export const GLOSSARY = {
     title: 'Laufende Kosten (TER)',
     text: ['Jährliche Kosten eines Fonds in Prozent des Vermögens („Total Expense Ratio“). Breite Index-ETFs liegen oft bei 0,1–0,3 %, aktive Fonds deutlich höher.'],
   },
+  erbfallVersicherung: {
+    title: 'Erbfall bei der Versicherung',
+    text: [
+      'Stirbt die versicherte Person vor Rentenbeginn, zahlt die Versicherung das Fondsguthaben, mindestens aber die eingezahlten Beiträge (Beitragsrückgewähr, bei fondsgebundenen Rentenversicherungen üblich). Die Leistung ist einkommensteuerfrei, es kann nur Erbschaftsteuer anfallen. Prüfe im Angebot, ob dein Vertrag diese Mindestleistung hat.',
+      'Das Guthaben ist mit einem festen Kostenabzug von der Rendite gerechnet. Bei Provisionstarifen fallen die Kosten aber vor allem am Beitrag und in den ersten Jahren an. In den ersten 10 bis 20 Jahren ist das Guthaben hier deshalb eher zu hoch, bei einem geprüften Angebot um bis zu ein Viertel. Bei Rentenbeginn passt es wieder.',
+      'Nach Rentenbeginn erhalten die Erben nur die restlichen Renten der Garantiezeit; bei Kapitalauszahlung das Depot, in das sie angelegt ist.',
+    ],
+  },
   effektivkosten: {
     title: 'Effektivkosten',
     text: [
       'Alle Kosten eines Vertrags, ausgedrückt als Minderung der jährlichen Rendite. Stehen im Produktinformationsblatt.',
       'Bei Versicherungen sind Abschlusskosten darin über die Laufzeit verteilt. Wer früh kündigt, steht deutlich schlechter da.',
+      'Gerechnet wird mit einem festen Abzug von der Rendite. Das trifft das Kapital bei Rentenbeginn gut. Bei Provisionstarifen fallen die Kosten aber vor allem am Beitrag und in den ersten Jahren an. Das Guthaben vor Rentenbeginn, etwa im Erbfall, ist dann in den ersten 10 bis 20 Jahren eher zu hoch gerechnet. Bei einem geprüften Angebot (0,88 % Effektivkosten) waren es bis zu ein Viertel.',
     ],
   },
   avdKosten: {

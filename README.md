@@ -1,6 +1,6 @@
 # Rentenbilanz
 
-Öffentlicher Rechner ([rente.jonasseifried.co](https://rente.jonasseifried.co)), der ETF-Depot, Altersvorsorgedepot (ab 2027), fondsgebundene Rentenversicherung und aktiven Fonds vergleicht: netto, mit Steuertarif 2026, Förderung, Vorabpauschale, Auszahlphase, Krankenversicherung und Erbfall. Rein statisch, kein Backend, keine Tracker, keine externen Anfragen.
+Öffentlicher Rechner ([rente.jonasseifried.com](https://rente.jonasseifried.com)), der ETF-Depot, Altersvorsorgedepot (ab 2027), fondsgebundene Rentenversicherung und aktiven Fonds vergleicht: netto, mit Steuertarif 2026, Förderung, Vorabpauschale, Auszahlphase, Krankenversicherung und Erbfall. Rein statisch, kein Backend, keine Tracker, keine externen Anfragen.
 
 **Name:** steht nur in `src/lib/site.ts` (wird beim Build auch in die HTML-Seiten eingesetzt).
 

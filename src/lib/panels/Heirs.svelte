@@ -58,7 +58,7 @@
     <section class="card" aria-labelledby="heir-h">
       <div class="card-head">
         <h2 id="heir-h">Was die Erben bekommen</h2>
-        <p class="hint">Bei Tod mit {p.deathAge}, {p.deathAge < p.R ? 'vor' : 'nach'} Rentenbeginn. Ohne Erbschaftsteuer.{#if res.kombi} Deine Kombi ist gemeinsam versteuert: <Info k="erbfallKombi">Erbfall bei einer Kombi</Info>.{/if}</p>
+        <p class="hint">Bei Tod mit {p.deathAge}, {p.deathAge < p.R ? 'vor' : 'nach'} Rentenbeginn. Ohne Erbschaftsteuer.{#if p.deathAge < p.R && (res.ins || res.kombi?.combo.parts.ins)} Versicherung vor Rentenbeginn: <Info k="erbfallVersicherung">Guthaben eher zu hoch, mindestens die Beiträge</Info>.{/if}{#if res.kombi} Deine Kombi ist gemeinsam versteuert: <Info k="erbfallKombi">Erbfall bei einer Kombi</Info>.{/if}</p>
       </div>
       <div class="table-scroll" {@attach scrollRegion('Tabelle: Was die Erben bekommen')}>
         <table class="heirs" data-testid="heirs-table">
