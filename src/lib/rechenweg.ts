@@ -21,8 +21,8 @@ const LABELS: Readonly<Record<InputKey, readonly [string, string]>> = Object.fre
   deathAge: ['Erbfall: Todesalter', 'Alter'], heirHalf: ['Erbfall: Erbe bei Auszahlung mindestens 62', ''],
   incHeir: ['Erbfall: zu versteuerndes Einkommen der Erben (heutiges Geld)', '€/Jahr'],
   kist: ['Kirchensteuersatz (0 = keine)', '%'], married: ['Verheiratet, zusammen veranlagt (Splitting)', ''],
-  incSpouse: ['Partner: zu versteuerndes Einkommen vor Ihrem Rentenbeginn (heutiges Geld)', '€/Jahr'],
-  incSpouseRet: ['Partner: zu versteuerndes Einkommen ab Ihrem Rentenbeginn (heutiges Geld)', '€/Jahr'],
+  incSpouse: ['Partner: zu versteuerndes Einkommen vor dem eigenen Rentenbeginn (heutiges Geld)', '€/Jahr'],
+  incSpouseRet: ['Partner: zu versteuerndes Einkommen ab dem eigenen Rentenbeginn (heutiges Geld)', '€/Jahr'],
   studyEnd: ['Ausbildung/Studium bis', 'Alter (16 = keine)'], incStudy: ['Zu versteuerndes Einkommen in der Ausbildung', '€/Jahr'],
   eligStudy: ['In der Ausbildung zulageberechtigt', ''], kvRate: ['KV/PV-Satz im Alter', '%'],
   infl: ['Inflation', '% p. a.'], dyn: ['Beitragsdynamik', '% p. a.'], basis: ['Basiszins Vorabpauschale', '%'],
@@ -67,7 +67,7 @@ function taxText(p: Params): string {
   const church = p.kist > 0
     ? 'Kirchensteuer ' + pct(p.kist) + ' % auf die festzusetzende Einkommensteuer einschließlich hinzugerechneter AVD-Zulage (§ 51a Abs. 2 EStG, ohne Kinderfreibeträge und ohne Kappung); gezahlte Kirchensteuer über ' + (p.married ? '72' : '36') + ' € ist im selben Jahr als Sonderausgabe abgezogen (§ 10 Abs. 1 Nr. 4, § 10c EStG)'
     : 'keine Kirchensteuer';
-  const heirs = p.kist > 0 || p.married ? ' Erben (und beim AVD-Übertrag der Partner) versteuern einzeln im Grundtarif' + (p.kist > 0 ? ' mit demselben Kirchensteuersatz' : '') + '.' : '';
+  const heirs = p.kist > 0 || p.married ? ' Erben' + (p.married ? ' und beim AVD-Übertrag der Partner (mit incSpouseRet)' : '') + ' versteuern einzeln im Grundtarif' + (p.kist > 0 ? ' mit demselben Kirchensteuersatz' : '') + '.' : '';
   return tariff + ', mit Solidaritätszuschlag; Tarifgrenzen wachsen mit der Inflation; ' + church + '.' + (p.married ? '' : ' Kein Ehegattensplitting.') + heirs;
 }
 

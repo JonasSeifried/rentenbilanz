@@ -10,6 +10,8 @@ import { ALL_FIXES, type FixId } from '../src/lib/engine/fixes';
 import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
 import { decodeState, encodeState } from '../src/lib/link';
 import { sanitize } from '../src/lib/storage';
+import { rechenweg } from '../src/lib/rechenweg';
+import { changedSettings } from '../src/lib/settingsChanged';
 
 const P = (patch: Partial<Inputs> = {}) => readParams({ ...DEFAULTS, ...patch });
 const without = (...ids: FixId[]) => ({ fixes: new Set([...ALL_FIXES].filter(f => !ids.includes(f))) });
@@ -157,5 +159,22 @@ describe('Link und Speicher', () => {
     expect(decodeState('#v=1&a0=40').inputs).toMatchObject({ kist: 0, married: false });
     expect(decodeState('#v=1&kist=99').inputs!.kist).toBe(0); // außerhalb der Grenzen ignoriert
     expect(sanitize({ kist: 8, married: true })).toMatchObject({ kist: 8, married: true });
+  });
+});
+
+describe('Texte', () => {
+  const md = (x: Partial<Inputs>) => { const inp = { ...DEFAULTS, ...x }; return rechenweg(inp, analyze(readParams(inp)), ''); };
+  it('Rechenweg nennt das Steuerprofil so, wie gerechnet wird', () => {
+    const off = md({});
+    expect(off).toMatch(/Grundtarif ledig/); expect(off).toMatch(/keine Kirchensteuer/); expect(off).toMatch(/Abgeltungsteuer 26,375 %/);
+    const on = md({ kist: 9, married: true, incSpouse: 30000, incSpouseRet: 15000 });
+    expect(on).toMatch(/Splittingtarif/); expect(on).toMatch(/Partner 30\.000 € vor und 15\.000 € ab Rentenbeginn/);
+    expect(on).toMatch(/Kirchensteuer 9 %/); expect(on).toMatch(/Abgeltungsteuer 27,9951 %/); expect(on).toMatch(/Sparer-Pauschbetrag 2\.000 €/);
+    expect(on).toMatch(/\| kist \| Kirchensteuersatz \(0 = keine\) \| 9 \|  \| % \|/);
+  });
+  it('Einstellungs-Badge: Partner-Einkommen zählt nur verheiratet', () => {
+    expect(changedSettings({ ...DEFAULTS, incSpouse: 1000 })).toEqual([]);
+    expect(changedSettings({ ...DEFAULTS, married: true, incSpouse: 1000 })).toEqual(['married', 'incSpouse']);
+    expect(changedSettings({ ...DEFAULTS, kist: 8 })).toEqual(['kist']);
   });
 });

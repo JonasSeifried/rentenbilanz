@@ -7,6 +7,7 @@
   import NumberField from '../components/NumberField.svelte';
   import Switch from '../components/Switch.svelte';
   import Icon from '../components/Icon.svelte';
+  import Info from '../components/Info.svelte';
 
   const i = $derived(app.inputs);
   const p = $derived(readParams(app.inputs));
@@ -61,6 +62,11 @@
   }
 
   type OnKey = 'etfOn' | 'avdOn' | 'insOn' | 'fondOn';
+
+  // Steuerprofil: Kirchensteuersatz als Auswahl (8 % Bayern/Baden-Württemberg, 9 % übrige Länder); ein anderer Wert
+  // (z. B. aus einem Link) bleibt gültig und wird genannt.
+  const KIST = [{ v: 0, label: 'Keine' }, { v: 8, label: '8 % (Bayern, Baden-Württemberg)' }, { v: 9, label: '9 % (übrige Länder)' }] as const;
+  const kistOther = $derived(!KIST.some(o => o.v === i.kist));
 </script>
 
 {#snippet offNote(key: OnKey)}
@@ -118,6 +124,28 @@
       {/if}
       <Switch checked={i.bonus} onchange={v => setInput('bonus', v)} label="Berufseinsteigerbonus 200 € (unter 25)" info="bonus" />
     </div>
+    <div class="grp" role="group" aria-labelledby="s-tax">
+      <h3 id="s-tax">Steuer</h3>
+      <fieldset class="chips" data-testid="kist">
+        <legend>Kirchensteuer <Info k="kirchensteuer" /></legend>
+        <div class="opts">
+          {#each KIST as o (o.v)}
+            <label class="chip" class:on={i.kist === o.v}>
+              <input type="radio" name="kist" value={o.v} checked={i.kist === o.v} id={o.v === 0 ? 'f-kist' : undefined}
+                onchange={() => setInput('kist', o.v)} data-testid="kist-{o.v}" />{o.label}
+            </label>
+          {/each}
+        </div>
+        {#if kistOther}<p class="hint">Gerechnet wird mit {pc(p.kist).toLocaleString('de-DE')} %.</p>{/if}
+      </fieldset>
+      <Switch id="f-married" checked={i.married} testid="married" onchange={v => setInput('married', v)} label="Verheiratet, zusammen veranlagt" info="splitting" />
+      {#if i.married}
+        <NumberField layout="row" label="Partner: zu versteuerndes Einkommen bis zu deinem Rentenbeginn" value={i.incSpouse} onchange={v => setInput('incSpouse', v)} min={0} step={1000} unit="€/Jahr" info="zve" testid="incSpouse"
+          limits={LIMITS.incSpouse} effective={p.incSpouse} />
+        <NumberField layout="row" label="… ab deinem Rentenbeginn" value={i.incSpouseRet} onchange={v => setInput('incSpouseRet', v)} min={0} step={1000} unit="€/Jahr" testid="incSpouseRet"
+          limits={LIMITS.incSpouseRet} effective={p.incSpouseRet} hint="Heutiges Geld, ohne die verglichenen Produkte. Gerechnet wird angenommen, dass der Partner keinen eigenen geförderten Vertrag und keine eigenen Kapitalerträge hat." />
+      {/if}
+    </div>
     <div class="grp" role="group" aria-labelledby="s-kv">
       <h3 id="s-kv">Krankenversicherung</h3>
       <NumberField id="f-kvGrossRet" layout="row" label="Sonstige KV-beitragspflichtige Bruttoeinnahmen im Alter" value={i.kvGrossRet} onchange={v => setInput('kvGrossRet', v)} min={-1} step={1000} unit="€/Jahr" limits={LIMITS.kvGrossRet} effective={kvGross(p)}
@@ -136,7 +164,7 @@
   <Switch checked={i.fundingDelay} onchange={v => setInput('fundingDelay', v)} label="AVD-Zulagen und Erstattungen ein Jahr später (Sensitivität)" />
   <p class="hint">Standard: Ende des Beitragsjahres. Ein Jahr Verzug ist ein Szenario, keine gesetzliche Bearbeitungsfrist. Die letzte Gutschrift kommt am Ende des ersten Rentenjahres.</p>
   <Switch checked={i.indexAllowance} onchange={v => setInput('indexAllowance', v)} label="Sparer-Pauschbetrag wächst mit Inflation (hypothetische Sensitivität)" />
-  <p class="hint">Gesetzlicher Ausgangswert: nominal 1.000 € jährlich. Tarif, Soli-Grenze und KV-BBG wachsen im Modell mit Inflation; diese Fortschreibung ist keine zugesicherte Rechtsentwicklung.</p>
+  <p class="hint">Gesetzlicher Ausgangswert: nominal 1.000 € jährlich (zusammen veranlagt 2.000 €). Tarif, Soli-Grenze und KV-BBG wachsen im Modell mit Inflation; diese Fortschreibung ist keine zugesicherte Rechtsentwicklung.</p>
   <NumberField layout="row" label="AVD-Kosten in der Auszahlung" value={i.avdPayCost} onchange={v => setInput('avdPayCost', v)} min={-1} step={0.1} unit="% p. a." limits={LIMITS.avdPayCost} effective={pc(p.avdPayCost < 0 ? p.avdCost : p.avdPayCost)} hint="−1 übernimmt die Ansparkosten. Der Standarddepot-Kostendeckel betrifft die Ansparphase." />
   <NumberField layout="row" label="ETF-Kosten in der Auszahlung (auch Neben-/Folgedepot)" value={i.etfPayTer} onchange={v => setInput('etfPayTer', v)} min={-1} step={0.1} unit="% p. a." limits={LIMITS.etfPayTer} effective={pc(p.etfPayTer < 0 ? p.etfTer : p.etfPayTer)} hint="−1 übernimmt die jeweilige TER; sonst eigener Kostensatz." />
   <NumberField layout="row" label="Aktiver Fonds: Kosten in der Auszahlung" value={i.fondPayTer} onchange={v => setInput('fondPayTer', v)} min={-1} step={0.1} unit="% p. a." limits={LIMITS.fondPayTer} effective={pc(p.fondPayTer < 0 ? p.fondTer : p.fondPayTer)} hint="−1 übernimmt die TER. Ein sicherer ETF-Teil nutzt die ETF-Auszahlkosten." />
@@ -217,11 +245,11 @@
   </details>
   <details>
     <summary>Einkommensteuer</summary>
-    <p>Einkommensteuer nach Tarif 2026 (§ 32a EStG, Grundtarif, ledig) inkl. Solidaritätszuschlag; die Tarifgrenzen wachsen mit der Inflation mit, der Sparerpauschbetrag bleibt bei 1.000 €. Keine Kirchensteuer, kein Ehegattensplitting. Die Steuerreform 2027 ist noch nicht beschlossen. Das Gehalt bleibt bis zur Rente real gleich, außer unter „Gehaltsentwicklung“ ist ein Zielgehalt eingetragen.</p>
+    <p>Einkommensteuer nach Tarif 2026 (§ 32a EStG) inkl. Solidaritätszuschlag; die Tarifgrenzen wachsen mit der Inflation mit, der Sparerpauschbetrag bleibt bei 1.000 € (zusammen veranlagt 2.000 €). Ledig: Grundtarif. Verheiratet: Splittingtarif auf das gemeinsame zu versteuernde Einkommen (§ 32a Abs. 5), Soli-Freigrenze verdoppelt; der Partner hat dabei keinen eigenen geförderten Vertrag und keine eigenen Kapitalerträge, seine mögliche Zulage (§ 79 Satz 2) ist nicht gerechnet. Kirchensteuer (8 oder 9 %) auf die Einkommensteuer einschließlich der Zulage, die bei der Günstigerprüfung hinzugerechnet wird (§ 51a EStG); gezahlte Kirchensteuer mindert als Sonderausgabe das Einkommen (§ 10 Abs. 1 Nr. 4). Nicht gerechnet: Kinderfreibeträge in der Bemessung, Kappung der Kirchensteuer, Kirchgeld; bei Verheirateten sind beide Kirchenmitglied. Erben versteuern im Grundtarif mit demselben Kirchensteuersatz. Die Steuerreform 2027 ist noch nicht beschlossen. Das Gehalt bleibt bis zur Rente real gleich, außer unter „Gehaltsentwicklung“ ist ein Zielgehalt eingetragen.</p>
   </details>
   <details>
     <summary>ETF und Fonds</summary>
-    <p>Abgeltungsteuer 26,375 %, 30 % Teilfreistellung (Aktienfonds), Sparer-Pauschbetrag 1.000 € nominal pro Jahr (in der Kombi gemeinsam einschließlich Versicherungsleistung), Vorabpauschale mit Zufluss im Folgejahr. Die Steuer wird aus dem Depot bezahlt; die beim dafür nötigen Anteilsverkauf entstehende Steuer ist mitgerechnet. Entnahmen jährlich am Jahresanfang als Zeitnäherung statt monatlicher Zahlung.</p>
+    <p>Abgeltungsteuer 26,375 % (mit Kirchensteuer 9 %: 27,995 %, 8 %: 27,819 %; § 32d Abs. 1 EStG), 30 % Teilfreistellung (Aktienfonds), Sparer-Pauschbetrag 1.000 € nominal pro Jahr (in der Kombi gemeinsam einschließlich Versicherungsleistung), Vorabpauschale mit Zufluss im Folgejahr. Die Steuer wird aus dem Depot bezahlt; die beim dafür nötigen Anteilsverkauf entstehende Steuer ist mitgerechnet. Entnahmen jährlich am Jahresanfang als Zeitnäherung statt monatlicher Zahlung.</p>
   </details>
   <details>
     <summary>Altersvorsorgedepot</summary>
@@ -234,7 +262,7 @@
   </details>
   <details>
     <summary>Erbfall</summary>
-    <p>Altersvorsorgedepot: Ehepartner können das Guthaben förderunschädlich auf einen eigenen Vertrag übertragen; die spätere Einkommensteuer darauf ist grob abgezogen. Alle anderen Erben: Zulagen und Steuervorteile werden zurückgefordert (§ 93 EStG). Die Erträge versteuern die Erben mit ihrem eigenen Steuersatz (§ 22 Nr. 5 S. 3 EStG; BMF-Schreiben vom 05.10.2023, Rn. 229 f.), nur zur Hälfte, wenn der Erbe mindestens 62 ist und der Vertrag mindestens 12 Jahre lief. Nach Rentenbeginn werden Restbeiträge und verbleibende Förderung noch grob am Restguthaben bemessen; deren genaue Zuordnung ist offen. Die latente Ehepartnersteuer nutzt weiterhin das Einkommen und den Restzeitraum der verstorbenen Person. Das ist kein eigener Hinterbliebenen-Auszahlplan. Bei verzögerter Förderung wird nur bereits gutgeschriebene Förderung zurückgefordert; noch offene Ansprüche sind im Erbwert weder angesetzt noch abgezogen. Der ungeförderte Teil (Beiträge über 1.800 € im Jahr) geht ohne Rückforderung an alle Erben; sie versteuern nur dessen Gewinn (§ 22 Nr. 5 S. 2 Buchst. c EStG), beim Ehepartner ebenso. Restrenten aus der Garantiezeit der Versicherung versteuern die Erben ebenfalls selbst.</p>
+    <p>Altersvorsorgedepot: Ehepartner können das Guthaben förderunschädlich auf einen eigenen Vertrag übertragen; die spätere Einkommensteuer darauf ist grob abgezogen. Alle anderen Erben: Zulagen und Steuervorteile werden zurückgefordert (§ 93 EStG). Die Erträge versteuern die Erben mit ihrem eigenen Steuersatz (§ 22 Nr. 5 S. 3 EStG; BMF-Schreiben vom 05.10.2023, Rn. 229 f.), nur zur Hälfte, wenn der Erbe mindestens 62 ist und der Vertrag mindestens 12 Jahre lief. Nach Rentenbeginn werden Restbeiträge und verbleibende Förderung noch grob am Restguthaben bemessen; deren genaue Zuordnung ist offen. Die latente Ehepartnersteuer nutzt den Restzeitraum der verstorbenen Person und deren Einkommen im Alter, bei „Verheiratet“ stattdessen das Einkommen des Partners im Alter (Grundtarif). Das ist kein eigener Hinterbliebenen-Auszahlplan. Bei verzögerter Förderung wird nur bereits gutgeschriebene Förderung zurückgefordert; noch offene Ansprüche sind im Erbwert weder angesetzt noch abgezogen. Der ungeförderte Teil (Beiträge über 1.800 € im Jahr) geht ohne Rückforderung an alle Erben; sie versteuern nur dessen Gewinn (§ 22 Nr. 5 S. 2 Buchst. c EStG), beim Ehepartner ebenso. Restrenten aus der Garantiezeit der Versicherung versteuern die Erben ebenfalls selbst.</p>
   </details>
   <details>
     <summary>Kapitalerträge</summary>
@@ -290,6 +318,19 @@
   .assume:focus { outline: none; }
   .acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
   .print-h { margin: 0 0 10px; }
+  .chips { border: 0; margin: 0; padding: 6px 0; min-width: 0; }
+  .chips legend { padding: 0; margin-bottom: 6px; font-size: .82rem; color: var(--text-2); display: flex; align-items: center; gap: 4px; }
+  .chips .opts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px; cursor: pointer; user-select: none;
+    padding: 5px 12px 5px 8px; border-radius: 999px; font-size: .85rem;
+    border: 1px solid var(--border-strong); color: var(--text-2); background: var(--surface);
+  }
+  .chip input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+  .chip.on { color: var(--text); background: var(--surface-2); border-color: var(--text-2); }
+  .chip:hover { border-color: var(--text-2); }
+  .chip:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (pointer: coarse) { .chip { padding: 8px 14px 8px 10px; } }
   @media (max-width: 400px) { .grid { grid-template-columns: 1fr; } }
   @media print {
     .assume summary { padding: 4px 0 2px; }

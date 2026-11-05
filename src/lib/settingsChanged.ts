@@ -6,7 +6,7 @@ import { CONTRIB_KEYS, DEFAULTS, type InputKey, type Inputs } from './engine/inp
 export const SETTINGS_KEYS: readonly InputKey[] = [
   'studyEnd', 'incStudy', 'eligStudy', 'incPeak', 'incPeakAge', 'kids', 'kidsFrom', 'kidsYears', 'bonus', 'kvRate',
   'etfM', 'etfTer', 'avdM', 'avdCost', 'reinvest', 'insM', 'insEff', 'fondM', 'fondAA', 'fondTer',
-  'infl', 'dyn', 'basis',
+  'infl', 'dyn', 'basis', 'kist', 'married', 'incSpouse', 'incSpouseRet',
 ];
 
 /**
@@ -21,6 +21,7 @@ export function changedSettings(i: Inputs): InputKey[] {
     if (k === 'studyEnd') return inStudy !== (DEFAULTS.studyEnd > DEFAULTS.a0) || (inStudy && i.studyEnd !== DEFAULTS.studyEnd);
     if ((k === 'incStudy' || k === 'eligStudy') && !inStudy) return false;
     if ((k === 'kidsFrom' || k === 'kidsYears') && !(i.kids > 0)) return false;
+    if ((k === 'incSpouse' || k === 'incSpouseRet') && !i.married) return false;
     if (k === 'incPeakAge') return false; // zählt mit incPeak als eine Angabe (eine Zeile im Annahmen-Check)
     return i[k] !== DEFAULTS[k];
   });

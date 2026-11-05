@@ -127,8 +127,8 @@ export const GLOSSARY = {
   abgeltung: {
     title: 'Abgeltungsteuer, Teilfreistellung, Sparerpauschbetrag',
     text: [
-      'Gewinne aus Fonds werden pauschal mit 25 % plus Solidaritätszuschlag besteuert, zusammen 26,375 % (ohne Kirchensteuer).',
-      'Bei Aktienfonds sind 30 % der Erträge steuerfrei (Teilfreistellung). Dazu sind 1.000 € Kapitalerträge pro Jahr steuerfrei (Sparerpauschbetrag), im Rechner je Produkt.',
+      'Gewinne aus Fonds werden pauschal mit 25 % plus Solidaritätszuschlag besteuert, zusammen 26,375 %. Mit Kirchensteuer sinkt die 25-%-Steuer etwas, dafür kommt die Kirchensteuer dazu: zusammen 27,995 % bei 9 % und 27,819 % bei 8 % (§ 32d Abs. 1 EStG).',
+      'Bei Aktienfonds sind 30 % der Erträge steuerfrei (Teilfreistellung). Dazu sind 1.000 € Kapitalerträge pro Jahr steuerfrei (Sparerpauschbetrag; zusammen veranlagte Ehepaare 2.000 €), im Rechner je Produkt.',
     ],
   },
   ter: {
@@ -230,6 +230,22 @@ export const GLOSSARY = {
   incHeir: {
     title: 'Einkommen der Erben',
     text: ['Zu versteuerndes Einkommen der Erben im Todesjahr, in heutigem Geld. Danach richtet sich der Steuersatz auf AVD-Erträge und Restrenten sowie die gemeinsame Günstigerprüfung beim Depotverkauf. Standard: 38.000 €.'],
+  },
+  kirchensteuer: {
+    title: 'Kirchensteuer',
+    text: [
+      '8 % der Einkommensteuer in Bayern und Baden-Württemberg, 9 % in den übrigen Ländern. Sie fällt auf alles an, was der Einkommensteuer unterliegt: Auszahlungen aus Altersvorsorgedepot und Versicherung, Kapitalerträge und Vorabpauschale.',
+      'Die gezahlte Kirchensteuer ist eine Sonderausgabe und senkt die Einkommensteuer etwas (über 36 € im Jahr, Ehepaare 72 €). Das ist gerechnet; das eingegebene zu versteuernde Einkommen gilt vor diesem Abzug. Beim Sonderausgabenabzug für das Altersvorsorgedepot spart man auch Kirchensteuer.',
+      'Nicht gerechnet: die Kappung auf einen Höchstsatz des Einkommens (auf Antrag, nur bei hohen Einkommen), Kinderfreibeträge in der Bemessung und das Kirchgeld, wenn nur ein Ehepartner Mitglied ist. Bei Verheirateten gilt der Satz für beide. Erben zahlen im Rechner denselben Satz.',
+    ],
+  },
+  splitting: {
+    title: 'Verheiratet, zusammen veranlagt',
+    text: [
+      'Ehepaare zahlen die Einkommensteuer gemeinsam auf beide Einkommen (Splittingtarif): Steuer auf die Hälfte, mal zwei. Verdient der Partner weniger, sinkt der Steuersatz, bei der Steuererstattung des Altersvorsorgedepots in der Ansparphase wie auf die Auszahlungen im Alter. Dazu gibt es 2.000 € Sparerpauschbetrag statt 1.000 € und eine doppelte Freigrenze beim Solidaritätszuschlag.',
+      'Gerechnet wird mit dem zu versteuernden Einkommen des Partners vor und ab deinem Rentenbeginn, in heutigem Geld. Angenommen: Der Partner hat keine eigenen Kapitalerträge und keinen eigenen geförderten Vertrag. Hat er einen, bekäme er unter Umständen selbst eine Zulage (als mittelbar Berechtigter bis 175 € im Jahr, ab 120 € eigenem Beitrag) und die Günstigerprüfung umfasst beide Verträge. Das ist nicht gerechnet.',
+      'Krankenversicherung und Erbfall bleiben je Person: Erben versteuern im Grundtarif. Übernimmt der Partner das Altersvorsorgedepot, ist die spätere Steuer mit seinem Einkommen im Alter geschätzt.',
+    ],
   },
   erbschaftsteuer: {
     title: 'Erbschaftsteuer',
