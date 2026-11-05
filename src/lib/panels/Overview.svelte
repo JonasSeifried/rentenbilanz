@@ -4,6 +4,7 @@
   import { DEFAULTS, INPUT_KEYS, type Inputs } from '../engine/inputs';
   import { eur, eurRound } from '../format';
   import { SITE } from '../site';
+  import { rechenweg } from '../rechenweg';
   import { isFlip, legendName, robustText, tileName, tileSub, verdict } from '../verdict';
   import { app, focusField, openKombi, setInputs, setTab, shareUrl, showToast } from '../state.svelte';
   import Icon from '../components/Icon.svelte';
@@ -98,6 +99,15 @@
     el.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
     el.setAttribute('tabindex', '-1');
     el.focus({ preventScroll: true });
+  }
+  async function copyRechenweg() {
+    const text = rechenweg($state.snapshot(app.inputs) as Inputs, A, shareUrl());
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('Rechenweg kopiert: Eingaben, Annahmen und Jahreswerte als Text, zum Nachrechnen oder Einfügen in eine KI.');
+    } catch {
+      showToast('Kopieren hat nicht geklappt. Bitte erneut versuchen.');
+    }
   }
   async function share() {
     const url = shareUrl();
@@ -254,9 +264,10 @@
   <ol>
     <li><span>Prüfe die Annahmen, die das Ergebnis am stärksten verändern.</span>
       <button type="button" class="linkish noprint" onclick={jumpCheck}>Zum Annahmen-Check</button></li>
-    <li><span>Speichere das Ergebnis als PDF oder teile den Link.</span>
+    <li><span>Speichere das Ergebnis als PDF, teile den Link oder kopiere den Rechenweg zum Nachprüfen.</span>
       <span class="noprint btns"><button type="button" class="linkish" onclick={() => window.print()}>Drucken / PDF</button>
-        <button type="button" class="linkish" onclick={share}>Link kopieren</button></span></li>
+        <button type="button" class="linkish" onclick={share}>Link kopieren</button>
+        <button type="button" class="linkish" onclick={copyRechenweg} data-testid="copy-rechenweg">Rechenweg kopieren</button></span></li>
     <li><span>Vor einem Abschluss: die Kosten im Produktinformationsblatt vergleichen (<Info k="effektivkosten">Effektivkosten</Info>).</span></li>
     <li><span>Bei Fragen zur eigenen Situation helfen unabhängige Stellen, zum Beispiel die Verbraucherzentralen.</span></li>
   </ol>

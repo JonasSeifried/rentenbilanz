@@ -34,6 +34,7 @@ Für die Browser-Tests einmalig: `npx playwright install chromium webkit`.
 | `src/lib/engine/` | Eine Rechen-Engine für Einzelprodukte und Kombi (`combo.ts`; ein Einzelprodukt ist eine Kombi mit einem Teil), Auswertung (`analyze.ts`), Tarif, Konstanten und Eingaben (`core.ts`, `inputs.ts`). `engine.ts` ist der unveränderte Port des Originals und nur noch Referenz für die Tests. |
 | `src/lib/link.ts`, `storage.ts`, `state.svelte.ts` | Link-Format, Speichern im Browser, App-Zustand |
 | `src/lib/glossary.ts` | Erklärtexte zu Fachbegriffen |
+| `src/lib/rechenweg.ts` | „Rechenweg kopieren“: Eingaben, Modellgrenzen, Ergebnisse und Jahreswerte als Markdown zum Nachrechnen (auch durch eine KI) |
 | `src/lib/panels/`, `src/lib/components/` | Oberfläche (Svelte 5) |
 | `impressum.html`, `datenschutz.html` | Rechtliche Seiten |
 | `tests/` | Golden-Tests (Original gegen Port) und Unit-Tests (Vitest) |
