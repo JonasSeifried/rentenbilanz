@@ -70,3 +70,7 @@ Die Rechnung nutzt Werte, die sich jedes Jahr ändern. Nach jeder Änderung: `np
 - „Link teilen“ kopiert einen Link mit dem Szenario im `#`-Teil (wird nicht an den Server gesendet).
 - Wird ein Link geöffnet und ist im Browser nichts gespeichert, wird das Szenario übernommen. Gibt es eigene, abweichende Eingaben, erscheint es im Ansichtsmodus: Nichts wird überschrieben, bis „Übernehmen“ geklickt wird.
 - „Auf Standardwerte zurücksetzen“ mit Rückgängig; „Gespeicherte Eingaben löschen“ unter Weitere Einstellungen.
+
+## Lizenz
+
+Code: [MIT](LICENSE). Die Schrift Inter steht unter der SIL Open Font License (`src/assets/fonts/LICENSE-Inter.txt`). Die Inhalte sind eine Modellrechnung ohne Gewähr und keine Anlage-, Steuer- oder Rechtsberatung.
