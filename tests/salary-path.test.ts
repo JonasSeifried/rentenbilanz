@@ -160,9 +160,10 @@ describe('Gehaltsentwicklung – Randfälle in Texten und Eingaben (Review)', ()
     const late = scenarioList(P({ incWork: 40000, incPeak: 100000, incPeakAge: 70 })).find(s => s.id === 'incWork')!;
     expect(late.label).toBe('Gehalt 30 % niedriger (28.000 €, steigend Richtung 70.000 €)');
     const noWork = P({ studyEnd: 70, incPeak: 60000, incPeakAge: 68 });
-    expect(incomePathKind(noWork)).toBe('off');
+    expect(incomePathKind(noWork)).toBe('noWork');
     for (let age = noWork.a0; age < noWork.R; age++) expect(incomeAt(noWork, age)).toBe(noWork.incStudy);
     const inp = { ...DEFAULTS, studyEnd: 70, incPeak: 60000, incPeakAge: 68 };
-    expect(rechenweg(inp, analyze(readParams(inp)), 'u')).toContain('Das Einkommen im Beruf bleibt real gleich');
+    expect(rechenweg(inp, analyze(readParams(inp)), 'u')).toContain('Gehaltsentwicklung eingetragen, aber ohne Wirkung: Die Ausbildung dauert bis zum Rentenbeginn (Alter 67)');
+    expect(scenarioList(noWork).some(s => s.id === 'incPath')).toBe(false);
   });
 });

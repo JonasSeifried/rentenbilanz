@@ -60,6 +60,7 @@ function salaryText(p: Params): string {
   const kind = incomePathKind(p), gr = incomeGrowth(p);
   const tail = ' (heutiges Geld). Werte je Jahr unter „Einkommen vor Rentenbeginn“. Beiträge folgen dem Gehalt nicht (nur der Dynamik).';
   if (kind === 'off') return 'Das Einkommen im Beruf bleibt real gleich (keine Gehaltsentwicklung), abgesehen von einer Ausbildungsphase.';
+  if (kind === 'noWork') return 'Gehaltsentwicklung eingetragen, aber ohne Wirkung: Die Ausbildung dauert bis zum Rentenbeginn (Alter ' + p.studyEnd + '), gerechnet wird durchgehend mit dem Einkommen in der Ausbildung ' + n0(p.incStudy) + ' €.';
   if (kind === 'now') return 'Gehaltsentwicklung: Das Zielalter ' + p.incPeakAge + ' liegt nicht nach dem Berufsbeginn (Alter ' + p.studyEnd + '); gerechnet wird ab Berufsbeginn durchgehend mit dem Zielgehalt ' + n0(p.incPeak) + ' €, das Gehalt ' + n0(p.incWork) + ' € wirkt nicht' + tail;
   const growth = (gr != null ? ' mit konstantem realem Wachstum (' + pct(gr) + ' % p. a.)' : ' linear');
   if (kind === 'late') return 'Gehaltsentwicklung: ab Berufsbeginn (Alter ' + p.studyEnd + ') ' + n0(p.incWork) + ' €,' + growth + ' Richtung ' + n0(p.incPeak) + ' € mit Alter ' + p.incPeakAge + '; das Zielalter liegt nach Rentenbeginn, zuletzt (Alter ' + (p.R - 1) + ') ' + n0(incomeAt(p, p.R - 1)) + ' €' + tail;

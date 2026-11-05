@@ -1,7 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { app, setInput, setInputs, resetToDefaults, forgetSaved } from '../state.svelte';
-  import { incomeGrowth, kvGross, readParams } from '../engine/core';
+  import { incomeGrowth, incomePathKind, kvGross, readParams } from '../engine/core';
   import { DEFAULTS, LIMITS } from '../engine/inputs';
   import { SITE } from '../site';
   import NumberField from '../components/NumberField.svelte';
@@ -52,9 +52,10 @@
   // Gehaltsentwicklung: Einschalten startet mit +30 % bis 45 (wie das Szenario), Ausschalten stellt beide Werte auf Standard.
   const pathOn = $derived(i.incPeak >= 0);
   const growth = $derived(incomeGrowth(p));
+  const pathKind = $derived(incomePathKind(p));
   function togglePath(v: boolean) {
     if (!v) { setInputs({ incPeak: DEFAULTS.incPeak, incPeakAge: DEFAULTS.incPeakAge }); return; }
-    setInputs({ incPeakAge: Math.max(DEFAULTS.incPeakAge, p.studyEnd + 1), incPeak: i.incWork >= 1000 ? Math.round(i.incWork * 1.3 / 1000) * 1000 : Math.round(i.incWork * 1.3) });
+    setInputs({ incPeakAge: Math.max(DEFAULTS.incPeakAge, p.studyEnd + 1), incPeak: Math.round(i.incWork * 1.3 / 100) * 100 }); // auf 100 € gerundet, bleibt über dem Startgehalt
   }
 
   type OnKey = 'etfOn' | 'avdOn' | 'insOn' | 'fondOn';
@@ -97,10 +98,12 @@
           limits={LIMITS.incPeak} effective={p.incPeak} hint="Heutiges Geld. Gilt ab dem Zielalter bis Rentenbeginn." />
         <NumberField layout="row" label="… erreicht mit" value={i.incPeakAge} onchange={v => setInput('incPeakAge', v)} min={16} max={100} unit="Jahren" testid="incPeakAge"
           limits={LIMITS.incPeakAge} effective={p.incPeakAge}
-          hint={growth != null
+          hint={pathKind === 'noWork' ? 'Ohne Wirkung: Die Ausbildung dauert bis zur Rente, es gibt keine Berufsphase.'
+            : pathKind === 'now' ? 'Das Zielalter liegt nicht nach dem Berufsbeginn: Das Zielgehalt gilt sofort.'
+            : growth != null
             ? 'Ab Berufsbeginn (' + p.studyEnd + ') real ' + (growth >= 0 ? '+' : '') + (Math.round(growth * 1000) / 10).toLocaleString('de-DE') + ' % pro Jahr, danach konstant.'
-            : p.incPeakAge <= p.studyEnd ? 'Das Zielalter liegt nicht nach dem Berufsbeginn: Das Zielgehalt gilt sofort.' : 'Linearer Übergang (Start- oder Zielgehalt 0).'} />
-        {#if p.incPeakAge >= p.R}<p class="hint">Das Zielalter liegt nach Rentenbeginn; bis zur Rente wird das Zielgehalt nicht erreicht.</p>{/if}
+            : 'Linearer Übergang (Start- oder Zielgehalt 0).'} />
+        {#if pathKind === 'late'}<p class="hint">Das Zielalter liegt nach Rentenbeginn; bis zur Rente wird das Zielgehalt nicht erreicht.</p>{/if}
       {/if}
     </div>
     <div class="grp" role="group" aria-labelledby="s-kids">

@@ -140,11 +140,12 @@ export function incomeAt(p: Params, age: number): number {
 }
 
 /**
- * Form der Gehaltsentwicklung für Texte: 'off' (aus oder keine Berufsphase vor der Rente), 'now' (Zielalter nicht nach Berufsbeginn: Zielgehalt sofort,
+ * Form der Gehaltsentwicklung für Texte: 'off' (aus), 'noWork' (an, aber Ausbildung bis zur Rente: kein Gehalt wirkt), 'now' (Zielalter nicht nach Berufsbeginn: Zielgehalt sofort,
  * incWork wirkt nicht), 'late' (Zielalter erst ab Rentenbeginn: wird nicht erreicht), sonst 'path'.
  */
-export function incomePathKind(p: Params): 'off' | 'now' | 'late' | 'path' {
-  if (!(p.incPeak >= 0) || p.studyEnd >= p.R) return 'off'; // ohne Berufsphase vor der Rente wirkt kein Gehalt
+export function incomePathKind(p: Params): 'off' | 'noWork' | 'now' | 'late' | 'path' {
+  if (!(p.incPeak >= 0)) return 'off';
+  if (p.studyEnd >= p.R) return 'noWork';
   if (p.incPeakAge <= p.studyEnd) return 'now';
   return p.incPeakAge >= p.R ? 'late' : 'path';
 }

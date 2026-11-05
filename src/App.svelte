@@ -29,6 +29,7 @@
   const incomeNote = (q: Params) => {
     const kind = incomePathKind(q);
     if (kind === 'off') return null;
+    if (kind === 'noWork') return 'Wirkt nicht: Die Ausbildung dauert bis zur Rente (siehe Einstellungen).';
     if (kind === 'now') return 'Gerechnet wird ' + (q.studyEnd > q.a0 ? 'ab Berufsbeginn (' + q.studyEnd + ') ' : '') + 'mit dem Zielgehalt ' + eur(q.incPeak) + ' (siehe Einstellungen).';
     return 'Startgehalt; ' + (kind === 'late' ? 'steigt Richtung ' : 'ab ' + q.incPeakAge + ' ') + eur(q.incPeak) + (kind === 'late' ? ' (Zielalter nach Rentenbeginn)' : '') + ' (siehe Einstellungen).';
   };

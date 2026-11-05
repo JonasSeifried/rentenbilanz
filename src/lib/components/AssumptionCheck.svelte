@@ -20,7 +20,7 @@
   function pathValue(): string {
     const p = readParams(i), kind = incomePathKind(p);
     if (!(p.incPeak >= 0)) return 'keine (real gleich)';
-    if (kind === 'off') return 'ohne Wirkung (keine Berufsphase vor der Rente)';
+    if (kind === 'noWork') return 'ohne Wirkung (keine Berufsphase vor der Rente)';
     if (kind === 'now') return de(p.incPeak) + ' € ab Berufsbeginn';
     return 'auf ' + de(p.incPeak) + ' € mit ' + de(p.incPeakAge) + ' Jahren' + (kind === 'late' ? ' (nach Rentenbeginn, nicht erreicht)' : '');
   }

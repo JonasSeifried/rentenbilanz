@@ -226,7 +226,7 @@ test('Gehaltsentwicklung: Schalter unter „Deine Situation“, Szenario-Zeile, 
   await page.click('#tab-settings');
   await expect(page.getByTestId('incPeak')).toHaveCount(0);
   await page.getByTestId('incPath').check();
-  await expect(page.getByTestId('incPeak')).toHaveValue('49.000');
+  await expect(page.getByTestId('incPeak')).toHaveValue('49.400');
   await setField(page, 'incPeak', '60000');
   await setField(page, 'incPeakAge', '40');
   await expect(page.locator('#panel-settings')).toContainText('real +2,6 % pro Jahr');

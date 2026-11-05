@@ -192,7 +192,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   const T = 100 - p.a0, n = p.R - p.a0, tH = p.H - p.a0;
   const I = (t: number) => Math.pow(1 + p.infl, t);
   const Rn = (x: number, t: number) => p.real ? x / I(t) : x; // für Beträge in Hinweistexten (gleiche Basis wie die Anzeige)
-  const incomes = Array.from({ length: T }, (_, t) => incomeAt(p, p.a0 + t)); // einmal je Lauf (Suche ruft run() oft)
+  const incomes = Array.from({ length: n }, (_, t) => incomeAt(p, p.a0 + t)); // einmal je Lauf, nur Ansparjahre (incAt nur für t < n)
   const incAt = (t: number) => incomes[t]; // Ausbildung, Beruf, optional Gehaltsentwicklung (core.ts)
   const taxNom = (incomeNom: number, t: number) => F.round ? tax2026(incomeNom, I(t)) : tax(incomeNom / I(t)) * I(t);
   const taxAdd = (incReal: number, addNom: number, t: number) => addNom <= 0 ? 0 : F.round
