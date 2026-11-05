@@ -51,7 +51,8 @@ Für die Browser-Tests einmalig: `npx playwright install chromium webkit`.
 Die Rechnung nutzt Werte, die sich jedes Jahr ändern. Nach jeder Änderung: `npm run test:all`, dann Rechtsstand und Prüfdatum in `src/lib/site.ts` anpassen.
 
 - [ ] **Januar – Basiszins** für die Vorabpauschale (BMF-Schreiben): Standardwert `basis` in `src/lib/engine/inputs.ts`, Text in `glossary.ts` (`basiszins`) und unter „Weitere Einstellungen“.
-- [ ] **Einkommensteuertarif** (§ 32a EStG) und **Soli-Freigrenze**: `est()` / `soli()` in `src/lib/engine/core.ts` sowie die getrennte nominale ESt für E4 (`incomeTaxNom` in `combo.ts`) gemeinsam pflegen (Steuerreform 2027 im Blick behalten).
+- [ ] **Einkommensteuertarif** (§ 32a EStG) und **Soli-Freigrenze**: `est()` / `soli()` in `src/lib/engine/core.ts` sowie die getrennte nominale ESt für E4 und das Steuerprofil (`incomeTaxNom`/`assess` in `combo.ts`) gemeinsam pflegen (Steuerreform 2027 im Blick behalten).
+- [ ] **Kirchensteuer und Splitting:** Kirchensteuersätze (8 % BY/BW, 9 % sonst; Auswahl in `Settings.svelte`, Glossar `kirchensteuer`), Abgeltungsformel § 32d Abs. 1 (`ABG` in `combo.ts`, Prozentangaben in Glossar `abgeltung` und Annahmen), Sonderausgaben-Pauschbetrag 36/72 € (§ 10c), Soli-Freigrenze bei Splitting (40.700 €, `assess` in `combo.ts`), gemeinsamer Sparer-Pauschbetrag 2.000 € (`SPB`), mittelbare Zulage § 79 S. 2 (offen, `docs/kirchensteuer-splitting.md`).
 - [ ] **Beitragsbemessungsgrenze KV/PV** (`KV_BBG` in `core.ts`), **Versicherungspflichtgrenze** und **Zusatzbeitrag/Pflegesatz** (Standard `kvRate`, Texte `kvFreiwillig`/`kvRate` im Glossar).
 - [ ] **Altersvorsorgedepot:** Zulagen, Höchstbeträge, Bonus, Auszahlregeln gegen das aktuelle Gesetz/BMF-Schreiben prüfen; Hinweis zum Start (`avdStart`) entfällt ab 2027 automatisch. Standarddepot: Umschichtungsanteile (`AVD_STD_GLIDE` in `core.ts`, § 1 Abs. 1c Nr. 5 AltZertG; gelten mit dem Schalter „Umschichtung vor Rentenbeginn“ für alle Produkte) und Kostendeckel (§ 2a Abs. 2) mit Glossar (`standarddepot`, `umschichtung`, `avdKosten`) und `src/lib/prosCons.ts` abgleichen. Teilfreistellung (§ 20 InvStG, 30 % Aktienfonds, 0 % sicherer Teil) in `combo.ts` prüfen.
 - [ ] **„Was die Zahlen nicht zeigen“** (`src/lib/prosCons.ts`): Rechtsaussagen mit Fundstelle (§ 12 SGB II, § 93 EStG, AltZertG) gegen den aktuellen Stand prüfen.
@@ -64,6 +65,7 @@ Die Rechnung nutzt Werte, die sich jedes Jahr ändern. Nach jeder Änderung: `np
 - `docs/engine-rest-2026-11.md`: Umsetzung R3/R4/R5/R7, wählbare Annahmen, offene Erbfallgrenzen und aktuelle Vergleichsmessungen.
 - `docs/zulagen-veranlagung-2026-11.md`: E4-Veranlagung mit Primärbelegen, R3-Bilanz, D1-Gegenfall und aktuelle Wirkung.
 - `docs/gehaltsentwicklung.md`: Gehaltsverlauf bis zur Rente (Zielgehalt und Alter), abschaltbar, mit Wirkung auf die AVD-Erstattung.
+- `docs/kirchensteuer-splitting.md`: Kirchensteuer und Zusammenveranlagung (Primärquellen, Rechenmodell, Wirkung, offene Punkte).
 - `docs/kombi-modus.md`: Rechenmodell der Kombi (gemeinsame Besteuerung, Suche nach der besten Aufteilung, Einbindung in den Vergleich).
 
 ## Speichern und Teilen

@@ -496,10 +496,19 @@ Kinderfreibetragsrechnung, nominale Rundung und Wirkung stehen im
   - **Eine Person als Erbe.** Mehrere Erben hätten je einen Tarif und einen Sparer-Pauschbetrag; das senkt die
     Steuer. Ebenso nicht gerechnet: eigene Kapitalerträge der Erben, die den Pauschbetrag schon nutzen.
   - **Ehepartner:** Im Todesjahr ist meist noch Zusammenveranlagung möglich (Pauschbetrag 2.000 €, § 20 Abs. 9 S. 2
-    EStG, Splittingtarif). Gerechnet sind 1.000 € und `incHeir` im Grundtarif, wie im Einzelfall.
+    EStG, Splittingtarif). Gerechnet sind 1.000 € und `incHeir` im Grundtarif, wie im Einzelfall, auch mit der
+    Eingabe „verheiratet“ (die Erben sind eine eigene Person mit eigener Eingabe).
   - **Verkauf im Todesjahr.** Behalten die Erben die Depots, zahlen sie die Steuer erst später; der Erbwert ist dann
     eher zu niedrig. Die Auszahlung des AVD wird im Todesjahr angenommen.
   - **Letzte Steuererklärung der verstorbenen Person** (Einkünfte bis zum Tod) ist nicht gerechnet, wie im Einzelfall.
+- **Steuerprofil (Kirchensteuer, Zusammenveranlagung), Details in `kirchensteuer-splitting.md`:**
+  - Partner mit eigenem gefördertem Vertrag: mittelbare Zulage (§ 79 S. 2 EStG, nach AVRG ≥ 120 € eigener Beitrag,
+    Grundzulage bis 175 €, § 84 S. 3–4 n. F.) und gemeinsame Günstigerprüfung (§ 10a Abs. 3 S. 2–5) nicht gerechnet.
+  - Partner mit eigenen Kapitalerträgen (geteilter Pauschbetrag, § 20 Abs. 9 S. 3; § 32d Abs. 6 S. 4) nicht gerechnet.
+  - Kirchensteuer-Kappung, Kinderfreibeträge in der Bemessung (§ 51a Abs. 2 S. 1), glaubensverschiedene Ehe/Kirchgeld,
+    eigene Konfession der Erben, zeitlicher Versatz des Sonderausgabenabzugs.
+  - Witwensplitting (§ 32a Abs. 6 Nr. 1), abweichender Rentenbeginn des Partners, KV-Anrechnung des
+    Partner-Einkommens (§ 240 Abs. 5 SGB V).
 - **E2 und E6 für das AVD:** Ein AVD-spezifisches BMF-Schreiben gibt es noch nicht. Übertragen sind die Aussagen
   zur Riester-Rente, weil die Normen dieselben sind. Ob Kassen die Vorabpauschale bei Rentnern tatsächlich
   erheben, ist in der Praxis uneinheitlich.
@@ -640,3 +649,20 @@ mit dem Standard 0,9 % also auf etwa 1 % genau, überschätzt aber das Guthaben 
 Jahr 5 +12 %, Jahr 10 +26 %, Jahr 20 +14 %, Jahr 27 +9 %), weil die Kosten dort überwiegend am Beitrag hängen.
 Ein Modell „Kosten am Beitrag“ ist erst sinnvoll, wenn es an weiteren Tarifen (Nettotarif, kurze Laufzeit,
 ohne Dynamik) geprüft ist.
+
+### Erweiterung: Kirchensteuer und Zusammenveranlagung (`kist`, `married`, kein Fix)
+
+Neue Eingaben im Steuerprofil, Standard aus (keine Kirchensteuer, ledig) und dann bitgleich zur bisherigen Rechnung.
+Kirchensteuer nach § 51a Abs. 2 EStG auf die festzusetzende ESt einschließlich hinzugerechneter AVD-Zulage, auf
+Kapitalerträge mit dem ermäßigten Satz nach § 32d Abs. 1 S. 3–5 (9 %: 27,9951 %, 8 %: 27,8186 % statt 26,375 %),
+gezahlte KiSt über 36/72 € als Sonderausgabe (§ 10 Abs. 1 Nr. 4, § 10c). Verheiratet: Splitting (§ 32a Abs. 5) mit
+dem Partner-zvE, Soli-Freigrenze 40.700 € (§ 3 Abs. 3 SolZG), Sparer-Pauschbetrag 2.000 € (§ 20 Abs. 9); Erben weiter
+Grundtarif und 1.000 €; AVD-Übertrag auf den Partner mit dessen Einkommen im Alter. Partner ohne eigenen geförderten
+Vertrag und ohne Kapitalerträge; mittelbare Zulage (§ 79 S. 2, AVRG: ≥ 120 €, bis 175 €) und § 10a Abs. 3 S. 2–5
+bleiben offen.
+
+Wirkung cumH real (ETF / AVD / Versicherung): Default 153.289 / 174.856 / 127.694 € → KiSt 9 %
+151.597 / 171.907 / 126.624 €; verheiratet mit Partner 38.000/20.000 € 159.807 / 177.174 / 131.201 €; Partner 0/0 €
+176.707 / 199.696 / 138.223 € (AVD-Erstattung 8.017 → 1.246 €). DK mit KiSt 9 %: 139.342 / 138.680 / 104.734 €
+(knappe Reihenfolge dreht, 662 € Abstand). Herleitung, Quellen, alle Messungen und offene Punkte:
+[kirchensteuer-splitting.md](kirchensteuer-splitting.md). Tests: `tests/kirchensteuer-splitting.test.ts`.
