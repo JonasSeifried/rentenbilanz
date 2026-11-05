@@ -12,6 +12,8 @@ export const SITE = {
   contact: 'legal@jonasseifried.com',
   /** Öffentliche Adresse der Seite (ohne Schrägstrich am Ende). Leer = keine canonical-/og:url-Angaben. */
   url: 'https://rente.jonasseifried.co',
+  /** Öffentliches Quellcode-Repository (Link in der Fußzeile). */
+  repo: 'https://github.com/JonasSeifried/rentenbilanz',
   /** Start des Altersvorsorgedepots; der Hinweis in der Oberfläche schaltet sich ab diesem Datum selbst ab. */
   avdStart: '01.01.2027',
   avdStartISO: '2027-01-01',

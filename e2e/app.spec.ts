@@ -284,6 +284,13 @@ test('Läuft auch in einem Unterordner', async ({ page }) => {
   await expect(page.getByTestId('verdict')).toBeVisible();
 });
 
+test('Fußzeile verlinkt den Quellcode auf GitHub', async ({ page }) => {
+  await page.goto('./');
+  const link = page.getByRole('link', { name: 'Quellcode auf GitHub' });
+  await expect(link).toHaveAttribute('href', 'https://github.com/JonasSeifried/rentenbilanz');
+  await expect(link).toHaveAttribute('rel', /noopener/);
+});
+
 test('Datenschutzseite ist erreichbar', async ({ page }) => {
   await page.goto('./datenschutz.html');
   await expect(page.getByRole('heading', { name: 'Datenschutzerklärung' })).toBeVisible();

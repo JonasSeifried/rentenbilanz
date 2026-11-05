@@ -206,10 +206,11 @@
       <span class="muted">Rechtsstand: {SITE.lawState}. Zuletzt geprüft am {SITE.updated}.</span><br />
       <span class="muted">Keine Cookies, kein Tracking, keine externen Anfragen. Eingaben bleiben in diesem Browser.</span>
     </div>
-    <nav aria-label="Rechtliches" class="noprint">
+    <nav aria-label="Weitere Seiten" class="noprint">
       <a href="./impressum.html">Impressum</a>
       <a href="./datenschutz.html">Datenschutz</a>
       <a href={'mailto:' + SITE.contact + '?subject=' + encodeURIComponent(SITE.name + ': Fehler oder Hinweis')}>Fehler melden</a>
+      <a href={SITE.repo} rel="noopener noreferrer">Quellcode auf GitHub</a>
     </nav>
   </div>
 </footer>
