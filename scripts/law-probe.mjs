@@ -3,9 +3,10 @@
 // und verlangt, dass genau die erwarteten Tests rot werden: das Live-Fixture (bewusst neu zu erzeugen) und sonst nichts.
 // Golden, I1, die an 2026 gebundenen Regeltests (tests/helpers/law-2026.ts), Konsistenz und Vergiftungstest müssen grün
 // bleiben; schlägt etwas anderes an, mischt ein Test oder die App zwei Rechtsstände.
+// Scheitert auch bei Fehlern außerhalb von Tests (unbehandelte Fehler, Hooks, Dateien, die nicht laden, vitest-Absturz).
 //   npm run test:law-probe
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -16,26 +17,35 @@ const EXPECTED = [
 
 const dir = mkdtempSync(join(tmpdir(), 'law-probe-'));
 const out = join(dir, 'result.json');
+const errors = [];
 try {
-  spawnSync('npx', ['vitest', 'run', '--config', 'vitest.lawprobe.config.ts', '--reporter=json', '--outputFile=' + out], { stdio: ['ignore', 'ignore', 'inherit'] });
-  const res = JSON.parse(readFileSync(out, 'utf8'));
-  const failed = [], broken = [];
-  for (const f of res.testResults) {
-    const file = f.name.split('/').pop();
-    if (f.status !== 'passed' && f.assertionResults.length === 0) broken.push(file + ': ' + (f.message || '').split('\n')[0]);
-    for (const a of f.assertionResults) if (a.status === 'failed') failed.push([file, a.fullName]);
+  const run = spawnSync('npx', ['vitest', 'run', '--config', 'vitest.lawprobe.config.ts', '--reporter=json', '--reporter=default', '--outputFile.json=' + out], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  const log = (run.stdout || '') + (run.stderr || '');
+  if (run.error) errors.push('vitest nicht gestartet: ' + run.error.message);
+  if (run.signal) errors.push('vitest abgebrochen (Signal ' + run.signal + ')');
+  if (/Unhandled (Rejection|Error)s?\b|caught \d+ unhandled/.test(log)) errors.push('Unbehandelte Fehler während der Tests:\n' + log.split('\n').filter(l => /Unhandled|unhandled|Error:/.test(l)).slice(0, 10).join('\n'));
+  if (!existsSync(out)) {
+    errors.push('vitest hat kein Ergebnis geschrieben (Exit ' + run.status + '):\n' + log.split('\n').slice(-20).join('\n'));
+  } else {
+    const res = JSON.parse(readFileSync(out, 'utf8'));
+    const failed = [];
+    for (const f of res.testResults) {
+      const file = f.name.split('/').pop();
+      const bad = f.assertionResults.filter(a => a.status === 'failed');
+      for (const a of bad) failed.push([file, a.fullName]);
+      // Datei rot ohne rote Assertion: lädt nicht, Hook-Fehler o. Ä.
+      if (f.status !== 'passed' && bad.length === 0) errors.push('Datei rot ohne roten Test (lädt nicht oder Hook-Fehler): ' + file + ': ' + (f.message || '').split('\n')[0]);
+    }
+    const isExpected = ([file, name]) => EXPECTED.some(([f, re]) => f === file && re.test(name));
+    for (const [f, n] of failed.filter(x => !isExpected(x))) errors.push('Unerwartet rot: ' + f + ' › ' + n);
+    for (const [f, re] of EXPECTED.filter(([f, re]) => !failed.some(([file, name]) => file === f && re.test(name)))) errors.push('Hätte rot werden müssen (Probe-Tabelle nicht aktiv?): ' + f + ' ' + re);
+    if (!errors.length) console.log(`Probe-Rechtsstand: ${res.numTotalTests} Tests, rot nur das Live-Fixture.`);
   }
-  const isExpected = ([file, name]) => EXPECTED.some(([f, re]) => f === file && re.test(name));
-  const unexpected = failed.filter(x => !isExpected(x));
-  const missing = EXPECTED.filter(([f, re]) => !failed.some(([file, name]) => file === f && re.test(name)));
-  const ok = !broken.length && !unexpected.length && !missing.length;
-  for (const b of broken) console.error('Datei lädt nicht: ' + b);
-  for (const [f, n] of unexpected) console.error('Unerwartet rot: ' + f + ' › ' + n);
-  for (const [f, re] of missing) console.error('Hätte rot werden müssen (Probe-Tabelle nicht aktiv?): ' + f + ' ' + re);
-  console.log(ok
-    ? `Probe-Rechtsstand: ${res.numTotalTests} Tests, rot nur das Live-Fixture.`
-    : 'Probe-Rechtsstand: Tests mischen Rechtsstände oder lesen Jahreswerte nicht aus der Tabelle (siehe oben).');
-  process.exitCode = ok ? 0 : 1;
+  if (errors.length) {
+    for (const e of errors) console.error(e);
+    console.error('Probe-Rechtsstand: fehlgeschlagen (siehe oben).');
+  }
+  process.exitCode = errors.length ? 1 : 0;
 } finally {
   rmSync(dir, { recursive: true, force: true });
 }
