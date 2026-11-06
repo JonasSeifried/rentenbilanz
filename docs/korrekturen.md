@@ -13,9 +13,15 @@ Die neuen R-Fixes werden nur in `combo.ts` umgesetzt; `engine.ts` bleibt unverä
 E-Abschnitten gelten vor den R-Korrekturen; aktuelle Werte stehen im neuen Abschnitt am Ende.
 
 ```ts
-model(p, { fixes })    analyze(p, { fixes })    scenarios(p, { fixes })
+model(p, { fixes, law })    analyze(p, { fixes, law })    scenarios(p, { fixes, law })
 // fixes weggelassen ⇒ ALL_FIXES (Standard in der App); NO_FIXES ⇒ exakt das Original
+// law weggelassen ⇒ CURRENT_LAW (neueste Rechtsstand-Tabelle, law.ts); Golden und I1 übergeben LAW_2026
 ```
+
+Schalter gibt es nur für Änderungen an der **Rechnung**. Neue Jahreswerte (Tarif, BBG, Pauschbeträge, Zulagen …)
+kommen als neue Rechtsstand-Tabelle in `src/lib/engine/law.ts`, nicht hinter einen Schalter
+([jährliche Pflege](jaehrliche-pflege.md)). Die Zahlenwerte in den Abschnitten unten (1.000 €, 0,26375, 1.800 € …)
+sind die von 2026; im Code stehen sie heute als Felder von `LAW_2026`.
 
 - **Golden-Test** (`tests/golden.test.ts`): Die Engine läuft mit `NO_FIXES` und muss auf den Cent mit der
   unveränderten `legacy/index.html` übereinstimmen (29 benannte und 300 Zufallsszenarien). Neu sind nur die
@@ -465,8 +471,8 @@ Erbfall, Szenario-Zeile, Migration der alten Schlüssel); e2e „Umschichtung vo
   außerhalb des Jahresbuchs aus E7 (siehe E9).
 - **`latentTax`:** Die spätere Einkommensteuer auf AVD-Kapital ist grob geschätzt, gleichmäßig über den
   restlichen Auszahlplan verteilt. Verwendet wird sie für `capNet` und `heirMarried`.
-- **Tarif 2026 fortgeschrieben:** Einkommensteuer-Tarif, Soli-Freigrenze und BBG wachsen mit der angenommenen
-  Inflation. Gerechnet wird mit dem Grundtarif; seit R8 werden Einkommen und Steuer nominal auf volle Euro abgerundet.
+- **Tarif fortgeschrieben:** Einkommensteuer-Tarif, Soli-Freigrenze und BBG der aktuellen Rechtsstand-Tabelle
+  (`CURRENT_LAW`, derzeit 2026) wachsen mit der angenommenen Inflation. Gerechnet wird mit dem Grundtarif; seit R8 werden Einkommen und Steuer nominal auf volle Euro abgerundet.
 
 ## Offene Punkte (nicht umgesetzt)
 
@@ -544,7 +550,7 @@ https://www.buzer.de/gesetz/17547/a339399.htm. Bei null Beitrag weiterhin null F
 
 ### R8 – `taxRounding`: nominale Rundung nach indexiertem Tarif
 
-`core.ts` enthält zusätzlich `tax2026(incomeNom, index)`: nominales Einkommen auf volle Euro abrunden,
+`core.ts` enthält zusätzlich `tax2026(incomeNom, index)` (heute `taxIndexed` der Rechtsstand-Tabelle, `lawOf(opts).fn` in `law.ts`; `tax2026` ist fest an `LAW_2026` gebunden): nominales Einkommen auf volle Euro abrunden,
 indexierten Tarif anwenden, nominale ESt auf volle Euro abrunden, danach Soli berechnen (§ 32a Abs. 1,
 https://www.gesetze-im-internet.de/estg/__32a.html). `est()`/`tax()` bleiben für den Referenzpfad unverändert.
 Die Review-Probe hatte den Steuerbetrag noch in heutigen Euro gerundet; deshalb stimmen deren isolierte

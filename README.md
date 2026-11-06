@@ -68,7 +68,8 @@ Alle Pfade sind relativ, die Seite läuft auch in einem Unterordner. Name, Recht
 | Pfad | Inhalt |
 |---|---|
 | `src/lib/engine/combo.ts` | Die Rechen-Engine. Ein Einzelprodukt ist eine Kombi mit einem Teil. |
-| `src/lib/engine/` | Auswertung (`analyze.ts`), Kosten-Gleichstand (`breakEven.ts`), Tarif, Konstanten und Eingaben (`core.ts`, `inputs.ts`). `engine.ts` ist der unveränderte Port des Originals und dient nur als Referenz. |
+| `src/lib/engine/law.ts` | Rechtsstand-Tabellen: alle gesetzlichen Jahreswerte (Tarif, Soli, Pauschbeträge, KV-BBG, AVD-Förderung …), je Jahr eine eingefrorene Tabelle mit Quellen |
+| `src/lib/engine/` | Auswertung (`analyze.ts`), Kosten-Gleichstand (`breakEven.ts`), Eingaben (`core.ts`, `inputs.ts`). `engine.ts` ist der Port des Originals und dient nur als Referenz. |
 | `src/lib/pensionTax.ts` | Hilfsrechnung Bruttorente → zu versteuerndes Einkommen im Alter |
 | `src/lib/rechenweg.ts` | Export des Rechenwegs als Markdown |
 | `src/lib/glossary.ts`, `prosCons.ts` | Erklärtexte und „Was die Zahlen nicht zeigen“ |
@@ -82,10 +83,11 @@ Alle Pfade sind relativ, die Seite läuft auch in einem Unterordner. Name, Recht
 
 Menschen planen mit diesen Zahlen. Deshalb gilt:
 
-- **Golden-Tests:** `tests/golden.test.ts` vergleicht die Engine mit dem ursprünglichen Rechner in `legacy/index.html` (29 benannte und 300 Zufallsszenarien). `tests/combo.test.ts` prüft die Kombi mit einem Teil bitgenau gegen die Referenz.
+- **Golden-Tests:** `tests/golden.test.ts` vergleicht die Engine mit dem ursprünglichen Rechner in `legacy/index.html` (29 benannte und 300 Zufallsszenarien). `tests/combo.test.ts` prüft die Kombi mit einem Teil bitgenau gegen die Referenz. Beide rechnen immer mit den Werten von 2026 (`LAW_2026`).
+- **Live-Fixture:** `tests/live-regression.test.ts` friert die Ergebnisse der App mit allen Korrekturen über rund 500 Fälle bitgenau ein (auch Splitting, Kirchensteuer, Kombi, Steueränderung). Es wird nur bewusst neu erzeugt, mit begründetem Diff.
 - **Korrekturen sind abschaltbar:** Jede Abweichung von der ersten Fassung hat gezielte Tests und ist in [`docs/korrekturen.md`](docs/korrekturen.md) mit Rechtsquelle und Wirkung dokumentiert. Neue Rechnung kommt nur in `combo.ts`, damit der historische Referenzpfad bitgleich bleibt.
 - **Stabile Links:** Standardwerte (`DEFAULTS` in `inputs.ts`) dürfen sich ändern. Geteilte Links bleiben gültig, weil sie gegen eine eingefrorene Basis kodiert sind (`link.ts`, `LINK_VERSION`).
-- **Jährliche Pflege:** Basiszins, Steuertarif, Beitragsbemessungsgrenzen und Förderregeln ändern sich. Die Schritte stehen als Arbeitsauftrag (auch für eine KI) in [`docs/jaehrliche-pflege.md`](docs/jaehrliche-pflege.md).
+- **Jährliche Pflege:** Basiszins, Steuertarif, Beitragsbemessungsgrenzen und Förderregeln ändern sich. Jedes Jahr kommt eine neue Rechtsstand-Tabelle in `law.ts` dazu, mit Primärquelle je Wert; alte Tabellen bleiben unverändert. Die Schritte stehen als Arbeitsauftrag (auch für eine KI) in [`docs/jaehrliche-pflege.md`](docs/jaehrliche-pflege.md).
 
 ## Dokumentation
 

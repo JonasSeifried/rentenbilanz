@@ -4,105 +4,104 @@ Diese Datei ist ein Arbeitsauftrag. Gib sie einer KI (oder arbeite sie selbst ab
 
 ## Auftrag
 
-Rentenbilanz rechnet mit Steuer- und Sozialversicherungswerten, die sich jedes Jahr ändern. Bring alle Werte unten auf den aktuellen Stand. Menschen planen ihre Altersvorsorge mit diesen Zahlen, deshalb gilt:
+Rentenbilanz rechnet mit Steuer- und Sozialversicherungswerten, die sich jedes Jahr ändern. Lege für das neue Jahr eine neue Rechtsstand-Tabelle an und bring alle Werte auf den aktuellen Stand. Menschen planen ihre Altersvorsorge mit diesen Zahlen, deshalb gilt:
 
-- **Nur Primärquellen:** Gesetzestext (gesetze-im-internet.de, Bundesgesetzblatt), BMF-Schreiben, Bekanntmachungen der Ministerien. Keine Blogs oder Vergleichsportale als alleinige Quelle.
-- **Jeden Wert mit Quelle belegen:** Fundstelle (Paragraf, Absatz, Datum des Schreibens) und Link notieren.
-- **Unklares nicht raten:** Wenn ein Wert noch nicht veröffentlicht oder die Rechtslage unklar ist, alten Wert lassen und den Punkt im Bericht als offen markieren.
+- **Nur Primärquellen:** Gesetzestext (gesetze-im-internet.de, Bundesgesetzblatt), BMF-Schreiben, Verordnungen und Bekanntmachungen der Ministerien. Keine Blogs oder Vergleichsportale als alleinige Quelle.
+- **Jeden Wert mit Quelle belegen:** Fundstelle (Paragraf, Absatz, Datum des Schreibens oder der Verordnung) im Kommentar der Tabelle und im Bericht, dazu der Link im Bericht.
+- **Unklares nicht raten:** Ist ein Wert noch nicht veröffentlicht oder die Rechtslage unklar, den Vorjahreswert in die neue Tabelle übernehmen, im Kommentar „Wert <Vorjahr> übernommen, <Grund>“ vermerken und den Punkt im Bericht als offen markieren.
 - **Neutral bleiben:** Texte zeigen nur Zahlen und Regeln, keine Empfehlung.
+
+## So sind die Jahreswerte organisiert
+
+- **Rechtsstand-Tabellen** in `src/lib/engine/law.ts`: Jeder gesetzliche Jahreswert und Betrag, mit dem gerechnet wird, steht dort genau einmal (Tarif, Soli, Abgeltungsteuer, Pauschbeträge, KV-BBG, AVD-Höchstbeträge und Zulagen, Ertragsanteil, KV/PV-Sätze, Basiszins). Jede Tabelle ist eingefroren (`defineLaw`). `LAWS` listet alle Tabellen, älteste zuerst. `CURRENT_LAW` ist immer die letzte.
+- **Die App** rechnet ohne Optionen, also mit `CURRENT_LAW`. Die Engine holt jeden Wert über `lawOf(opts)`; in `core.ts`, `combo.ts`, `engine.ts`, `analyze.ts`, `search.ts` usw. steht kein Jahreswert mehr als Zahl (`tests/law.test.ts` prüft das).
+- **Golden** (`tests/golden.test.ts`, gegen `legacy/index.html`) und **I1** (`tests/combo.test.ts`, `combo.ts` gegen `engine.ts`) übergeben immer ausdrücklich `LAW_2026`. Sie bleiben deshalb grün, egal wie viele Tabellen dazukommen, und dürfen nie angepasst werden.
+- **Live-Fixture** (`tests/live-regression.test.ts`, `tests/fixtures/live-regression.json`): friert die Ergebnisse der App über rund 500 Fälle bitgenau ein (Kennzahlen lesbar, Details als SHA-256). Es gehört zu einem Rechtsstand (`"law"`) und wird mit einer neuen Tabelle **bewusst** neu erzeugt; der Diff gehört in den Bericht.
+- **Keine Schalter für Jahreswerte:** Neue Werte kommen in eine neue Tabelle, nicht hinter einen Schalter in `fixes.ts`. Schalter (`fixes.ts`, `docs/korrekturen.md`) gibt es nur für Änderungen an der **Rechnung**.
 
 ## Regeln für Änderungen am Code
 
-- Gerechnet wird nur in `src/lib/engine/combo.ts`. `src/lib/engine/engine.ts` und `legacy/index.html` sind Referenzen für die Golden-Tests und werden nicht geändert.
-- Standardwerte ändern sich nur in `DEFAULTS` (`src/lib/engine/inputs.ts`). Das ist für die Golden-Tests unkritisch, weil sie beiden Seiten dieselben Eingaben geben. Die Link-Basis in `src/lib/link.ts` nie ändern, sonst werden geteilte Links falsch gelesen (wenn es doch sein muss: neue `LINK_VERSION`).
-- Ändert sich ein Wert, der auch in Texten steht (Glossar, Annahmen, „Was die Zahlen nicht zeigen“), den Text mit anpassen. Im ganzen Repo nach dem alten Wert **und nach der alten Jahreszahl** suchen (`grep -rn "2026" src`), damit auch Angaben wie „Tarif 2026“ oder „Durchschnitt 2026“ nicht vergessen werden. Dabei keine Bezeichner umbenennen (etwa `tax2026`) und Rechtsstand-Angaben wie „BGBl. 2026“ oder `avdStart` nicht anfassen.
-- Ändert sich die Rechnung (nicht nur ein Zahlenwert), die Abweichung in `docs/korrekturen.md` mit Rechtsquelle und Wirkung dokumentieren und gezielte Tests ergänzen.
-
-### Achtung: Werte auf dem Referenzpfad
-
-`tests/golden.test.ts` vergleicht zwei Rechnungen centgenau mit dem Original in `legacy/index.html`, wo die Werte 2026 fest stehen: `engine.ts` und `analyze()`, also `combo.ts` mit abgeschalteten Korrekturen (`NO_FIXES`). `tests/combo.test.ts` (I1) prüft außerdem `combo.ts` mit den historischen E-Korrekturen bitgenau gegen `engine.ts`. Jeder Wert, den eine dieser Rechnungen benutzt, ist ein **Referenzwert**:
-
-| Wert | Stelle |
-|---|---|
-| Tarif und Soli: `tariff()`, `est()`, `soli()` mit `fg`, `tax()`, `tax2026()` | `core.ts` |
-| Tarifkopie `incomeTaxNom` mit Grundfreibetrag `12348` | `combo.ts` |
-| `KV_BBG`, `AVD_SUB_MAX`, `AVD_MAX`, `ERTRAG` | `core.ts` |
-| Grundzulage (Sätze 0,5/0,25, Grenzen 360/1.800 €) in `grundOf` und `grund` | `combo.ts` |
-| Kinderzulage `kind` (300 €), Bonus `bon` (200 €) | `combo.ts` |
-| Sparer-Pauschbetrag für Alleinstehende 1.000 € (`SPB`, Sparer-Pauschbetrag der Erben `heirAllowance` und weitere Stellen, `grep -nw "1000" src/lib/engine/combo.ts`) | `combo.ts` |
-| Abgeltungsteuer ohne Kirchensteuer `.26375` in `ABG` | `combo.ts` |
-
-Für Referenzwerte gilt:
-
-1. Den Wert 2026 **nicht überschreiben**. Er bleibt für den Referenzpfad.
-2. Den neuen Wert als eigene Konstante oder Funktion anlegen (zum Beispiel `tariff2027()`, `KV_BBG_2027`) und in `combo.ts` nur verwenden, wenn der neue Schalter an ist.
-3. Den Schalter in `src/lib/engine/fixes.ts` anlegen: neue `FixId`, Eintrag in `FIXES` und eine **neue, eindeutige `FindingId` mit R-Präfix** (zum Beispiel `R10`; nicht E, denn E-Korrekturen erwarten die Tests bitgleich in `engine.ts`). Er ist dann in `ALL_FIXES` an und in `NO_FIXES` aus.
-4. Den Schalter an allen Stellen berücksichtigen, an denen `combo.ts` den Wert nutzt. Beim Tarif sind das alle Aufrufe von `tax()`, `tax2026()`, `est()` und `soli()` sowie die Kopie in `incomeTaxNom` (`grep -n "tax(\|tax2026(\|est(\|soli(\|12348" src/lib/engine/combo.ts`).
-5. Den Schalter in `docs/korrekturen.md` dokumentieren und gezielte Tests in einer eigenen Testdatei ergänzen.
-
-Nicht auf dem Referenzpfad liegen Werte, die das Original nicht kannte: Zusammenveranlagung (Sparer-Pauschbetrag 2.000 €, Pauschbetrag 72 €), Kirchensteuer (Sätze, Pauschbetrag 36 €), Partner-Vertrag (175 €) und alles in `pensionTax.ts`. Sie dürfen direkt geändert werden.
-
-Wenn unklar ist, ob ein Wert auf dem Referenzpfad liegt: ändern und `npx vitest run tests/golden.test.ts tests/combo.test.ts` laufen lassen. Schlägt einer fehl, die Änderung zurücknehmen und den Wert wie oben hinter den Schalter legen. Wenn unklar ist, wie das sauber geht: nicht improvisieren, sondern den Punkt im Bericht als offen melden.
+1. **Neue Tabelle anlegen:** In `law.ts` die letzte Tabelle kopieren, als `LAW_<Jahr>` benennen, `id` und `year` setzen und am Ende von `LAWS` eintragen. Dann jeden Wert prüfen und ändern. Über der Tabelle die Quellen nennen wie bei `LAW_2026`, bei jedem geänderten oder übernommenen Wert einen kurzen Kommentar mit Fundstelle.
+2. **Alte Tabellen nie ändern.** `LAW_2026` brauchen Golden und I1 für immer; jede andere alte Tabelle bleibt so, wie sie war. Einzige Ausnahme: ein neues Feld (siehe 4).
+3. **Abgeleitete Werte mitziehen:** `abg.withSoli` = `rate · soliFactor`, `abg.soliFactor` = `1 + soli.rate`, `abg.divisor` = `1 / rate`. Sie stehen als Literale in der Tabelle, damit die Rechnung bitgleich bleibt; `tests/law.test.ts` prüft, dass sie exakt zu den Grundwerten passen. Ist eine Gleichheit in Gleitkomma nicht exakt erreichbar, nicht runden oder tricksen, sondern im Bericht als offen melden.
+4. **Ändert sich die Form einer Regel** (andere Zahl von Tarifzonen, neue Zulagenart, ein Wert aus der Liste „Nicht in der Tabelle“ im Kopf von `law.ts`, etwa Teilfreistellung oder Teilkapitalauszahlung), ist das eine Änderung der Rechnung: Code in `combo.ts` anpassen, neues Tabellenfeld anlegen, in alten Tabellen mit dem Wert, der genau das bisherige Verhalten ergibt (Golden, I1 und das Fixture der alten Tabelle müssen dann unverändert grün sein), in `docs/korrekturen.md` mit Rechtsquelle dokumentieren, gezielte Tests ergänzen und die Zuordnung in `tests/law.test.ts` (`ENGINE_VALUES` oder `OTHER_VALUES`) erweitern. Wenn unklar ist, wie das sauber geht: nicht improvisieren, sondern den Punkt im Bericht als offen melden.
+5. **Standardwerte** der Eingaben (`DEFAULTS` in `src/lib/engine/inputs.ts`: `basis`, `kvRate`, `abgRate`) an die neue Tabelle anpassen; `tests/law.test.ts` prüft den Zusammenhang (`kvRate` = ermäßigter Satz + Ø-Zusatzbeitrag + PV + Kinderlosenzuschlag). Die Link-Basis in `src/lib/link.ts` nie ändern, sonst werden geteilte Links falsch gelesen (wenn es doch sein muss: neue `LINK_VERSION`).
+6. **Texte:** `tests/law.test.ts` („Oberflächentexte nennen die Werte der aktuellen Tabelle“) meldet jede Datei, die einen Wert der neuen Tabelle nicht nennt (Glossar, Einstellungen, „Was die Zahlen nicht zeigen“, Rechenweg, Hinweise). Zusätzlich im ganzen Repo nach den alten Beträgen **und nach der alten Jahreszahl** suchen (`grep -rn "2026" src`), damit auch Angaben wie „Durchschnitt 2026“ oder „2026: 3,2 %“ nicht vergessen werden. Dabei keine Bezeichner umbenennen (`LAW_2026`, `tax2026`, Dateinamen) und Rechtsstand-Angaben wie „BGBl. 2026“ oder `avdStart` nicht anfassen.
+7. **`engine.ts` und `legacy/index.html`** nicht ändern. `engine.ts` liest seine Werte ebenfalls über `lawOf(opts)`, rechnet in Golden und I1 aber immer mit `LAW_2026`.
 
 ## Aufgaben
+
+Je Aufgabe: Quelle, Felder der Tabelle (`LAW_<Jahr>` in `law.ts`), weitere Stellen.
 
 ### 1. Basiszins für die Vorabpauschale
 
 - **Quelle:** BMF-Schreiben zum Basiszins nach § 18 Abs. 4 InvStG (erscheint Anfang Januar).
-- **Stellen:** Standardwert `basis` in `DEFAULTS` (`src/lib/engine/inputs.ts`), Glossar-Eintrag `basiszins` in `src/lib/glossary.ts`, Text unter „Weitere Einstellungen“ (`src/lib/panels/Settings.svelte`).
+- **Tabelle:** `basiszins` (Anteil, z. B. 0,032).
+- **Weitere Stellen:** Standardwert `basis` in `DEFAULTS`, Glossar-Eintrag `basiszins` in `src/lib/glossary.ts`, Text unter „Weitere Einstellungen“ (`src/lib/panels/Settings.svelte`).
 
 ### 2. Einkommensteuertarif und Solidaritätszuschlag
 
-- **Quelle:** § 32a EStG (Grundfreibetrag, Tarifzonen), § 3 und § 4 SolZG (Freigrenze). Geplante Steuerreformen beachten.
-- **Stellen:** Die Tarifkoeffizienten stehen zweimal: in `tariff()` in `src/lib/engine/core.ts` (genutzt von `est()`, `tax()` und `tax2026()`) und als eigene Kopie in `incomeTaxNom` in `combo.ts`, dort auch der Grundfreibetrag (`grep -n "12348\|12.348"`). Die Soli-Freigrenze ist `fg` in `soli()` (`core.ts`). Alles davon sind Referenzwerte: nur über einen Schalter ändern, siehe „Achtung“ oben.
+- **Quelle:** § 32a Abs. 1 EStG (Grundfreibetrag, Zonengrenzen, Koeffizienten), § 3 Abs. 3 und § 4 SolZG (Freigrenze, Satz, Milderungszone). Geplante Steuerreformen beachten.
+- **Tabelle:** `tariff` (`gfb`, `z2End`, `z3End`, `z4End`, Koeffizienten `a2 b2`, `a3 b3 c3`, `r4 c4`, `r5 c5`), `soli` (`fg`, `rate`, `cap`). `tests/law.test.ts` prüft, dass der Tarif an den Zonengrenzen stetig ist (fängt Tippfehler in Koeffizienten).
+- **Weitere Stellen:** Die Soli-Freigrenze bei Zusammenveranlagung ergibt sich als Splitting (keine eigene Zahl); nur der Kommentar in `assess` (`combo.ts`) nennt den Betrag. Texte mit dem Grundfreibetrag (Einstellungen „Steueränderung“, Rechenweg) und „Tarif <Jahr>“.
 
 ### 3. Kirchensteuer, Splitting, Pauschbeträge und Partner-Vertrag
 
-- **Kirchensteuersätze:** 8 % in Bayern und Baden-Württemberg, 9 % sonst. Stellen: Auswahl in `Settings.svelte`, Glossar `kirchensteuer`.
-- **Abgeltungsteuer mit Kirchensteuer** nach § 32d Abs. 1 EStG: `ABG` in `combo.ts` (der Wert ohne Kirchensteuer, `.26375`, ist ein Referenzwert), Prozentangaben im Glossar `abgeltung` und in den Annahmen.
-- **Sonderausgaben-Pauschbetrag** 36 € / 72 € (§ 10c EStG).
-- **Soli-Freigrenze bei Zusammenveranlagung** (derzeit 40.700 €): keine eigene Konstante. Sie ergibt sich in `assess` (`combo.ts`) als Splitting über `soli()` mit der Einzel-Freigrenze `fg`. Nur der Kommentar dort nennt den Betrag, er muss mitgezogen werden.
-- **Sparer-Pauschbetrag** (derzeit 1.000 €, bei Zusammenveranlagung 2.000 €): `SPB` und weitere Stellen in `combo.ts`. Der Wert für Alleinstehende ist ein Referenzwert.
-- **Partner-Vertrag** (`avdSpouse`): § 10a Abs. 3, § 79 S. 2, § 84 S. 3–4 EStG (derzeit 175 €), Mindestbeitrag 120 €, Höchstbetrag plus 120 €. Stellen: `spouseAvd` und der AVD-Block in `combo.ts`, Glossar `partnerVertrag`.
+- **Kirchensteuersätze:** 8 % in Bayern und Baden-Württemberg, 9 % sonst (Eingabe, keine Tabelle). Stellen: Auswahl in `Settings.svelte`, Glossar `kirchensteuer`.
+- **Abgeltungsteuer** nach § 32d Abs. 1 EStG: Tabelle `abg` (`rate`, `withSoli`, `soliFactor`, `divisor`, siehe Regel 3). Prozentangaben im Glossar `abgeltung`, in den Annahmen und „Heute 25 %“ in den Einstellungen.
+- **Sonderausgaben-Pauschbetrag** (§ 10c EStG): `saPausch` (Ehegatten das Doppelte).
+- **Sparer-Pauschbetrag** (§ 20 Abs. 9 EStG): `spb` (zusammen veranlagt das Doppelte; auch Grenze der Eingabe `allowanceUsed`).
+- **Partner-Vertrag** (`avdSpouse`): § 10a Abs. 3, § 79 S. 2, § 84 S. 3–4 EStG. Tabelle `avd.spouseMinOwn` (Mindestbeitrag), `avd.spouseRaise` (Erhöhung des Höchstbetrags), `avd.spouseGrundMax` (höchste Grundzulage). Glossar `partnerVertrag`, Einstellungen, Rechenweg.
 
 ### 4. Kranken- und Pflegeversicherung
 
-- **Quelle:** Sozialversicherungsrechengrößen-Verordnung des Jahres, Bekanntmachung des durchschnittlichen Zusatzbeitrags (BMG), Beitragssatz der Pflegeversicherung (§ 55 SGB XI).
-- **Stellen:** Beitragsbemessungsgrenze `KV_BBG` in `src/lib/engine/core.ts` (Referenzwert, nur über einen Schalter ändern); Standardwert `kvRate` in `DEFAULTS`; Glossar `kvFreiwillig` und `kvRate`. Die Versicherungspflichtgrenze steht nur als Text im Glossar (`src/lib/glossary.ts`, nach dem Betrag suchen).
+- **Quelle:** Sozialversicherungsrechengrößen-Verordnung des Jahres, Bekanntmachung des durchschnittlichen Zusatzbeitrags (BMG), Beitragssätze (§§ 241, 243 SGB V, § 55 SGB XI).
+- **Tabelle:** `kvBbg` (rechnet), `kvJaeg` (nur Glossartext), `kv` (`general`, `reduced`, `zusatzAvg`, `pv`, `pvChildless`; Hilfsrechnung und Standardwert).
+- **Weitere Stellen:** Standardwert `kvRate` in `DEFAULTS`; Glossar `kvFreiwillig` und `kvRate`; Einstellungen (KV-Satz, BBG).
 
 ### 5. Altersvorsorgedepot
 
 - **Quelle:** aktuelles Gesetz (Altersvorsorgereformgesetz, EStG, AltZertG) und BMF-Schreiben zur steuerlichen Förderung.
-- **Prüfen:** Zulagen, Höchstbeträge, Bonus und Auszahlregeln.
-- **Stellen:** `AVD_SUB_MAX` (geförderte Eigenbeiträge) und `AVD_MAX` (Eigenbeiträge insgesamt) in `core.ts`. Zulagen und Bonus stehen als Zahlen in `combo.ts`: Grundzulage zweimal (`grundOf` und `grund` im AVD-Block, Sätze 0,5/0,25 und Grenzen 360/1.800 €), Kinderzulage (`kind`, 300 €), Bonus (`bon`, 200 € unter 25). Das alles sind Referenzwerte, siehe „Achtung“ oben. Die mittelbare Zulage des Partners (175 €) ist keiner. Nach den alten Beträgen auch in Glossar und Texten suchen.
-- **Standarddepot:** Umschichtungsanteile `AVD_STD_GLIDE` in `core.ts` (§ 1 Abs. 1c Nr. 5 AltZertG; gelten mit dem Schalter „Umschichtung vor Rentenbeginn“ für alle Produkte) und Kostendeckel (§ 2a Abs. 2 AltZertG). Abgleichen mit dem Glossar (`standarddepot`, `umschichtung`, `avdKosten`) und `src/lib/prosCons.ts`.
-- **Teilfreistellung** (§ 20 InvStG: 30 % für Aktienfonds, 0 % für den sicheren Teil) in `combo.ts` prüfen.
-- Der Hinweis zum Start (`avdStart` in `src/lib/site.ts`) schaltet sich ab 2027 selbst ab, dafür ist nichts zu tun.
+- **Tabelle:** `avd.subMax` (geförderte Eigenbeiträge), `avd.max` (Eigenbeiträge insgesamt), `avd.minOwn` (Mindesteigenbeitrag), Grundzulage `avd.grundRate1`/`grundTop1`/`grundRate2`/`grundTop2`, `avd.kid` (Kinderzulage), `avd.bonus` (Berufseinsteigerbonus). Die Suche rechnet den Förderhöchstbetrag je Monat daraus (`avdCap` in `search.ts`); liegt er nicht auf dem 10-€-Raster, wird er zusätzlich geprüft.
+- **Nicht in der Tabelle** (Struktur, siehe Regel 4): Altersgrenze des Bonus (unter 25), Teilkapitalauszahlung 30 %, Umschichtungsanteile `AVD_STD_GLIDE` in `core.ts` (§ 1 Abs. 1c Nr. 5 AltZertG), Kostendeckel (§ 2a Abs. 2 AltZertG), Teilfreistellung (§ 20 InvStG: 30 % Aktienfonds, 0 % sicherer Teil). Trotzdem jedes Jahr gegen das Gesetz prüfen.
+- **Weitere Stellen:** Glossar (`avd`, `zulagen`, `bonus`, `standarddepot`, `umschichtung`, `avdKosten`), `src/lib/prosCons.ts`, `verdict.ts`, Einstellungen. Der Hinweis zum Start (`avdStart` in `src/lib/site.ts`) schaltet sich ab 2027 selbst ab.
 
-### 6. „Was die Zahlen nicht zeigen“
+### 6. Ertragsanteil der Leibrente
+
+- **Quelle:** § 22 Nr. 1 S. 3 Buchst. a Doppelbuchst. bb EStG (Tabelle, seit 2005 unverändert).
+- **Tabelle:** `ertrag` (Alter bei Rentenbeginn → Prozent).
+
+### 7. „Was die Zahlen nicht zeigen“
 
 - **Stelle:** `src/lib/prosCons.ts`.
 - **Prüfen:** jede Rechtsaussage gegen ihre Fundstelle: § 12 SGB II, § 93 EStG, AltZertG; bei der Betriebsrente § 1a BetrAVG, § 3 Nr. 63 EStG, SvEV, §§ 226, 248, 250 SGB V.
 
-### 7. Hilfsrechnung Bruttorente
+### 8. Hilfsrechnung Bruttorente
 
-- **Stelle:** `src/lib/pensionTax.ts`.
-- **Prüfen:** allgemeiner KV-Beitragssatz (`KV_GENERAL`, § 241 SGB V), Pflegeversicherungssatz (`PV_RATE`, Zuschlag für Kinderlose `PV_CHILDLESS`), durchschnittlicher Zusatzbeitrag (`ZUSATZ_AVG`), Werbungskosten-Pauschbetrag für Renten (`WK_PAUSCH`, § 9a S. 1 Nr. 3 EStG), Sonderausgaben-Pauschbetrag (`SA_PAUSCH`, § 10c EStG), Tabelle der Besteuerungsanteile (§ 22 Nr. 1 S. 3 Buchst. a Doppelbuchst. aa EStG).
+- **Stelle:** `src/lib/pensionTax.ts` liest `KV_GENERAL`, `PV_RATE`, `PV_CHILDLESS`, `ZUSATZ_AVG`, `WK_PAUSCH` und `SA_PAUSCH` aus `CURRENT_LAW` (Tabellenfelder `kv.*`, `wkPauschRente`, `saPausch`).
+- **Prüfen:** die Tabelle der Besteuerungsanteile `taxSharePct` (§ 22 Nr. 1 S. 3 Buchst. a Doppelbuchst. aa EStG). Sie ist ein mehrjähriger gesetzlicher Fahrplan, kein Jahreswert, und steht deshalb im Code.
 
 ## Abschluss
 
-1. `npm run test:all` ausführen. Alle Tests müssen grün sein.
-   - `tests/golden.test.ts` und I1 in `tests/combo.test.ts` dürfen nie angepasst werden. Schlagen sie fehl, wurde ein Referenzwert überschrieben: die Änderung zurücknehmen und wie unter „Achtung“ hinter einen Schalter legen.
-   - **Erwartet** ändern sich Tests, die die aktuelle Rechnung mit allen Korrekturen festhalten, vor allem die Snapshots „Snapshots mit ALL_FIXES“ in `tests/fixes.test.ts` und feste Beträge in anderen Testdateien. Solche erwarteten Werte nur anpassen, wenn die Abweichung allein aus den belegten neuen Werten folgt. Im Bericht je angepasstem Test alten und neuen Wert nennen.
-2. In `src/lib/site.ts` Rechtsstand (`lawState`, `lawStateShort`) und Prüfdatum (`updated`) anpassen.
-3. Hat sich der Rechtsstand (das Gesetz in `lawState`) geändert, den Badge in `README.md` (`Rechtsstand-TT.MM.JJJJ`) und `README.en.md` (`Legal%20status-JJJJ--MM--TT`, Bindestriche verdoppelt) auf dasselbe Datum setzen. Neue Steuerwerte allein ändern den Badge nicht.
-4. Committen, eine Nachricht je Aufgabe oder eine zusammenfassende Nachricht mit allen geänderten Werten.
+1. `npx vitest run tests/law.test.ts`: Konsistenz der neuen Tabelle, Standardwerte, Texte. Erst weiter, wenn grün.
+2. **Fixture bewusst neu erzeugen und begründen:**
+   - Vorher (mit der alten Tabelle als `CURRENT_LAW`, also vor dem Eintrag in `LAWS`) vollständige Ausgabe sichern: `LIVE_DUMP=<ordner-alt> npx vitest run tests/live-regression.test.ts`.
+   - Nach dem Eintrag neu erzeugen: `UPDATE_LIVE_FIXTURE=1 npx vitest run tests/live-regression.test.ts`, dazu `LIVE_DUMP=<ordner-neu>` für die Fehlersuche.
+   - `git diff tests/fixtures/live-regression.json` zeigt je Fall die geänderten Kennzahlen. Im Bericht nennen: wie viele Fälle sich geändert haben, für „golden: Standardwerte“ und zwei, drei typische Fälle (verheiratet, Kirchensteuer, KV, Kombi) alt/neu von `avgMonthly` und `cumHReal` je Produkt, und welcher neue Wert die Änderung erklärt. Eine Änderung, die sich nicht aus den belegten neuen Werten erklären lässt (zum Beispiel ein Fall, auf den keiner der geänderten Werte wirken kann), ist ein Fehler: anhalten und im Bericht melden, nicht das Fixture übernehmen.
+3. `npm run test:all` ausführen. Alle Tests müssen grün sein.
+   - `tests/golden.test.ts`, I1 in `tests/combo.test.ts` und `tests/law-propagation.test.ts` dürfen nie angepasst werden. Schlagen sie fehl, wurde eine alte Tabelle verändert oder die Option `law` geht irgendwo verloren: Ursache beheben, nicht den Test.
+   - **Erwartet** ändern sich Tests, die die aktuelle Rechnung mit festen Beträgen festhalten (zum Beispiel „Snapshots mit ALL_FIXES“ in `tests/fixes.test.ts`). Prüft ein Test eine Regel mit Beträgen von 2026 (etwa einen Tarifwert), ihm `{ law: LAW_2026 }` übergeben statt die Zahl zu ändern. Hält er die aktuelle Rechnung fest, den erwarteten Wert nur anpassen, wenn die Abweichung allein aus den belegten neuen Werten folgt. Im Bericht je angepasstem Test alten und neuen Wert nennen.
+4. In `src/lib/site.ts` Rechtsstand (`lawState`, `lawStateShort`, „Steuerwerte <Jahr>“) und Prüfdatum (`updated`) anpassen.
+5. Hat sich der Rechtsstand (das Gesetz in `lawState`) geändert, den Badge in `README.md` (`Rechtsstand-TT.MM.JJJJ`) und `README.en.md` (`Legal%20status-JJJJ--MM--TT`, Bindestriche verdoppelt) auf dasselbe Datum setzen. Neue Steuerwerte allein ändern den Badge nicht.
+6. Committen, eine Nachricht je Aufgabe oder eine zusammenfassende Nachricht mit allen geänderten Werten und der Zahl der geänderten Fixture-Fälle.
 
 ## Bericht
 
 Am Ende eine Tabelle ausgeben:
 
-| Aufgabe | Wert | alt | neu | Quelle | Status |
+| Aufgabe | Tabellenfeld | alt | neu | Quelle | Status |
 |---|---|---|---|---|---|
 
 Status ist `geändert`, `unverändert` (geprüft, gleicher Wert) oder `offen` (noch nicht veröffentlicht oder unklar, mit Begründung).
+
+Danach der Fixture-Diff (Schritt 2 des Abschlusses): Zahl der geänderten Fälle, Beispiele alt/neu, Begründung, und die angepassten Tests mit altem und neuem Wert.
