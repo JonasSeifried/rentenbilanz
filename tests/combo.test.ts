@@ -7,6 +7,7 @@ import { kvGross } from '../src/lib/engine/core';
 import { analyze } from '../src/lib/engine/analyze';
 import { ALL_FIXES, FIX_IDS, FIXES, NO_FIXES, type FixId } from '../src/lib/engine/fixes';
 import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
+import { LAW_2026 } from '../src/lib/engine/law';
 import { combo, comboStats, emptySplit, partStats, readCombo, shareAllowance, SPLIT_KEYS, type ComboResult, type Split } from '../src/lib/engine/combo';
 
 // engine.ts bleibt Referenz für E1–E10; neue R-Fixes werden ausschließlich in combo.ts gerechnet.
@@ -112,10 +113,10 @@ function oneProductInvariant(inputs: Inputs[], fixes: ReadonlySet<FixId>) {
       const amount = p[M[k]] as number;
       // 0 € = kein Teil (I8); als Einzelprodukt (analyze) wird es mit parts: [k] trotzdem gerechnet.
       const ctx = `${JSON.stringify(inp)} ${k} fixes=[${[...fixes]}]`;
-      const m = model(p, { fixes });
+      const m = model(p, { fixes, law: LAW_2026 }); // I1 rechnet immer mit den Werten von 2026
       const single = m.res[k]! as unknown as Record<string, unknown>;
-      const A = analyze(p, { fixes });
-      const c = combo(p, S({ [k]: amount }), { fixes, cost: true, parts: [k] });
+      const A = analyze(p, { fixes, law: LAW_2026 });
+      const c = combo(p, S({ [k]: amount }), { fixes, law: LAW_2026, cost: true, parts: [k] });
       const part = c.parts[k]! as unknown as Record<string, unknown>;
       expect(Object.keys(c.parts), ctx).toEqual([k]);
       for (const [f, v] of Object.entries(single)) {
@@ -152,7 +153,7 @@ function oneProductInvariant(inputs: Inputs[], fixes: ReadonlySet<FixId>) {
       expect(c.own).toBe(single.own); expect(c.ownReal).toBe(single.ownReal); expect(c.capR).toBe(single.capR);
       expect(c.capNet).toBe(single.capNet); expect(c.cost).toBe(single.cost); expect(c.foerder).toBe(single.foerder);
       expect(c.kvClipped).toBe(false);
-      if (amount > 0) expect(Object.keys(combo(p, S({ [k]: amount }), { fixes }).parts), ctx).toEqual([k]);
+      if (amount > 0) expect(Object.keys(combo(p, S({ [k]: amount }), { fixes, law: LAW_2026 }).parts), ctx).toEqual([k]);
       cases++;
     }
   }

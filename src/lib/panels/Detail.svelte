@@ -1,7 +1,8 @@
 <script lang="ts">
   import { scrollRegion } from '../attach';
   import type { Analysis, Product } from '../engine/analyze';
-  import { ERTRAG } from '../engine/core';
+  import { CURRENT_LAW } from '../engine/law';
+  const ERTRAG = CURRENT_LAW.ertrag;
   import { eur } from '../format';
   import { splitText } from '../comboVerdict';
   import { app, setInput } from '../state.svelte';

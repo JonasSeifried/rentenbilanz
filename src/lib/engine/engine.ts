@@ -5,8 +5,8 @@
 // Golden-Test den Originalpfad gegen legacy/index.html prüfen kann und I1 (tests/combo.test.ts) combo.ts gegen model().
 
 import { eur } from '../format';
-import { fixesOf, type EngineOptions } from './fixes';
-import { tax, AVD_MAX, AVD_SUB_MAX, ERTRAG, KV_BBG, type Params, type ProductKey, type ProductResult } from './core';
+import { fixesOf, lawOf, type EngineOptions } from './fixes';
+import type { Params, ProductKey, ProductResult } from './core';
 
 export * from './core';
 
@@ -26,6 +26,11 @@ export interface ModelResult {
 // Zeitachse: t = 0 … T-1 sind Jahre ab heute; vals[t] ist der Wert zu Beginn von Jahr t (= Alter a0 + t).
 export function model(p: Params, opts?: EngineOptions): ModelResult {
   const fx = fixesOf(opts);
+  // Rechtsstand (law.ts): Golden und I1 übergeben LAW_2026; jeder Wert steht dort, wo vorher das Literal stand.
+  const L = lawOf(opts);
+  const { tax } = L.fn, KV_BBG = L.kvBbg, AVD_SUB_MAX = L.avd.subMax, AVD_MAX = L.avd.max, ERTRAG = L.ertrag;
+  const SPB = L.spb, ABG = L.abg.withSoli;
+  const { minOwn, grundRate1, grundTop1, grundRate2, grundTop2, kid: KID, bonus: BONUS } = L.avd;
   const F = {
     bonus: fx.has('bonusOutsideSA'), // E3
     kvInv: fx.has('kvInvestBase'),   // E6
@@ -61,14 +66,14 @@ export function model(p: Params, opts?: EngineOptions): ModelResult {
     for (let t = 0; t < T; t++) {
       const accum = t < n;
       const rm = Math.pow(1 + (accum ? p.g : p.gPay) - ter, 1 / 12) - 1;
-      let spb = 1000, payY = 0, dedY = 0, kvBase = 0;
+      let spb = SPB, payY = 0, dedY = 0, kvBase = 0;
       if (!accum && t < tEnd && V > 0) {
         const W = annuityDue(V, p.gPay - ter, tEnd - t);
         const gain = Math.max(0, W * (V - B) / V);
         const tb = Math.max(0, gain * 0.7 - spb); spb = Math.max(0, spb - gain * 0.7);
         // Fix kvInvestBase (E6): beitragspflichtig sind 70 % des Gewinnanteils (Teilfreistellung § 20 InvStG), siehe unten auch die Vorabpauschale.
-        if (F.kvInv || kvSink) { dedY = tb * 0.26375; kvBase = F.kvInv ? 0.7 * gain : gain; }
-        else dedY = tb * 0.26375 + kvAdd(gain, t);
+        if (F.kvInv || kvSink) { dedY = tb * ABG; kvBase = F.kvInv ? 0.7 * gain : gain; }
+        else dedY = tb * ABG + kvAdd(gain, t);
         B -= W * B / V; V -= W; payY = W;
       }
       const Vs = V; let cY = 0, newSh = 0;
@@ -78,7 +83,7 @@ export function model(p: Params, opts?: EngineOptions): ModelResult {
       }
       if (V > 0 && p.basis > 0) {
         const vp = Math.min((Vs + newSh) * p.basis * 0.7, Math.max(0, V - Vs - cY));
-        const tx = Math.max(0, vp * 0.7 - spb) * 0.26375;
+        const tx = Math.max(0, vp * 0.7 - spb) * ABG;
         if (tx > 0) { B *= (V - tx) / V; V -= tx; }
         B += vp;
         if (F.kvInv && !accum && t < tEnd) kvBase += 0.7 * vp; // Vorabpauschale in der Rentenphase (§ 16 Abs. 1 Nr. 2 InvStG)
@@ -89,7 +94,7 @@ export function model(p: Params, opts?: EngineOptions): ModelResult {
       net[t] = payY - dedY;
       vals.push(V); bases.push(B); owns.push(own);
     }
-    const sellNet = (idx: number) => { const V = vals[idx], B = bases[idx]; return V - Math.max(0, (V - B) * 0.7 - 1000) * 0.26375; };
+    const sellNet = (idx: number) => { const V = vals[idx], B = bases[idx]; return V - Math.max(0, (V - B) * 0.7 - SPB) * ABG; };
     return { vals, bases, owns, net, sellNet, own: owns[n], ownReal, capR: vals[n], capNet: sellNet(n), tEnd };
   }
 
@@ -169,11 +174,11 @@ export function model(p: Params, opts?: EngineOptions): ModelResult {
           V *= 1 + rm; Vu *= 1 + rm;
         }
         ownReal += E / I(t); ownUReal += U / I(t);
-        if (elig && E >= 120) {
-          const grund = 0.5 * Math.min(E, 360) + 0.25 * Math.max(0, Math.min(E, 1800) - 360);
+        if (elig && E >= minOwn) {
+          const grund = grundRate1 * Math.min(E, grundTop1) + grundRate2 * Math.max(0, Math.min(E, grundTop2) - grundTop1);
           const kidActive = age >= p.kidsFrom && age < p.kidsFrom + p.kidsYears;
-          const kind = kidActive ? p.kids * 300 * Math.min(1, E / 300) : 0;
-          let bon = 0; if (p.bonus && !bonusUsed && age < 25) { bon = 200; bonusUsed = true; }
+          const kind = kidActive ? p.kids * KID * Math.min(1, E / KID) : 0;
+          let bon = 0; if (p.bonus && !bonusUsed && age < 25) { bon = BONUS; bonusUsed = true; }
           const z = grund + kind + bon; // gutgeschrieben wird die volle Zulage inkl. Bonus
           // Günstigerprüfung: Original rechnet den Bonus mit. Fix bonusOutsideSA (E3): Die Erhöhung nach § 84 S. 2 EStG
           // bleibt außer Betracht (§ 2 Abs. 6 S. 2 Hs. 2 EStG), weder im Abzug noch bei der Gegenrechnung.
@@ -251,7 +256,7 @@ export function model(p: Params, opts?: EngineOptions): ModelResult {
     const annualNet = (t: number) => annual - taxAdd(p.incRet, annual * ea, t);
     // Kapitalauszahlung: 15 % des Gewinns steuerfrei; nach 12 Jahren und ab 62 davon die Hälfte mit persönlichem Satz, sonst Abgeltungsteuer.
     const gain = Math.max(0, a.C - a.own), halb = n >= 12;
-    const kapTax = halb ? taxAdd(p.incRet, gain * 0.85 * 0.5, n) : gain * 0.85 * 0.26375;
+    const kapTax = halb ? taxAdd(p.incRet, gain * 0.85 * 0.5, n) : gain * 0.85 * ABG;
     // Original: KV auf die Kapitalauszahlung (120 Monate) sofort abgezogen. Fix kvLumpSpread (E8): C/10 in den Jahren n … n+9
     // beitragspflichtig (§ 5 Abs. 4 Beitragsverfahrensgrundsätze Selbstzahler), gezahlt aus den Entnahmen des Folge-ETF.
     const kapNet = F.kvSpread ? a.C - kapTax : a.C - kapTax - kvLump(a.C, n);

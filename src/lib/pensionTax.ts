@@ -13,6 +13,8 @@
 // Heutiges Geld: Die Rente wächst im Modell mit der Inflation (real gleich). Feste Euro-Beträge (Rentenfreibetrag, 102 €, 36 €)
 // verlieren dadurch real an Wert; der Durchschnitt über die Auszahljahre ist der Vorschlag zur Übernahme.
 
+import { CURRENT_LAW } from './engine/law';
+
 /** Besteuerungsanteil der gesetzlichen Rente in Prozent nach dem Jahr des Rentenbeginns. */
 export function taxSharePct(year: number): number {
   const y = Math.floor(year);
@@ -22,12 +24,13 @@ export function taxSharePct(year: number): number {
   return Math.min(100, 82 + 0.5 * (y - 2022));
 }
 
-/** Allgemeiner KV-Beitragssatz (§ 241 SGB V) und PV-Satz 2026 (§ 55 SGB XI: 3,6 %, kinderlos +0,6 %). */
-export const KV_GENERAL = 14.6;
-export const PV_RATE = 3.6, PV_CHILDLESS = 0.6;
-/** Durchschnittlicher Zusatzbeitrag 2026 (BMG-Bekanntmachung), Vorschlag. */
-export const ZUSATZ_AVG = 2.9;
-export const WK_PAUSCH = 102, SA_PAUSCH = 36;
+// Jahreswerte aus der aktuellen Rechtsstand-Tabelle (engine/law.ts).
+/** Allgemeiner KV-Beitragssatz (§ 241 SGB V) und PV-Satz (§ 55 SGB XI; 2026: 3,6 %, kinderlos +0,6 %). */
+export const KV_GENERAL = CURRENT_LAW.kv.general;
+export const PV_RATE = CURRENT_LAW.kv.pv, PV_CHILDLESS = CURRENT_LAW.kv.pvChildless;
+/** Durchschnittlicher Zusatzbeitrag (BMG-Bekanntmachung), Vorschlag. */
+export const ZUSATZ_AVG = CURRENT_LAW.kv.zusatzAvg;
+export const WK_PAUSCH = CURRENT_LAW.wkPauschRente, SA_PAUSCH = CURRENT_LAW.saPausch;
 
 export interface PensionInput {
   /** Monatliche Bruttorente laut Renteninformation (heutiges Geld). */

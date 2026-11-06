@@ -14,10 +14,11 @@ import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { computeLive, liveCases, type LiveRecord } from './live/cases';
+import { CURRENT_LAW } from '../src/lib/engine/law';
 
 const FILE = fileURLToPath(new URL('./fixtures/live-regression.json', import.meta.url));
 
-interface Fixture { note: string; cases: LiveRecord[] }
+interface Fixture { law: string; note: string; cases: LiveRecord[] }
 
 describe('Live-Rechnung = eingefrorenes Fixture (bitgenau)', () => {
   it('alle Fälle', () => {
@@ -30,12 +31,13 @@ describe('Live-Rechnung = eingefrorenes Fixture (bitgenau)', () => {
     }
     const records = results.map(r => r.record);
     if (process.env.UPDATE_LIVE_FIXTURE) {
-      const fx: Fixture = { note: 'Erzeugt mit UPDATE_LIVE_FIXTURE=1 (tests/live-regression.test.ts). Nur bewusst neu erzeugen, Diff im Bericht begründen (docs/jaehrliche-pflege.md).', cases: records };
+      const fx: Fixture = { law: CURRENT_LAW.id, note: 'Erzeugt mit UPDATE_LIVE_FIXTURE=1 (tests/live-regression.test.ts). Nur bewusst neu erzeugen, Diff im Bericht begründen (docs/jaehrliche-pflege.md).', cases: records };
       writeFileSync(FILE, JSON.stringify(fx, null, 1) + '\n');
       console.log(`Fixture neu geschrieben: ${records.length} Fälle`);
       return;
     }
     const fx = JSON.parse(readFileSync(FILE, 'utf8')) as Fixture;
+    expect(fx.law, 'Fixture gehört zu einem anderen Rechtsstand: bewusst neu erzeugen (docs/jaehrliche-pflege.md)').toBe(CURRENT_LAW.id);
     expect(records.map(r => r.id)).toEqual(fx.cases.map(r => r.id));
     const diffs: string[] = [];
     records.forEach((r, i) => {

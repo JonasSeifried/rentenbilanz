@@ -8,10 +8,12 @@ import { describe, expect, it, beforeAll } from 'vitest';
 import { readParams, model, type ProductKey } from '../src/lib/engine/engine';
 import { analyze, scenarios } from '../src/lib/engine/analyze';
 import { NO_FIXES } from '../src/lib/engine/fixes';
+import { LAW_2026 } from '../src/lib/engine/law';
 import { DEFAULTS, LEGACY_KEYS, type Inputs } from '../src/lib/engine/inputs';
 
 const CENT = 0.005;
-const OPTS = { fixes: NO_FIXES };
+// Original und Port rechnen immer mit den Werten von 2026, egal welche Rechtsstand-Tabelle die App gerade nutzt.
+const OPTS = { fixes: NO_FIXES, law: LAW_2026 };
 // Einzige erlaubte neue Schlüssel (fehlen im Original): params.incHeir, params.shift/safeRate (Umschichtung vor
 // Rentenbeginn, Standard aus) und stats.*.cumHReal. Alles andere muss strukturell gleich sein.
 const ALLOW_NEW = [/^(params|scen\[\d+\]\.p)\.(incHeir|incPeak|incPeakAge|kist|married|incSpouse|incSpouseRet|avdSpouse|abgRate|estAdd|taxFrom|shift|safeRate|kvGrossRet|payResidual|fundingDelay|indexAllowance|allowanceUsed|avdPayCost|etfPayTer|fondPayTer)$/, /^(scen\[\d+\]\.)?stats\.\w+\.cumHReal$/];

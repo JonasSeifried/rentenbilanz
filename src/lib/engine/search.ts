@@ -8,8 +8,9 @@
 // einzeln gerechnet und nur der Rest per Tauschsuche (50 €, dann 10 €) auf die anderen Produkte verteilt,
 // warm gestartet vom Optimum des vorigen AVD-Betrags.
 
-import { AVD_MAX, type Params, type ProductKey } from './core';
-import { fixesOf, type EngineOptions } from './fixes';
+import type { Params, ProductKey } from './core';
+import { fixesOf, lawOf, type EngineOptions } from './fixes';
+import { CURRENT_LAW } from './law';
 import { combo, comboStats, emptySplit, SPLIT_KEYS, type ComboStats, type Split } from './combo';
 
 /** Unterschiede bis 1 € (Summe bis H, heutige Kaufkraft) gelten in der Suche als gleich. */
@@ -23,14 +24,16 @@ export const TIE_REL = 0.001;
 export const tieTol = (value: number): number => Math.max(TIE_EUR, TIE_REL * Math.abs(value));
 /** Rasterweite der Suche in €/Monat. */
 export const STEP = 10;
-/** Förderhöchstbetrag AVD in €/Monat (1.800 €/Jahr). */
-export const AVD_CAP = 150;
+/** Förderhöchstbetrag AVD in €/Monat (Rechtsstand 2026: 1.800 €/Jahr = 150 €). */
+export const avdCap = (opts?: EngineOptions): number => lawOf(opts).avd.subMax / 12;
+/** Förderhöchstbetrag des aktuellen Rechtsstands in €/Monat (Oberfläche). */
+export const AVD_CAP = CURRENT_LAW.avd.subMax / 12;
 /**
- * Bis zu diesem Monatsbetrag rechnet das AVD anders als ein ETF: mit Fix avdUnsubsidized (E10) bis 570 €
- * (6.840 €/Jahr, ungefördert im Vertrag), ohne ihn bis 150 €. Darüber liegt alles im ETF-Nebendepot.
+ * Bis zu diesem Monatsbetrag rechnet das AVD anders als ein ETF: mit Fix avdUnsubsidized (E10) bis zum Höchstbetrag
+ * (2026: 6.840 €/Jahr = 570 €, ungefördert im Vertrag), ohne ihn bis zum Förderhöchstbetrag. Darüber liegt alles im ETF-Nebendepot.
  */
 export function avdRasterMax(opts?: EngineOptions): number {
-  return fixesOf(opts).has('avdUnsubsidized') ? AVD_MAX / 12 : AVD_CAP;
+  return fixesOf(opts).has('avdUnsubsidized') ? lawOf(opts).avd.max / 12 : avdCap(opts);
 }
 
 export interface Cand { split: Split; stats: ComboStats; value: number }
@@ -99,7 +102,10 @@ export function searchSpace(p: Params, budget: number, keys: readonly ProductKey
     else {
       const max = ks.includes('etf') ? Math.min(budget, avdRasterMax(opts)) : budget;
       for (let u = 0; u * step <= max + 1e-9; u++) avdValues.push(u * step);
-      if (p.kids > 0 && 25 <= max && step === STEP) { avdValues.push(25); avdValues.sort((a, b) => a - b); }
+      // Knick der Kinderzulage (2026: 300 €/Jahr = 25 €) und Förderhöchstbetrag (2026: 150 €, liegt auf dem Raster)
+      const law = lawOf(opts), kidKnee = law.avd.kid / 12, cap = law.avd.subMax / 12;
+      if (p.kids > 0 && kidKnee <= max && step === STEP && !avdValues.includes(kidKnee)) { avdValues.push(kidKnee); avdValues.sort((a, b) => a - b); }
+      if (cap <= max && step === STEP && !avdValues.includes(cap)) { avdValues.push(cap); avdValues.sort((a, b) => a - b); }
     }
   } else avdValues.push(0);
   return { budget, step, keys: ks, avdValues, others, sink };
@@ -147,13 +153,14 @@ export interface PureStrategy { key: ProductKey; label: string; split: Split; st
 /** Bezeichnung einer reinen Strategie (UX Teil D). */
 export function pureLabel(key: ProductKey, budget: number, opts?: EngineOptions): string {
   const e = (x: number) => Math.round(x).toLocaleString('de-DE') + ' €';
+  const AVD_CAP = avdCap(opts);
   switch (key) {
     case 'etf': return 'Alles ins ETF-Depot';
     case 'avd': {
       if (!(budget > AVD_CAP + 1e-9)) return 'Alles ins Altersvorsorgedepot';
       const max = avdRasterMax(opts);
-      if (max <= AVD_CAP) return 'Alles ins Altersvorsorgedepot (150 € gefördert + ' + e(budget - AVD_CAP) + ' Nebendepot)';
-      return 'Alles ins Altersvorsorgedepot (150 € gefördert + ' + e(Math.min(budget, max) - AVD_CAP) + ' ungefördert'
+      if (max <= AVD_CAP) return 'Alles ins Altersvorsorgedepot (' + e(AVD_CAP) + ' gefördert + ' + e(budget - AVD_CAP) + ' Nebendepot)';
+      return 'Alles ins Altersvorsorgedepot (' + e(AVD_CAP) + ' gefördert + ' + e(Math.min(budget, max) - AVD_CAP) + ' ungefördert'
         + (budget > max + 1e-9 ? ' + ' + e(budget - max) + ' Nebendepot)' : ')');
     }
     case 'ins': return 'Alles in die Rentenversicherung';
@@ -187,9 +194,9 @@ export interface BestSplitResult {
   evals: number;
 }
 
-/** Signatur von Params, Budget, Produkten und Fixes (stabil, serialisierbar). */
+/** Signatur von Params, Budget, Produkten, Fixes und Rechtsstand (stabil, serialisierbar). */
 export function comboSig(p: Params, budget: number, keys: readonly ProductKey[], opts?: EngineOptions): string {
-  return JSON.stringify([p, budget, SPLIT_KEYS.filter(k => keys.includes(k)), [...fixesOf(opts)].sort()]);
+  return JSON.stringify([p, budget, SPLIT_KEYS.filter(k => keys.includes(k)), [...fixesOf(opts)].sort(), lawOf(opts).id]);
 }
 
 /**
@@ -258,8 +265,8 @@ export function bestSplit(p: Params, budget: number, keys: readonly ProductKey[]
   // Gleichwertig (≤ tieTol) und einfacher: reine Strategien und „150 € AVD (Förderhöchstbetrag), Rest bestmöglich“.
   // Bewusst keine beliebigen Rasterpunkte, sonst landete die Wahl irgendwo am Rand der Toleranz.
   const top = best!, tol = tieTol(top.value);
-  const atCap = byAvd.get(AVD_CAP);
-  if (atCap && top.split.avd > AVD_CAP) alts.push(atCap);
+  const cap = avdCap(opts), atCap = byAvd.get(cap);
+  if (atCap && top.split.avd > cap) alts.push(atCap);
   let b = top;
   for (const c of alts) if (c.value >= top.value - tol && simpler(c, b)) b = c;
   return { sig: comboSig(p, budget, sp.keys, opts), budget, keys: sp.keys, split: b.split, stats: b.stats, value: b.value, curve, top: b === top ? null : top, evals: evalCount - before };

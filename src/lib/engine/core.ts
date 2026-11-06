@@ -2,33 +2,21 @@
 // combo.ts (eine Engine für Einzelprodukte und Kombi); engine.ts ist nur noch die Referenz des Originals (Golden-Test).
 
 import type { Inputs } from './inputs';
+import { CURRENT_LAW, LAW_2026 } from './law';
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
-// --- Steuer (Tarif 2026, Grundtarif) ---
-function tariff(x: number): number {
-  let t: number;
-  if (x <= 12348) t = 0;
-  else if (x <= 17799) { const y = (x - 12348) / 1e4; t = (914.51 * y + 1400) * y; }
-  else if (x <= 69878) { const z = (x - 17799) / 1e4; t = (173.10 * z + 2397) * z + 1034.87; }
-  else if (x <= 277825) t = 0.42 * x - 11135.63;
-  else t = 0.45 * x - 19470.38;
-  return Math.max(0, t);
-}
-/** Referenz des Originals: Einkommen abgerundet, Steuerbetrag noch ungerundet. */
-export function est(x: number): number { return tariff(Math.floor(Math.max(0, x))); }
-export function soli(t: number): number { const fg = 20350; return t <= fg ? 0 : Math.min(0.055 * t, 0.119 * (t - fg)); }
-export function tax(x: number): number { const t = est(x); return t + soli(t); }
-/** Indexierter Tarif; Einkommen und ESt im nominalen Steuerjahr auf volle Euro abgerundet (§ 32a). */
-export function tax2026(incomeNom: number, index = 1): number {
-  const income = Math.floor(Math.max(0, incomeNom));
-  const t = Math.floor(tariff(income / index) * index);
-  return t + soli(t / index) * index;
-}
-export const ERTRAG: Record<number, number> = { 60: 22, 61: 22, 62: 21, 63: 20, 64: 19, 65: 18, 66: 18, 67: 17, 68: 16, 69: 15, 70: 15 };
-export const KV_BBG = 69750; // Beitragsbemessungsgrenze KV/PV 2026, €/Jahr
-/** AVD: geförderte Eigenbeiträge höchstens 1.800 €/Jahr; Eigenbeiträge insgesamt höchstens 6.840 €/Jahr (AVRG). */
-export const AVD_SUB_MAX = 1800, AVD_MAX = 6840;
+// --- Steuer ---
+// Jahreswerte (Tarif, Soli, KV-BBG, AVD-Höchstbeträge, Ertragsanteil …) stehen in law.ts; die Engine holt sie über
+// lawOf(opts). Die folgenden Exporte sind ausdrücklich an LAW_2026 gebunden (Referenz für Tests mit Werten von 2026),
+// nicht an den aktuellen Rechtsstand.
+const TAX_2026 = LAW_2026.fn;
+/** Referenz des Originals (Tarif 2026): Einkommen abgerundet, Steuerbetrag noch ungerundet. */
+export const est: (x: number) => number = TAX_2026.est;
+export const soli: (t: number) => number = TAX_2026.soli;
+export const tax: (x: number) => number = TAX_2026.tax;
+/** Indexierter Tarif 2026; Einkommen und ESt im nominalen Steuerjahr auf volle Euro abgerundet (§ 32a). */
+export const tax2026: (incomeNom: number, index?: number) => number = TAX_2026.taxIndexed;
 /**
  * Umschichtung vor Rentenbeginn (Schalter `shift`, alle Produkte) mit den Anteilen des Standarddepots (§ 1 Abs. 1c Nr. 5
  * AltZertG ab 01.01.2027): fünf Jahre vor der Auszahlungsphase höchstens 50 %, zwei Jahre vorher und zu Beginn höchstens
@@ -116,6 +104,10 @@ export function numOf(v: unknown): number { const x = parseFloat(String(v).repla
 /** Sonstige KV-Bruttoeinnahmen im Alter (heutiges Geld): −1 folgt incRet. */
 export const kvGross = (p: Params) => p.kvGrossRet < 0 ? p.incRet : p.kvGrossRet;
 
+// Eingabegrenzen aus dem aktuellen Rechtsstand (readParams ist Eingabeprüfung, keine Rechnung): Obergrenze des schon
+// genutzten Pauschbetrags = gemeinsamer Pauschbetrag; fehlender Abgeltungsteuersatz = heute geltender.
+const ALLOWANCE_MAX = 2 * CURRENT_LAW.spb, ABG_TODAY = CURRENT_LAW.abg.rate;
+
 export function readParams(inp: Inputs): Params {
   const num = (id: keyof Inputs) => numOf(inp[id]);
   const chk = (id: keyof Inputs) => inp[id] === true;
@@ -125,7 +117,7 @@ export function readParams(inp: Inputs): Params {
     a0: clamp(Math.round(num('a0')), 16, 60), studyEnd: Math.round(num('studyEnd')), incStudy: Math.max(0, num('incStudy')), eligStudy: chk('eligStudy'),
     incWork: Math.max(0, num('incWork')), incPeak: inp.incPeak == null || num('incPeak') < 0 ? -1 : num('incPeak'), incPeakAge: inp.incPeakAge == null ? 45 : clamp(Math.round(num('incPeakAge')), 16, 100), incRet: Math.max(0, num('incRet')), R: clamp(Math.round(num('R')), 65, 70), H: Math.round(num('H')),
     kvGrossRet: num('kvGrossRet') < 0 ? -1 : num('kvGrossRet'), payResidual: chk('payResidual'), fundingDelay: chk('fundingDelay'), indexAllowance: chk('indexAllowance'),
-    allowanceUsed: clamp(num('allowanceUsed'), 0, 2000), // bis 2.000 € (zusammen veranlagt); combo.ts kappt auf den Pauschbetrag
+    allowanceUsed: clamp(num('allowanceUsed'), 0, ALLOWANCE_MAX), // bis zum gemeinsamen Pauschbetrag (zusammen veranlagt); combo.ts kappt auf den Pauschbetrag
     avdPayCost: num('avdPayCost') < 0 ? -1 : pct('avdPayCost', 0, 10),
     etfPayTer: num('etfPayTer') < 0 ? -1 : pct('etfPayTer', 0, 10),
     fondPayTer: num('fondPayTer') < 0 ? -1 : pct('fondPayTer', 0, 10),
@@ -143,7 +135,7 @@ export function readParams(inp: Inputs): Params {
     incSpouse: Math.max(0, num('incSpouse')), incSpouseRet: Math.max(0, num('incSpouseRet')),
     avdSpouse: Math.max(0, num('avdSpouse')), // fehlt ⇒ 0 (kein Partner-Vertrag)
     // Fehlen ⇒ heutiges Recht (25 %, kein Aufschlag), ab Rentenbeginn.
-    abgRate: inp.abgRate == null ? .25 : pct('abgRate', 0, 60), estAdd: inp.estAdd == null ? 0 : pct('estAdd', -14, 30),
+    abgRate: inp.abgRate == null ? ABG_TODAY : pct('abgRate', 0, 60), estAdd: inp.estAdd == null ? 0 : pct('estAdd', -14, 30),
     taxFrom: inp.taxFrom == null || num('taxFrom') < 0 ? -1 : clamp(Math.round(num('taxFrom')), 16, 100),
     real: chk('real'),
     on: { etf: chk('etfOn'), avd: chk('avdOn'), ins: chk('insOn'), fond: chk('fondOn') }

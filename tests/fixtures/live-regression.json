@@ -1,4 +1,5 @@
 {
+ "law": "2026",
  "note": "Erzeugt mit UPDATE_LIVE_FIXTURE=1 (tests/live-regression.test.ts). Nur bewusst neu erzeugen, Diff im Bericht begründen (docs/jaehrliche-pflege.md).",
  "cases": [
   {

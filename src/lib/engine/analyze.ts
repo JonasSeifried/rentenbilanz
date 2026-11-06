@@ -5,7 +5,7 @@
 // Die Szenario-Beschriftungen sind neutral formuliert (keine Rechenrelevanz).
 import { eur } from '../format';
 import { incomePathKind, kvGross, suggestedPath, type Params, type ProductKey, type ProductResult } from './core';
-import { fixesOf, type EngineOptions } from './fixes';
+import { fixesOf, lawOf, type EngineOptions } from './fixes';
 import { combo, comboStats, emptySplit, SPLIT_KEYS, type ComboPart, type ComboResult, type Split } from './combo';
 
 /** Ein Teilnehmer am Vergleich: eines der vier Produkte oder die Kombi (mehrere Produkte, gemeinsam gerechnet). */
@@ -168,10 +168,11 @@ export function scenarioList(p: Params, kombi?: Split | null, opts?: EngineOptio
     add('allowance', p.indexAllowance ? 'Pauschbetrag nominal fest' : 'Pauschbetrag indexiert (hypothetisch)', { indexAllowance: !p.indexAllowance });
     // Was-wäre-wenn Steueränderung (hypothetisch, docs/steueraenderung.md): je eine Steuerart, ab Rentenbeginn bzw. ab dem gewählten Alter.
     const from = p.taxFrom < 0 ? 'ab Rentenbeginn' : 'ab ' + Math.max(p.taxFrom, p.a0);
-    if (p.abgRate === .25 && p.estAdd === 0) {
+    const today = lawOf(opts).abg.rate; // heute geltender Abgeltungsteuersatz (Rechtsstand-Tabelle)
+    if (p.abgRate === today && p.estAdd === 0) {
       add('taxAbg', 'Abgeltungsteuer 30 % statt 25 % ' + from + ' (hypothetisch)', { abgRate: .3 });
       add('taxEst', 'Einkommensteuer 5 Prozentpunkte höher ' + from + ' (hypothetisch)', { estAdd: .05 });
-    } else add('taxNow', 'Steuerrecht wie heute, ohne Änderung', { abgRate: .25, estAdd: 0 });
+    } else add('taxNow', 'Steuerrecht wie heute, ohne Änderung', { abgRate: today, estAdd: 0 });
     if (p.kvOn) {
       add('kvGross', 'Sonstige KV-Bruttoeinnahmen 10.000 € höher (zvE gleich)', { kvGrossRet: kvGross(p) + 10000 });
       add('kvRate', 'KV/PV 3 Prozentpunkte höher', { kvRate: Math.min(.4, p.kvRate + .03) });

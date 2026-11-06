@@ -2,6 +2,8 @@
 // Standard überall: ALL_FIXES. Mit NO_FIXES rechnet die Engine bitgleich zum Original (tests/golden.test.ts).
 // Herleitung, Rechtsquellen und Wirkung je Korrektur: docs/korrekturen.md.
 
+import { CURRENT_LAW, type Law } from './law';
+
 export type FixId = 'soliOnZulage' | 'capitalGuenstiger' | 'vpNextYear' | 'kvGrossIncome' | 'insuranceAllowance' | 'rankReal' | 'heirTax' | 'bonusOutsideSA' | 'kvInvestBase' | 'kvSharedRoom' | 'kvLumpSpread' | 'avdUnsubsidized' | 'kvDeductible' | 'avdSmallContribution' | 'taxRounding' | 'vpTaxSale' | 'insDeathMinimum';
 
 export type FindingId = 'E4' | 'R3' | 'R4' | 'R5' | 'R7' | 'E1' | 'E2' | 'E3' | 'E6' | 'E7' | 'E8' | 'E10' | 'R1' | 'R6' | 'R8' | 'R2' | 'R9';
@@ -36,8 +38,15 @@ export const NO_FIXES: ReadonlySet<FixId> = new Set();
 export interface EngineOptions {
   /** Aktive Korrekturen; undefined ⇒ ALL_FIXES. */
   fixes?: ReadonlySet<FixId>;
+  /** Rechtsstand-Tabelle (law.ts); undefined ⇒ CURRENT_LAW. Golden und I1 übergeben immer LAW_2026. */
+  law?: Law;
 }
 
 export function fixesOf(opts?: EngineOptions): ReadonlySet<FixId> {
   return opts?.fixes ?? ALL_FIXES;
+}
+
+/** Einziger Zugang der Engine zum Standard-Rechtsstand (tests/law.test.ts prüft, dass die Option überall ankommt). */
+export function lawOf(opts?: EngineOptions): Law {
+  return opts?.law ?? CURRENT_LAW;
 }

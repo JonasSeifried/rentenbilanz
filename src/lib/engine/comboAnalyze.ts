@@ -10,7 +10,7 @@
 
 import type { Params, ProductKey } from './core';
 import { scenarioList, type ScenarioId } from './analyze';
-import type { EngineOptions } from './fixes';
+import { lawOf, type EngineOptions } from './fixes';
 import { combo, comboStats, emptySplit, partStats, splitSum, SPLIT_KEYS, type ComboResult, type ComboSetup, type ComboStats, type Split } from './combo';
 import {
   bestSplit, better, comboSig, evaluate, objective, pureStrategies, TIE_EUR, tieTol,
@@ -154,8 +154,9 @@ export interface RobustRow {
 }
 
 /** Szenarien der Robustheitstabelle: wie im Einzelvergleich, ohne „Steuererstattung ausgegeben“ (konstruktionsbedingt unfair). */
-export function robustScenarios(p: Params) {
-  return scenarioList(p).filter(s => s.id !== 'refund');
+// Nur der Rechtsstand wird weitergereicht; die Zeilen selbst bleiben (wie bisher) die mit allen Korrekturen.
+export function robustScenarios(p: Params, opts?: EngineOptions) {
+  return scenarioList(p, null, { law: lawOf(opts) }).filter(s => s.id !== 'refund');
 }
 
 /**
@@ -168,7 +169,7 @@ export function* robustRows(p: Params, setup: ComboSetup, baseBest?: Split | nul
   const split = emptySplit();
   for (const k of keys) split[k] = setup.split[k];
   const base = baseBest ?? bestSplit(p, budget, keys, opts)?.split ?? null;
-  for (const s of robustScenarios(p)) {
+  for (const s of robustScenarios(p, opts)) {
     const b = bestSplit(s.p, budget, keys, opts)!;
     const pure = pureStrategies(s.p, budget, keys, opts);
     const bestPure = pure.reduce<PureStrategy | null>((a, x) => (!a || better(x, a) ? x : a), null);

@@ -18,8 +18,8 @@
 // also mit ALL_FIXES. Ohne kvSharedRoom wird (wie im Original) jeder KV-Strom einzeln bis zur BBG begrenzt.
 
 import { eur } from '../format';
-import { est, soli, incomeAt, kvGross, tax, tax2026, contractGrowth, riskyShare, AVD_MAX, AVD_SUB_MAX, ERTRAG, KV_BBG, numOf, type HeirValue, type Params, type ProductKey, type ProductResult } from './core';
-import { fixesOf, type EngineOptions } from './fixes';
+import { incomeAt, kvGross, contractGrowth, riskyShare, numOf, type HeirValue, type Params, type ProductKey, type ProductResult } from './core';
+import { fixesOf, lawOf, type EngineOptions } from './fixes';
 import type { Inputs } from './inputs';
 
 /** Monatsbeitrag je Produkt in € (heutiges Geld, wächst mit der Dynamik wie im Einzelvergleich). */
@@ -181,6 +181,12 @@ export function combo(p: Params, split: Split, opts: ComboOptions = {}): ComboRe
 
 function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): ComboResult {
   const fx = fixesOf(opts);
+  // Rechtsstand (law.ts): alle gesetzlichen Jahreswerte; jeder steht dort, wo vorher das Literal stand (bitgleich).
+  const L = lawOf(opts);
+  const { est, soli, tax, taxIndexed } = L.fn;
+  const KV_BBG = L.kvBbg, AVD_SUB_MAX = L.avd.subMax, AVD_MAX = L.avd.max, ERTRAG = L.ertrag;
+  const { gfb, z2End, z3End, z4End, a2, b2, a3, b3, c3, r4, c4, r5, c5 } = L.tariff;
+  const { minOwn, grundRate1, grundTop1, grundRate2, grundTop2, kid: KID, bonus: BONUS, spouseMinOwn, spouseRaise, spouseGrundMax } = L.avd;
   const F = {
     bonus: fx.has('bonusOutsideSA'),  // E3
     soliZ: fx.has('soliOnZulage'),    // E4
@@ -207,18 +213,18 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   // gemeinsam), sonst einer einzelnen Person (Erben, überlebender Partner): Grundtarif, gleicher Kirchensteuersatz.
   const fam = p.kist > 0 || p.married;
   // § 32d Abs. 1 S. 3–5 EStG: ESt = e/(4 + k); Soli 5,5 % und Kirchensteuer k darauf ⇒ Satz (1,055 + k)/(4 + k).
-  const ABG = p.kist > 0 ? (1.055 + p.kist) / (4 + p.kist) : .26375;
+  const ABG = p.kist > 0 ? (L.abg.soliFactor + p.kist) / (L.abg.divisor + p.kist) : L.abg.withSoli;
   // Was-wäre-wenn Steueränderung (neu, nicht im Original; docs/steueraenderung.md): ab Jahr tChange (Standard Rentenbeginn)
   // Abgeltungsteuersatz p.abgRate statt 25 % und Grenzsteuersatz der Einkommensteuer um p.estAdd höher. Hypothetisch,
   // keine künftige Rechtslage. Kirchensteuer: § 32d Abs. 1 S. 3–4 verallgemeinert unter der Annahme, dass auch die Ermäßigung
   // um „25 % der Kirchensteuer“ (S. 3) dem neuen Satz folgt: ESt = e · s/(1 + s · k). Bleibt S. 3 bei 25 %: e · s/(1 + 0,25 · k).
   // Standard (25 %, 0) ⇒ jeder Ausdruck wie bisher (bitgleich).
   const tChange = p.taxFrom < 0 ? n : Math.max(0, p.taxFrom - p.a0);
-  const ABG_NEW = p.abgRate === .25 ? ABG : p.kist > 0 ? p.abgRate * (1.055 + p.kist) / (1 + p.abgRate * p.kist) : p.abgRate * 1.055;
+  const ABG_NEW = p.abgRate === L.abg.rate ? ABG : p.kist > 0 ? p.abgRate * (L.abg.soliFactor + p.kist) / (1 + p.abgRate * p.kist) : p.abgRate * L.abg.soliFactor;
   const abg = (t: number) => t >= tChange ? ABG_NEW : ABG;
   const estAddAt = (t: number) => t >= tChange ? p.estAdd : 0;
   // § 20 Abs. 9 S. 2 EStG: gemeinsamer Sparer-Pauschbetrag 2.000 € (Partner ohne eigene Kapitalerträge angenommen).
-  const SPB = p.married ? 2000 : 1000;
+  const SPB = p.married ? 2 * L.spb : L.spb;
   const partnerNom = (t: number) => (t < n ? p.incSpouse : p.incSpouseRet) * I(t);
   // Partner erbt (verheiratet): Im Todesjahr gemeinsame Veranlagung (§ 26 Abs. 1, beide lebten zu Jahresbeginn) mit dem
   // Partner-Einkommen allein (Tod zu Jahresbeginn), Splitting und 2.000 € Pauschbetrag: own = true mit eigenem Einkommen 0.
@@ -235,7 +241,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
    * est = tarifliche ESt ohne z (Vergleichsgröße des § 10a Abs. 2, BFH X R 11/21); church = Kirchensteuer.
    */
   const assess = (xNom: number, t: number, own: boolean, ded = 0, z = 0, paid = -1) => {
-    const sp = own && p.married, index = I(t), k = p.kist, sap = sp ? 72 : 36;
+    const sp = own && p.married, index = I(t), k = p.kist, sap = sp ? 2 * L.saPausch : L.saPausch;
     const zve = xNom + (sp ? partnerNom(t) : 0) - ded;
     const estOf = (x: number) => sp ? 2 * incomeTaxNom(Math.max(0, x) / 2, t) : incomeTaxNom(Math.max(0, x), t);
     let est: number, church: number;
@@ -256,7 +262,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   };
   const taxNom = (incomeNom: number, t: number, own = true) => fam ? assess(incomeNom, t, own).total
     : estAddAt(t) !== 0 ? withSoli(incomeTaxNom(incomeNom, t), t)
-    : F.round ? tax2026(incomeNom, I(t)) : tax(incomeNom / I(t)) * I(t);
+    : F.round ? taxIndexed(incomeNom, I(t)) : tax(incomeNom / I(t)) * I(t);
   const withSoli = (e: number, t: number) => e + soli(e / I(t)) * I(t);
   const taxAdd = (incReal: number, addNom: number, t: number, own = true) => addNom <= 0 ? 0 : F.round || fam || estAddAt(t) !== 0
     ? taxNom(incReal * I(t) + addNom, t, own) - taxNom(incReal * I(t), t, own)
@@ -272,7 +278,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   // Sparer-Pauschbetrag (§ 20 Abs. 9 EStG) des eigenen Haushalts (verheiratet 2.000 €); allowanceUsed (heutiges Geld)
   // ist anderweitig verbraucht (bei Paaren: vom gemeinsamen Betrag). Die Erben haben ihren eigenen Pauschbetrag
   // (heirAllowance), unabhängig davon; erbt der Partner, gilt im Todesjahr der gemeinsame Betrag (allowance).
-  const heirAllowance = (t: number) => 1000 * (p.indexAllowance ? I(t) : 1);
+  const heirAllowance = (t: number) => L.spb * (p.indexAllowance ? I(t) : 1);
   const allowanceFull = (t: number) => SPB * (p.indexAllowance ? I(t) : 1);
   const allowance = (t: number) => p.allowanceUsed > 0 ? Math.max(0, allowanceFull(t) - p.allowanceUsed * I(t)) : allowanceFull(t);
   const saDed = new Array<number>(T).fill(0), saZ = new Array<number>(T).fill(0);
@@ -282,13 +288,13 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   // Was-wäre-wenn: estAddAt(t) Prozentpunkte mehr Grenzsteuersatz oberhalb des Grundfreibetrags (12.348 €, heutiges Geld).
   const incomeTaxNom = (incomeNom: number, t: number) => {
     const index = I(t), d = estAddAt(t);
-    if (!F.round) return d === 0 ? est(incomeNom / index) * index : Math.max(0, est(incomeNom / index) + d * Math.max(0, Math.floor(Math.max(0, incomeNom / index)) - 12348)) * index;
+    if (!F.round) return d === 0 ? est(incomeNom / index) * index : Math.max(0, est(incomeNom / index) + d * Math.max(0, Math.floor(Math.max(0, incomeNom / index)) - gfb)) * index;
     const x = Math.floor(Math.max(0, incomeNom)) / index;
-    let e = d === 0 ? 0 : d * Math.max(0, x - 12348);
-    if (x > 277825) e += .45 * x - 19470.38;
-    else if (x > 69878) e += .42 * x - 11135.63;
-    else if (x > 17799) { const z = (x - 17799) / 1e4; e += (173.10 * z + 2397) * z + 1034.87; }
-    else if (x > 12348) { const y = (x - 12348) / 1e4; e += (914.51 * y + 1400) * y; }
+    let e = d === 0 ? 0 : d * Math.max(0, x - gfb);
+    if (x > z4End) e += r5 * x - c5;
+    else if (x > z3End) e += r4 * x - c4;
+    else if (x > z2End) { const z = (x - z2End) / 1e4; e += (a3 * z + b3) * z + c3; }
+    else if (x > gfb) { const y = (x - gfb) / 1e4; e += (a2 * y + b2) * y; }
     return Math.floor(Math.max(0, e) * index);
   };
   const avdLiability = (incomeNom: number, ded: number, z: number, t: number) => {
@@ -320,12 +326,12 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
   // siehe AVD-Block.
   const spouseAvd = p.married && p.avdSpouse > 0, spouseDirect = spouseAvd && p.incSpouse > 0;
   const spouseE = (t: number) => t < n ? p.avdSpouse * 12 * dynF(t) : 0;
-  const grundOf = (e: number) => 0.5 * Math.min(e, 360) + 0.25 * Math.max(0, Math.min(e, 1800) - 360); // § 84 S. 1 n. F.
+  const grundOf = (e: number) => grundRate1 * Math.min(e, grundTop1) + grundRate2 * Math.max(0, Math.min(e, grundTop2) - grundTop1); // § 84 S. 1 n. F.
   const spD = new Array<number>(T).fill(0), spZ = new Array<number>(T).fill(0); // Abzug und Zulage des Partners allein
   if (spouseDirect) for (let t = 0; t < n; t++) {
     const e = Math.min(spouseE(t), AVD_SUB_MAX); // eigener Höchstbetrag des Partners (§ 10a Abs. 1 S. 1 n. F.)
-    if (!(e >= 120 || (F.small && e > 0))) continue; // Mindesteigenbeitrag 120 € (§ 86 n. F.); darunter mit R6 nur Abzug
-    const z = e >= 120 ? grundOf(e) : 0; // nur Grundzulage (Kinder bei der Person, kein Bonus: der zählt nicht, E3)
+    if (!(e >= minOwn || (F.small && e > 0))) continue; // Mindesteigenbeitrag 120 € (§ 86 n. F.); darunter mit R6 nur Abzug
+    const z = e >= minOwn ? grundOf(e) : 0; // nur Grundzulage (Kinder bei der Person, kein Bonus: der zählt nicht, E3)
     spD[t] = e + z; spZ[t] = z; saDed[t] = e + z; saZ[t] = z;
   }
   const annuityDue = (V: number, rr: number, rem: number) => rem <= 1 ? V : (Math.abs(rr) < 1e-9 ? V / rem : V * rr / ((1 + rr) * (1 - Math.pow(1 + rr, -rem))));
@@ -387,12 +393,12 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
         V *= 1 + rm; Vu *= 1 + rm;
       }
       ownReal += E / I(t); ownUReal += U / I(t);
-      if (elig && (E >= 120 || (F.small && E > 0))) {
-        const hasAllowance = E >= 120;
-        const grund = hasAllowance ? 0.5 * Math.min(E, 360) + 0.25 * Math.max(0, Math.min(E, 1800) - 360) : 0;
+      if (elig && (E >= minOwn || (F.small && E > 0))) {
+        const hasAllowance = E >= minOwn;
+        const grund = hasAllowance ? grundRate1 * Math.min(E, grundTop1) + grundRate2 * Math.max(0, Math.min(E, grundTop2) - grundTop1) : 0;
         const kidActive = age >= p.kidsFrom && age < p.kidsFrom + p.kidsYears;
-        const kind = hasAllowance && kidActive ? p.kids * 300 * Math.min(1, E / 300) : 0;
-        let bon = 0; if (hasAllowance && p.bonus && !bonusUsed && age < 25) { bon = 200; bonusUsed = true; }
+        const kind = hasAllowance && kidActive ? p.kids * KID * Math.min(1, E / KID) : 0;
+        let bon = 0; if (hasAllowance && p.bonus && !bonusUsed && age < 25) { bon = BONUS; bonusUsed = true; }
         const z = grund + kind + bon;
         const zSA = F.bonus ? grund + kind : z; // Günstigerprüfung ohne Bonus (E3); hängt nur am AVD-Teil
         if (p.fundingDelay) delayedZ[t + 1] = z; else V += z;
@@ -403,10 +409,10 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
         // (eigene vorrangig, Höchstbetrag + 120 €, § 10a Abs. 3 S. 2–4 n. F.) und beide Zulagen. Ohne eigenen Vertrag der
         // Person gäbe es weder Zulage noch Abzug des Partners (BMF 05.10.2023 Rn. 26/27): Ausgangslage ohne Abzug.
         const eM = spouseAvd && !spouseDirect && hasAllowance ? spouseE(t) : 0;
-        if ((spouseDirect && spD[t] > 0) || eM >= 120) {
+        if ((spouseDirect && spD[t] > 0) || eM >= spouseMinOwn) {
           const x = incAt(t) * I(t);
-          const eP = spouseDirect ? spD[t] - spZ[t] : Math.min(eM, AVD_SUB_MAX + 120 - E);
-          const zP = spouseDirect ? spZ[t] : Math.min(175, grund);
+          const eP = spouseDirect ? spD[t] - spZ[t] : Math.min(eM, AVD_SUB_MAX + spouseRaise - E);
+          const zP = spouseDirect ? spZ[t] : Math.min(spouseGrundMax, grund);
           const ded = E + zSA + eP + zP, zz = zSA + zP;
           saDed[t] = ded; saZ[t] = zz;
           const joint = avdLiability(x, ded, zz, t);
@@ -670,7 +676,7 @@ function run(p: Params, split: Split, opts: ComboOptions, zeroCost: boolean): Co
     if (F.gp || F.nextVP || p.indexAllowance) {
       const l = liquidation(fs, idx, income, own); return l.value - l.tax;
     }
-    const spb = own ? allowance(idx) : 1000; // ohne indexAllowance: SPB abzüglich allowanceUsed
+    const spb = own ? allowance(idx) : L.spb; // ohne indexAllowance: SPB abzüglich allowanceUsed
     if (fs.length === 1) { const V = fs[0].vals[idx], B = fs[0].bases[idx], tf = fs[0].tf; return V - Math.max(0, (V - B) * tf - spb) * abg(idx); }
     let V = 0, G = 0, X = 0, mixed = false;
     for (const f of fs) { const g = f.vals[idx] - f.bases[idx]; V += f.vals[idx]; G += g; X += g * f.tf; if (f.tf !== 0.7) mixed = true; }

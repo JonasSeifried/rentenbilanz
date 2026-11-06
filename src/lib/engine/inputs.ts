@@ -1,6 +1,8 @@
 // Alle Eingaben des Rechners. Die Schlüssel entsprechen den Feld-IDs im Original (legacy/index.html),
 // damit die Golden-Tests dieselben Werte in beide Engines geben können.
 
+import { CURRENT_LAW } from './law';
+
 export interface Inputs {
   // Eckdaten
   a0: number; incWork: number; incRet: number; setAll: number; g: number; R: number; kvOn: boolean;
@@ -75,6 +77,9 @@ export const RETIRED_KEYS: Readonly<Record<string, InputKey>> = Object.freeze({ 
  *   Prozentpunkte mehr Grenzsteuersatz der Einkommensteuer, gültig ab Alter taxFrom (−1 = ab Rentenbeginn). Standard heutiges Recht.
  * studyEnd = 16 heißt „keine Ausbildungsphase“ (die Engine klemmt auf das Alter heute).
  */
+// basis (Basiszins), kvRate (ermäßigter KV-Satz + Ø-Zusatzbeitrag + PV mit Kinderlosenzuschlag) und abgRate folgen dem
+// aktuellen Rechtsstand (law.ts); als Literale, damit keine Gleitkomma-Rechnung den Standardwert verschiebt.
+// tests/law.test.ts prüft, dass sie zur neuesten Tabelle passen.
 export const DEFAULTS: Readonly<Inputs> = Object.freeze({
   a0: 22, incWork: 38000, incRet: 20000, setAll: 150, g: 6, R: 67, kvOn: false,
   incPeak: -1, incPeakAge: 45,
@@ -116,7 +121,7 @@ export const NUMERIC_KEYS = INPUT_KEYS.filter(k => typeof DEFAULTS[k] === 'numbe
  */
 export const LIMITS: Readonly<Record<NumericKey, readonly [number, number]>> = Object.freeze({
   a0: [0, 150], R: [0, 150], H: [0, 150], deathAge: [0, 150], studyEnd: [0, 150], kidsFrom: [0, 150],
-  kvGrossRet: [-1, 1e8], allowanceUsed: [0, 2000], incPeak: [-1, 1e8], incPeakAge: [0, 150], avdPayCost: [-1, 10], etfPayTer: [-1, 10], fondPayTer: [-1, 10],
+  kvGrossRet: [-1, 1e8], allowanceUsed: [0, 2 * CURRENT_LAW.spb], incPeak: [-1, 1e8], incPeakAge: [0, 150], avdPayCost: [-1, 10], etfPayTer: [-1, 10], fondPayTer: [-1, 10],
   incWork: [0, 1e8], incRet: [0, 1e8], incStudy: [0, 1e8], incHeir: [0, 1e8], incSpouse: [0, 1e8], incSpouseRet: [0, 1e8], avdSpouse: [0, 1e6], kist: [0, 10],
   abgRate: [0, 60], estAdd: [-14, 30], taxFrom: [-1, 150],
   setAll: [0, 1e6], etfM: [0, 1e6], avdM: [0, 1e6], insM: [0, 1e6], fondM: [0, 1e6],
