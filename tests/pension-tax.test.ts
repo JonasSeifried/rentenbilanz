@@ -1,6 +1,8 @@
 // Hilfsrechnung Bruttorente → zu versteuerndes Einkommen im Alter (src/lib/pensionTax.ts), mit Handrechnung.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { pensionTax, retireeKvRatePct, taxSharePct, type PensionInput } from '../src/lib/pensionTax';
+// Rechnet mit den Beträgen von 2026, auch wenn neuere Rechtsstand-Tabellen dazukommen (tests/helpers/law-2026.ts).
+vi.mock('../src/lib/engine/law', async orig => (await import('./helpers/law-2026')).pin2026(await orig()));
 
 const X = (patch: Partial<PensionInput> = {}): PensionInput => ({
   monthly: 1500, startYear: 2040, statutory: true, zusatz: 2.9, childless: true, privateKv: 0, other: 0,

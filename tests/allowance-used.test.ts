@@ -1,7 +1,7 @@
 // Sparer-Pauschbetrag schon anderweitig genutzt (allowanceUsed, neu, nicht im Original): 0 = bitgleich,
 // Wirkung in Anspar- und Auszahlphase und beim eigenen Verkauf, Erben mit eigenem vollen Pauschbetrag,
 // Link, Speicher und Rechenweg. Herleitung: docs/korrekturen.md, Abschnitt „Sparer-Pauschbetrag schon genutzt“.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { combo, emptySplit, type Split } from '../src/lib/engine/combo';
 import { readParams } from '../src/lib/engine/core';
 import { analyze } from '../src/lib/engine/analyze';
@@ -10,6 +10,8 @@ import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
 import { decodeState, encodeState } from '../src/lib/link';
 import { sanitize } from '../src/lib/storage';
 import { rechenweg } from '../src/lib/rechenweg';
+// Rechnet mit den Beträgen von 2026, auch wenn neuere Rechtsstand-Tabellen dazukommen (tests/helpers/law-2026.ts).
+vi.mock('../src/lib/engine/law', async orig => (await import('./helpers/law-2026')).pin2026(await orig()));
 
 const P = (patch: Partial<Inputs> = {}) => readParams({ ...DEFAULTS, ...patch });
 const S = (patch: Partial<Split>): Split => ({ ...emptySplit(), ...patch });

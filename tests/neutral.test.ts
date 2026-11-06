@@ -1,6 +1,6 @@
 // Neutrale Darstellung (Entscheidung des Betreibers, November 2026): kein Sieger, feste Produktreihenfolge,
 // Abstände in € und %, Kosten-Gleichstand mit dem ETF-Depot (engine/breakEven.ts).
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { readParams } from '../src/lib/engine/core';
 import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
 import { analyze, scenarios, single, PRODUCTS } from '../src/lib/engine/analyze';
@@ -10,6 +10,8 @@ import { breakEvenText, ranks, robustText, verdict } from '../src/lib/verdict';
 import { rechenweg } from '../src/lib/rechenweg';
 import { faqs } from '../src/lib/prosCons';
 import { GLOSSARY } from '../src/lib/glossary';
+// Rechnet mit den Beträgen von 2026, auch wenn neuere Rechtsstand-Tabellen dazukommen (tests/helpers/law-2026.ts).
+vi.mock('../src/lib/engine/law', async orig => (await import('./helpers/law-2026')).pin2026(await orig()));
 
 const inp = (patch: Partial<Inputs> = {}): Inputs => ({ ...DEFAULTS, ...patch });
 const P = (patch: Partial<Inputs> = {}) => readParams(inp(patch));

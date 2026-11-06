@@ -2,21 +2,13 @@
 // combo.ts (eine Engine für Einzelprodukte und Kombi); engine.ts ist nur noch die Referenz des Originals (Golden-Test).
 
 import type { Inputs } from './inputs';
-import { CURRENT_LAW, LAW_2026 } from './law';
+import { CURRENT_LAW } from './law';
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 // --- Steuer ---
-// Jahreswerte (Tarif, Soli, KV-BBG, AVD-Höchstbeträge, Ertragsanteil …) stehen in law.ts; die Engine holt sie über
-// lawOf(opts). Die folgenden Exporte sind ausdrücklich an LAW_2026 gebunden (Referenz für Tests mit Werten von 2026),
-// nicht an den aktuellen Rechtsstand.
-const TAX_2026 = LAW_2026.fn;
-/** Referenz des Originals (Tarif 2026): Einkommen abgerundet, Steuerbetrag noch ungerundet. */
-export const est: (x: number) => number = TAX_2026.est;
-export const soli: (t: number) => number = TAX_2026.soli;
-export const tax: (x: number) => number = TAX_2026.tax;
-/** Indexierter Tarif 2026; Einkommen und ESt im nominalen Steuerjahr auf volle Euro abgerundet (§ 32a). */
-export const tax2026: (incomeNom: number, index?: number) => number = TAX_2026.taxIndexed;
+// Jahreswerte (Tarif, Soli, KV-BBG, AVD-Höchstbeträge, Ertragsanteil …) und die daran gebundenen Steuerfunktionen
+// stehen in law.ts; die Engine holt sie über lawOf(opts). Tests mit Beträgen von 2026 nehmen LAW_2026.fn.
 /**
  * Umschichtung vor Rentenbeginn (Schalter `shift`, alle Produkte) mit den Anteilen des Standarddepots (§ 1 Abs. 1c Nr. 5
  * AltZertG ab 01.01.2027): fünf Jahre vor der Auszahlungsphase höchstens 50 %, zwei Jahre vorher und zu Beginn höchstens

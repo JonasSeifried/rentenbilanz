@@ -4,11 +4,15 @@
 // 2. Eigenschaften über 200 Zufallsszenarien (mulberry32 wie im Golden-Test).
 // 3. Snapshots der Standardwerte mit ALL_FIXES.
 // 4. Ausgewählte Teilmengen der Fixes laufen; Laufzeit separat in performance.test.ts.
-import { describe, expect, it } from 'vitest';
-import { readParams, tax, model, type Params, type ProductKey } from '../src/lib/engine/engine';
+import { describe, expect, it, vi } from 'vitest';
+import { readParams, model, type Params, type ProductKey } from '../src/lib/engine/engine';
 import { analyze, scenarios, scenarioList, PRODUCTS, type Analysis } from '../src/lib/engine/analyze';
 import { ALL_FIXES, FIX_IDS, FIXES, NO_FIXES, type FixId } from '../src/lib/engine/fixes';
+import { LAW_2026 } from '../src/lib/engine/law';
 import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
+// Rechnet mit den Beträgen von 2026, auch wenn neuere Rechtsstand-Tabellen dazukommen (tests/helpers/law-2026.ts).
+vi.mock('../src/lib/engine/law', async orig => (await import('./helpers/law-2026')).pin2026(await orig()));
+const { tax } = LAW_2026.fn;
 
 const P = (patch: Partial<Inputs> = {}) => readParams({ ...DEFAULTS, ...patch });
 const only = (...f: FixId[]) => ({ fixes: new Set<FixId>(f) as ReadonlySet<FixId> });

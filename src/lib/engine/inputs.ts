@@ -73,13 +73,15 @@ export const RETIRED_KEYS: Readonly<Record<string, InputKey>> = Object.freeze({ 
  * - allowanceUsed = Sparer-Pauschbetrag, den andere Kapitalerträge (Tagesgeld, weitere Depots) schon verbrauchen, in €/Jahr
  *   heutigen Geldes (wächst mit der Inflation, der Pauschbetrag nicht). 0 = ganzer Pauschbetrag frei (bisheriges Verhalten).
  *   Zusammen veranlagt: vom gemeinsamen Pauschbetrag (2.000 €) abgezogen, daher bis 2.000 €.
- * - abgRate/estAdd/taxFrom = Was-wäre-wenn Steueränderung (hypothetisch): Abgeltungsteuersatz in % (heute 25) und
+ * - abgRate/estAdd/taxFrom = Was-wäre-wenn Steueränderung (hypothetisch): Abgeltungsteuersatz in % (Standard: Satz der neuesten Tabelle) und
  *   Prozentpunkte mehr Grenzsteuersatz der Einkommensteuer, gültig ab Alter taxFrom (−1 = ab Rentenbeginn). Standard heutiges Recht.
  * studyEnd = 16 heißt „keine Ausbildungsphase“ (die Engine klemmt auf das Alter heute).
  */
 // basis (Basiszins), kvRate (ermäßigter KV-Satz + Ø-Zusatzbeitrag + PV mit Kinderlosenzuschlag) und abgRate folgen dem
-// aktuellen Rechtsstand (law.ts); als Literale, damit keine Gleitkomma-Rechnung den Standardwert verschiebt.
-// tests/law.test.ts prüft, dass sie zur neuesten Tabelle passen.
+// aktuellen Rechtsstand (law.ts). Auf 6 Nachkommastellen gerundet, damit die Gleitkomma-Summe den Standardwert nicht
+// um ein Bit verschiebt (14,0 + 2,9 + 3,6 + 0,6 ergibt genau 21,1 wie die Eingabe im Feld).
+const r6 = (x: number) => Math.round(x * 1e6) / 1e6;
+const KV = CURRENT_LAW.kv;
 export const DEFAULTS: Readonly<Inputs> = Object.freeze({
   a0: 22, incWork: 38000, incRet: 20000, setAll: 150, g: 6, R: 67, kvOn: false,
   incPeak: -1, incPeakAge: 45,
@@ -87,9 +89,9 @@ export const DEFAULTS: Readonly<Inputs> = Object.freeze({
   H: 90, gPay: 4, einmal: false, insLump: true, rf: 30, gz: 10,
   deathAge: 50, heirHalf: false, incHeir: 38000,
   kist: 0, married: false, incSpouse: 38000, incSpouseRet: 20000, avdSpouse: 0,
-  abgRate: 25, estAdd: 0, taxFrom: -1,
-  studyEnd: 16, incStudy: 12000, eligStudy: true, kvRate: 21.1,
-  infl: 2, dyn: 0, basis: 3.2,
+  abgRate: r6(CURRENT_LAW.abg.rate * 100), estAdd: 0, taxFrom: -1,
+  studyEnd: 16, incStudy: 12000, eligStudy: true, kvRate: r6(KV.reduced + KV.zusatzAvg + KV.pv + KV.pvChildless),
+  infl: 2, dyn: 0, basis: r6(CURRENT_LAW.basiszins * 100),
   etfM: 150, etfTer: 0.2,
   avdM: 150, avdCost: 0.5, kids: 0, kidsFrom: 32, kidsYears: 25, bonus: true, reinvest: true,
   insM: 150, insEff: 0.9,

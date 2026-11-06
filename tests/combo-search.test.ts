@@ -1,6 +1,6 @@
 // Suche, Auswertung und Ergebnissätze des Kombi-Modus (search.ts, comboAnalyze.ts, comboVerdict.ts).
 // S1: Suche = erschöpfende Suche; S2: Eigenschaften; S3: Snapshot der Standardwerte; Robustheit; Verdict; Laufzeit.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { readParams, type Params, type ProductKey } from '../src/lib/engine/engine';
 import { scenarioList } from '../src/lib/engine/analyze';
 import { ALL_FIXES, NO_FIXES, type FixId } from '../src/lib/engine/fixes';
@@ -10,6 +10,8 @@ import { bestSplit, better, evaluate, exhaustive, lattice, pureStrategies, searc
 import { analyzeCombo, restTarget, robustLevel, robustRows, robustScenarios, robustSummary, type ComboAnalysis, type RobustRow } from '../src/lib/engine/comboAnalyze';
 import { comboVerdict, eurAmount, splitText } from '../src/lib/comboVerdict';
 import { eurRound } from '../src/lib/format';
+// Rechnet mit den Beträgen von 2026, auch wenn neuere Rechtsstand-Tabellen dazukommen (tests/helpers/law-2026.ts).
+vi.mock('../src/lib/engine/law', async orig => (await import('./helpers/law-2026')).pin2026(await orig()));
 
 /** Alle Fixes außer E10 (AVD über 150 € im ETF-Nebendepot wie im Original). */
 const NO_UNSUB = { fixes: new Set<FixId>([...ALL_FIXES].filter(f => f !== 'avdUnsubsidized')) };

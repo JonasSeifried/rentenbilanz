@@ -1,14 +1,17 @@
 // Kombi-Engine (src/lib/engine/combo.ts): Invarianten I1–I8 aus dem Kombi-Design §5.
 // I1 ist der „zweite Golden-Test“: Eine Kombination mit nur einem Produkt muss bitgenau model()/analyze() ergeben.
 // engine.ts wird auf seinen historischen E-Fixes geprüft; neue R-Fixes haben unabhängige Recht-/Bilanztests.
-import { describe, expect, it } from 'vitest';
-import { readParams, model, tax, tax2026, type HeirValue, type Params, type ProductKey } from '../src/lib/engine/engine';
+import { describe, expect, it, vi } from 'vitest';
+import { readParams, model, type HeirValue, type Params, type ProductKey } from '../src/lib/engine/engine';
 import { kvGross } from '../src/lib/engine/core';
 import { analyze } from '../src/lib/engine/analyze';
 import { ALL_FIXES, FIX_IDS, FIXES, NO_FIXES, type FixId } from '../src/lib/engine/fixes';
 import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
 import { LAW_2026 } from '../src/lib/engine/law';
 import { combo, comboStats, emptySplit, partStats, readCombo, shareAllowance, SPLIT_KEYS, type ComboResult, type Split } from '../src/lib/engine/combo';
+// Rechnet mit den Beträgen von 2026, auch wenn neuere Rechtsstand-Tabellen dazukommen (tests/helpers/law-2026.ts).
+vi.mock('../src/lib/engine/law', async orig => (await import('./helpers/law-2026')).pin2026(await orig()));
+const { taxIndexed: tax2026 } = LAW_2026.fn;
 
 // engine.ts bleibt Referenz für E1–E10; neue R-Fixes werden ausschließlich in combo.ts gerechnet.
 const REFERENCE_IDS = FIX_IDS.filter(f => FIXES[f].finding.startsWith('E') && f !== 'soliOnZulage');

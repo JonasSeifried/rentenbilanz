@@ -217,8 +217,11 @@ describe('Engine-Dateien ohne Jahres-Literale (nur law.ts)', () => {
   it('keine Ertragsanteil-Tabelle außerhalb von law.ts', () => {
     for (const f of FILES) expect(src(f), f).not.toMatch(/\b6[0-9]\s*:\s*\d+\s*,\s*6[0-9]\s*:/);
   });
-  it('core.ts bindet die exportierten Tarif-Funktionen ausdrücklich an LAW_2026 (Referenz der Tests)', () => {
-    expect(src('src/lib/engine/core.ts')).toMatch(/const TAX_2026 = LAW_2026\.fn;/);
+  it('keine an ein Jahr gebundenen Steuerfunktionen außerhalb von law.ts (Tests nehmen LAW_2026.fn)', () => {
+    for (const f of FILES) {
+      expect(src(f), f).not.toMatch(/import \{[^}]*\bLAW_20\d\d\b/);
+      expect(src(f), f).not.toMatch(/export (const|function) (est|soli|tax|tax20\d\d)\b/);
+    }
   });
 });
 

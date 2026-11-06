@@ -2,7 +2,7 @@
 // ab 5 Jahre vor Rentenbeginn 50 %, ab 2 Jahren 30 % im chancenreichen Fonds. Standard aus; dann bitgleich.
 // AVD und Versicherung schichten steuerfrei im Vertrag um, Fondsdepots verkaufen (Abgeltungsteuer, Teilfreistellung,
 // ein Sparer-Pauschbetrag) in ein sicheres Teil-Depot ohne Teilfreistellung.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { contractGrowth, readParams, riskyShare, type Params, type ProductKey } from '../src/lib/engine/engine';
 import { analyze, scenarioList, single } from '../src/lib/engine/analyze';
 import { combo, emptySplit, type Split } from '../src/lib/engine/combo';
@@ -10,6 +10,8 @@ import { NO_FIXES } from '../src/lib/engine/fixes';
 import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
 import { decodeState, encodeState } from '../src/lib/link';
 import { sanitize } from '../src/lib/storage';
+// Rechnet mit den Beträgen von 2026, auch wenn neuere Rechtsstand-Tabellen dazukommen (tests/helpers/law-2026.ts).
+vi.mock('../src/lib/engine/law', async orig => (await import('./helpers/law-2026')).pin2026(await orig()));
 
 const at = (x: Partial<Inputs> = {}): Params => readParams({ ...DEFAULTS, ...x });
 const ALL_ON = { etf: true, avd: true, ins: true, fond: true };

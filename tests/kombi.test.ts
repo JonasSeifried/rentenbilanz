@@ -1,10 +1,12 @@
 // Die Kombi als weiterer Teilnehmer im Vergleich (analyze mit `kombi`), Eingaben und Ergebnissatz.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { analyze, scenarioList, scenarios, KOMBI } from '../src/lib/engine/analyze';
 import { readParams } from '../src/lib/engine/engine';
 import { combo, comboStats, emptySplit, readKombi, scaleSplit, splitSum, type Split } from '../src/lib/engine/combo';
 import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
 import { verdict } from '../src/lib/verdict';
+// Rechnet mit den Beträgen von 2026, auch wenn neuere Rechtsstand-Tabellen dazukommen (tests/helpers/law-2026.ts).
+vi.mock('../src/lib/engine/law', async orig => (await import('./helpers/law-2026')).pin2026(await orig()));
 
 const S = (s: Partial<Split>): Split => ({ ...emptySplit(), ...s });
 const inp = (patch: Partial<Inputs> = {}): Inputs => ({ ...DEFAULTS, ...patch });

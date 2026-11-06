@@ -1,10 +1,12 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { decodeState, encodeState, LINK_BASE_V1, sameInputs } from '../src/lib/link';
 import { clearSaved, loadSaved, sanitize, saveInputs, storageAvailable, STORAGE_KEY } from '../src/lib/storage';
 import {
   COMBO_KEYS, DEFAULTS, INPUT_KEYS, LEGACY_KEYS, LIMITS, NUMERIC_KEYS, type Inputs,
 } from '../src/lib/engine/inputs';
 import { parseDe } from '../src/lib/number';
+// Rechnet mit den Beträgen von 2026, auch wenn neuere Rechtsstand-Tabellen dazukommen (tests/helpers/law-2026.ts).
+vi.mock('../src/lib/engine/law', async orig => (await import('./helpers/law-2026')).pin2026(await orig()));
 
 describe('Link-Format', () => {
   it('Standardwerte ergeben einen kurzen Link', () => {

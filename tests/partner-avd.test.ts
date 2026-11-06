@@ -2,7 +2,7 @@
 // Engine unabhängigen Veranlagung: Splitting § 32a Abs. 5, Günstigerprüfung § 10a Abs. 2 und 3 EStG (BMF 05.10.2023
 // Rn. 109/110), Zulagen § 84 n. F. (AVRG, BGBl. 2026 I Nr. 156), Zurechnung § 10a Abs. 4 S. 3–4 (Rn. 116/118).
 // Herleitung und Quellen: docs/kirchensteuer-splitting.md, Abschnitt „Partner mit eigenem gefördertem Vertrag“.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { analyze } from '../src/lib/engine/analyze';
 import { combo, emptySplit, type Split } from '../src/lib/engine/combo';
 import { readParams } from '../src/lib/engine/core';
@@ -11,6 +11,8 @@ import { decodeState, encodeState, LINK_BASE_V1 } from '../src/lib/link';
 import { sanitize } from '../src/lib/storage';
 import { rechenweg } from '../src/lib/rechenweg';
 import { changedSettings } from '../src/lib/settingsChanged';
+// Rechnet mit den Beträgen von 2026, auch wenn neuere Rechtsstand-Tabellen dazukommen (tests/helpers/law-2026.ts).
+vi.mock('../src/lib/engine/law', async orig => (await import('./helpers/law-2026')).pin2026(await orig()));
 
 const P = (patch: Partial<Inputs> = {}) => readParams({ ...DEFAULTS, ...patch });
 const only = (k: keyof Split, v: number): Split => ({ ...emptySplit(), [k]: v });

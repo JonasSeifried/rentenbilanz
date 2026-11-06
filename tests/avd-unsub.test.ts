@@ -1,10 +1,12 @@
 // Fix avdUnsubsidized (E10): Eigenbeiträge über 1.800 €/Jahr bleiben bis 6.840 €/Jahr ungefördert im AVD-Vertrag.
 // Unabhängige Eigenschaften (die Spiegelung in der Kombi-Engine prüft I1 in combo.test.ts).
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { analyze } from '../src/lib/engine/analyze';
 import { model, readParams, type Params } from '../src/lib/engine/engine';
 import { ALL_FIXES, type FixId } from '../src/lib/engine/fixes';
 import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
+// Rechnet mit den Beträgen von 2026, auch wenn neuere Rechtsstand-Tabellen dazukommen (tests/helpers/law-2026.ts).
+vi.mock('../src/lib/engine/law', async orig => (await import('./helpers/law-2026')).pin2026(await orig()));
 
 const WITHOUT = { fixes: new Set<FixId>([...ALL_FIXES].filter(f => f !== 'avdUnsubsidized')) };
 const at = (b: number, x: Partial<Inputs> = {}): Params => readParams({ ...DEFAULTS, setAll: b, etfM: b, avdM: b, insM: b, fondM: b, ...x });

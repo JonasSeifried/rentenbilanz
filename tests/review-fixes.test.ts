@@ -1,9 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { analyze } from '../src/lib/engine/analyze';
 import { combo, comboStats, emptySplit, SPLIT_KEYS, type Split } from '../src/lib/engine/combo';
-import { readParams, tax, tax2026 } from '../src/lib/engine/core';
+import { readParams } from '../src/lib/engine/core';
+import { LAW_2026 } from '../src/lib/engine/law';
 import { ALL_FIXES, type FixId } from '../src/lib/engine/fixes';
 import { DEFAULTS, type Inputs } from '../src/lib/engine/inputs';
+// Rechnet mit den Beträgen von 2026, auch wenn neuere Rechtsstand-Tabellen dazukommen (tests/helpers/law-2026.ts).
+vi.mock('../src/lib/engine/law', async orig => (await import('./helpers/law-2026')).pin2026(await orig()));
+const { tax, taxIndexed: tax2026 } = LAW_2026.fn;
 
 const P = (patch: Partial<Inputs> = {}) => readParams({ ...DEFAULTS, kvGrossRet: patch.incRet ?? DEFAULTS.incRet, ...patch });
 const S = (s: Partial<Split>): Split => ({ ...emptySplit(), ...s });
