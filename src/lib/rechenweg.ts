@@ -28,7 +28,7 @@ const LABELS: Readonly<Record<InputKey, readonly [string, string]>> = Object.fre
   incSpouse: ['Partner: zu versteuerndes Einkommen vor dem eigenen Rentenbeginn (heutiges Geld)', '€/Jahr'],
   incSpouseRet: ['Partner: zu versteuerndes Einkommen ab dem eigenen Rentenbeginn (heutiges Geld)', '€/Jahr'],
   avdSpouse: ['Partner: eigener Beitrag in seinen geförderten Altersvorsorgevertrag (nur verheiratet)', '€/Monat'],
-  abgRate: ['Was-wäre-wenn: Abgeltungsteuersatz ohne Soli/Kirchensteuer (heute 25)', '%'],
+  abgRate: ['Was-wäre-wenn: Abgeltungsteuersatz ohne Soli/Kirchensteuer (heute ' + LT.abg.replace(/ %$/, '') + ')', '%'],
   estAdd: ['Was-wäre-wenn: Grenzsteuersatz der Einkommensteuer höher um', 'Prozentpunkte'],
   taxFrom: ['Was-wäre-wenn: Steueränderung gilt ab (−1 = ab Rentenbeginn)', 'Alter'],
   studyEnd: ['Ausbildung/Studium bis', 'Alter (16 = keine)'], incStudy: ['Zu versteuerndes Einkommen in der Ausbildung', '€/Jahr'],

@@ -3,12 +3,20 @@
 // bleiben alte Links trotzdem gültig. Bei einer neuen Basis LINK_VERSION erhöhen und die alte hier behalten.
 // Regel: Neue Schlüssel dürfen an eine bestehende Basis angehängt werden, wenn ihr Basiswert das bisherige
 // Verhalten ergibt; bestehende Werte nie ändern, sonst neue Version.
-import { BOOL_KEYS, INPUT_KEYS, inLimits, RETIRED_KEYS, type InputKey, type Inputs } from './engine/inputs';
+// Ausnahme Rechtsstand (LAW_KEYS): Der Standard dieser Schlüssel bedeutet „geltendes Recht“, nicht eine Annahme des
+// Nutzers. Ihr Basiswert ist deshalb in jeder Version der Wert der neuesten Rechtsstand-Tabelle (DEFAULTS): Ein Link
+// ohne den Schlüssel heißt immer „geltendes Recht beim Öffnen“, und ein Link speichert ihn nur, wenn er davon abweicht.
+// Für alle bisherigen v1-Links gleich (Satz bei Erstellung = 25 % = Basiswert), daher keine neue Version nötig.
+// Ausdrücklich gespeicherte Werte werden immer so gelesen, wie sie dastehen (z. B. abgRate=27 bleibt 27 %; ist 27 %
+// beim Öffnen geltendes Recht, ist das dann keine hypothetische Änderung mehr). docs/jaehrliche-pflege.md Regel 5.
+import { BOOL_KEYS, DEFAULTS, INPUT_KEYS, inLimits, RETIRED_KEYS, type InputKey, type Inputs } from './engine/inputs';
 
 export const TABS = ['overview', 'detail', 'heirs', 'settings'] as const;
 export type Tab = (typeof TABS)[number];
 
 export const LINK_VERSION = '1';
+/** Schlüssel, deren Standard „geltendes Recht“ bedeutet: Basiswert = DEFAULTS (neueste Tabelle), nicht eingefroren. */
+export const LAW_KEYS = ['abgRate'] as const satisfies readonly InputKey[];
 // Basis = alle Eingaben plus nicht mehr verwendete Schlüssel (RETIRED_KEYS), die in der Basis stehen bleiben.
 const BASES: Record<string, Inputs & { avdStd: boolean; avdSafe: number }> = {
   '1': {
@@ -42,11 +50,21 @@ const BASES: Record<string, Inputs & { avdStd: boolean; avdSafe: number }> = {
     // Später angehängt: Partner ohne eigenen geförderten Vertrag (bisheriges Verhalten).
     avdSpouse: 0,
     // Später angehängt: heutiges Steuerrecht (bisheriges Verhalten), Änderung ab Rentenbeginn.
+    // abgRate ist ein LAW_KEY: Für Links gilt statt der 25 (Satz 2026) der Satz der neuesten Tabelle (baseOf).
     abgRate: 25, estAdd: 0, taxFrom: -1,
   },
 };
-/** Die eingefrorene Basis von Version 1 (Tests und Speicher-Migration). */
+/** Die eingefrorene Basis von Version 1 wie oben (Tests und Speicher-Migration), abgRate also 25. Links benutzen baseOf. */
 export const LINK_BASE_V1: Readonly<Inputs> = withoutRetired(BASES['1']);
+
+/** Basis einer Link-Version, wie sie Kodieren und Dekodieren benutzen: eingefroren, nur LAW_KEYS = geltendes Recht. */
+function baseOf(v: string): Inputs | null {
+  const b = BASES[v];
+  if (!b) return null;
+  const out = withoutRetired(b);
+  for (const k of LAW_KEYS) out[k] = DEFAULTS[k];
+  return out;
+}
 
 function withoutRetired(x: Inputs): Inputs {
   const out = { ...x } as Record<string, unknown>;
@@ -55,7 +73,7 @@ function withoutRetired(x: Inputs): Inputs {
 }
 
 export function encodeState(inputs: Inputs, tab: Tab): string {
-  const base = BASES[LINK_VERSION];
+  const base = baseOf(LINK_VERSION)!;
   const q = new URLSearchParams();
   q.set('v', LINK_VERSION);
   for (const k of INPUT_KEYS) {
@@ -82,9 +100,9 @@ export function decodeState(hash: string): Decoded {
   const v = q.get('v') ?? LINK_VERSION;
   const hasInputs = q.has('v') || INPUT_KEYS.some(k => q.has(k));
   if (!hasInputs) return { inputs: null, tab, unsupported: false };
-  const base = BASES[v];
+  const base = baseOf(v);
   if (!base) return { inputs: null, tab, unsupported: true };
-  const inputs: Inputs = withoutRetired(base);
+  const inputs: Inputs = base;
   for (const [k0, raw] of q) {
     // Alter Schlüssel: auf den Nachfolger übertragen, sofern der Link diesen nicht selbst enthält.
     const k = k0 in RETIRED_KEYS && !q.has(RETIRED_KEYS[k0]) ? RETIRED_KEYS[k0] : k0;
