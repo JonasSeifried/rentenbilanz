@@ -1,84 +1,107 @@
 # Rentenbilanz
 
-Öffentlicher Rechner ([rente.jonasseifried.com](https://rente.jonasseifried.com)), der ETF-Depot, Altersvorsorgedepot (ab 2027), fondsgebundene Rentenversicherung und aktiven Fonds vergleicht: netto, mit Steuertarif 2026, Förderung, Vorabpauschale, Auszahlphase, Krankenversicherung und Erbfall. Rein statisch, kein Backend, keine Tracker, keine externen Anfragen.
+**Deutsch** · [English](README.en.md)
 
-**Name:** steht nur in `src/lib/site.ts` (wird beim Build auch in die HTML-Seiten eingesetzt).
+Offener Rechner für die private Altersvorsorge in Deutschland. Rentenbilanz vergleicht ETF-Depot, Altersvorsorgedepot (ab 2027), fondsgebundene Rentenversicherung und aktiven Fonds **netto**: nach Steuern, Förderung, Kosten und Krankenversicherung, über Anspar- und Auszahlphase bis zum Erbfall.
 
-## Entwickeln
+**→ [rente.jonasseifried.com](https://rente.jonasseifried.com)**
+
+[![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-blue.svg)](LICENSE)
+![Svelte 5](https://img.shields.io/badge/Svelte-5-ff3e00.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6.svg)
+![Rechtsstand](https://img.shields.io/badge/Rechtsstand-26.05.2026-555.svg)
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshot-dark.png">
+  <img src="docs/assets/screenshot-light.png" alt="Rentenbilanz: Eckdaten, Produktauswahl und Ergebnis im Überblick">
+</picture>
+
+> [!NOTE]
+> Modellrechnung ohne Gewähr. Keine Anlage-, Steuer- oder Rechtsberatung.
+
+## Funktionen
+
+- **Vier Produkte und Kombinationen:** ETF-Depot, Altersvorsorgedepot, fondsgebundene Rentenversicherung, aktiver Fonds; dazu eine Kombi aus mehreren Produkten mit gemeinsamer Besteuerung.
+- **Steuern nach geltendem Recht:** Einkommensteuertarif 2026 (§ 32a EStG), Abgeltungsteuer, Soli, Kirchensteuer, Zusammenveranlagung, Teilfreistellung und Vorabpauschale.
+- **Förderung:** Zulagen, Sonderausgabenabzug und Günstigerprüfung beim Altersvorsorgedepot, Partner-Vertrag, Gehaltsentwicklung bis zur Rente.
+- **Auszahlphase:** Besteuerung der Leistungen, Kranken- und Pflegeversicherung als Rentner (KVdR, freiwillig, privat), Hilfsrechnung von der Bruttorente zum zu versteuernden Einkommen.
+- **Erbfall:** was bei einem wählbaren Todesalter nach Steuern an die Erben geht, mit deren eigenem Steuersatz.
+- **Was-wäre-wenn:** Kosten-Gleichstand mit dem ETF-Depot, hypothetische Steueränderungen, Umschichtung vor Rentenbeginn, Ergebnisse nominal oder in heutiger Kaufkraft.
+- **Nachvollziehbar:** „Rechenweg kopieren“ gibt Eingaben, Annahmen, Modellgrenzen und Jahreswerte als Markdown aus, zum Nachrechnen von Hand oder mit einer KI. Fachbegriffe sind im Glossar mit Fundstelle erklärt.
+- **Neutral:** nur Zahlen, keine Empfehlung und kein „Sieger“. Was die Zahlen nicht zeigen (Verfügbarkeit, Bindung, Kostenrisiko), steht getrennt daneben.
+
+## Datenschutz
+
+Rein statische Seite: kein Backend, keine Cookies, keine Tracker, keine externen Anfragen. Eingaben bleiben im `localStorage` des Browsers. „Link teilen“ legt das Szenario in den `#`-Teil der Adresse, der nicht an den Server gesendet wird. Eine strenge Content-Security-Policy (`public/_headers`) erlaubt keine fremden Quellen.
+
+## Schnellstart
+
+Voraussetzung: Node.js 22 (siehe `.node-version`).
 
 ```sh
 npm install
 npm run dev        # http://localhost:5173
-npm run build      # statische Seite in dist/
-npm test           # Funktions-/Golden-Tests, danach separate Laufzeitprüfung
-npm run test:perf  # nur warme Node-Laufzeitbudgets, ohne parallele Funktionstests
-npm run test:all   # Typprüfung, Golden-/Unit-Tests, Build, Browser-Tests
 ```
+
+| Befehl | Zweck |
+|---|---|
+| `npm run build` | Statische Seite in `dist/` |
+| `npm test` | Unit- und Golden-Tests (Vitest), danach Laufzeitbudgets |
+| `npm run test:perf` | Nur die Laufzeitbudgets |
+| `npm run test:e2e` | Browser-Tests (Playwright, Chromium und WebKit/iPhone, inkl. axe-Barrierefreiheit) |
+| `npm run test:all` | Typprüfung, alle Tests, Build, Browser-Tests |
 
 Für die Browser-Tests einmalig: `npx playwright install chromium webkit`.
 
-## Deploy auf Cloudflare Pages
+## Deployment
 
-- Build command: `npm run build`
-- Build output directory: `dist`
-- Node-Version kommt aus `.node-version`.
-- Umgebungsvariablen `IMPRESSUM_STRASSE`, `IMPRESSUM_ORT` und `IMPRESSUM_TELEFON` setzen (Anschrift und Telefon für Impressum und Datenschutz, siehe `.env.example`). Ohne Straße/Ort bricht der Build ab. Lokal stehen die Werte in `.env.local`, die nicht eingecheckt wird.
+Gehostet auf Cloudflare Pages:
 
-`public/_headers` setzt die Sicherheits-Header (u. a. CSP ohne fremde Quellen). Alle Pfade sind relativ, die Seite läuft auch in einem Unterordner.
+- Build command: `npm run build`, Output: `dist`
+- Umgebungsvariablen `IMPRESSUM_STRASSE`, `IMPRESSUM_ORT` und `IMPRESSUM_TELEFON` für Impressum und Datenschutz (siehe `.env.example`). Ohne Straße und Ort bricht der Build ab. Lokal stehen die Werte in `.env.local`, die nicht eingecheckt wird.
 
-## Aufbau
+Alle Pfade sind relativ, die Seite läuft auch in einem Unterordner. Name, Rechtsstand und Prüfdatum stehen zentral in `src/lib/site.ts`.
+
+## Projektstruktur
 
 | Pfad | Inhalt |
 |---|---|
-| `legacy/index.html` | Ursprünglicher Rechner, Referenz für die Golden-Tests. Nicht ändern. |
-| `src/lib/engine/` | Eine Rechen-Engine für Einzelprodukte und Kombi (`combo.ts`; ein Einzelprodukt ist eine Kombi mit einem Teil), Auswertung (`analyze.ts`), Tarif, Konstanten und Eingaben (`core.ts`, `inputs.ts`). `engine.ts` ist der unveränderte Port des Originals und nur noch Referenz für die Tests. |
-| `src/lib/engine/breakEven.ts` | Kosten-Gleichstand mit dem ETF-Depot (Bisektion über dieselbe Einzelrechnung, keine eigene Rechnung) |
+| `src/lib/engine/combo.ts` | Die Rechen-Engine. Ein Einzelprodukt ist eine Kombi mit einem Teil. |
+| `src/lib/engine/` | Auswertung (`analyze.ts`), Kosten-Gleichstand (`breakEven.ts`), Tarif, Konstanten und Eingaben (`core.ts`, `inputs.ts`). `engine.ts` ist der unveränderte Port des Originals und dient nur als Referenz. |
+| `src/lib/pensionTax.ts` | Hilfsrechnung Bruttorente → zu versteuerndes Einkommen im Alter |
+| `src/lib/rechenweg.ts` | Export des Rechenwegs als Markdown |
+| `src/lib/glossary.ts`, `prosCons.ts` | Erklärtexte und „Was die Zahlen nicht zeigen“ |
 | `src/lib/link.ts`, `storage.ts`, `state.svelte.ts` | Link-Format, Speichern im Browser, App-Zustand |
-| `src/lib/glossary.ts` | Erklärtexte zu Fachbegriffen |
-| `src/lib/pensionTax.ts` | Hilfsrechnung Bruttorente → zu versteuerndes Einkommen im Alter (nur Oberfläche, Besteuerungsanteil § 22 EStG, Pauschbeträge, KV/PV des Rentners) |
-| `src/lib/rechenweg.ts` | „Rechenweg kopieren“: Eingaben, Modellgrenzen, Ergebnisse und Jahreswerte als Markdown zum Nachrechnen (auch durch eine KI) |
 | `src/lib/panels/`, `src/lib/components/` | Oberfläche (Svelte 5) |
-| `impressum.html`, `datenschutz.html` | Rechtliche Seiten |
-| `tests/` | Golden-Tests (Original gegen Port) und Unit-Tests (Vitest) |
-| `e2e/` | Browser-Tests (Playwright, Chromium und WebKit/iPhone) |
+| `legacy/index.html` | Ursprünglicher Rechner, Referenz für die Golden-Tests. Nicht ändern. |
+| `tests/`, `e2e/` | Unit- und Golden-Tests (Vitest), Browser-Tests (Playwright) |
+| `docs/` | Rechenmodell, Korrekturen mit Rechtsquellen, Pflege |
 
-## Wichtig beim Ändern
+## Genauigkeit und Tests
 
-- **Engine:** Gerechnet wird nur in `combo.ts`. `tests/golden.test.ts` vergleicht `analyze()` (also `combo.ts` ohne Korrekturen) und die Referenz `engine.ts` mit `legacy/index.html` (29 benannte und 300 Zufallsszenarien); `tests/combo.test.ts` (I1) prüft `combo.ts` mit einem Teil und den historischen E-Fixes bitgenau gegen `engine.ts`. Neue R-Fixes haben gezielte Tests in `tests/review-fixes.test.ts` und `tests/review-rest.test.ts`; E4 hat unabhängige Jahres-/Schwellentests in `tests/zulagen-veranlagung.test.ts`. Neue Rechnung (z. B. Umschichtung) nur in `combo.ts`, abschaltbar, damit der historische Referenzpfad bitgleich bleibt. Rechtliche Änderungen bewusst machen und dokumentieren.
-- **Standardwerte** (`DEFAULTS` in `inputs.ts`) dürfen sich ändern; geteilte Links bleiben gültig, weil sie gegen eine eingefrorene Basis kodiert sind (`link.ts`, `LINK_VERSION`).
-- **Rechtsstand und Prüfdatum** stehen in `src/lib/site.ts` und werden im Kopf, im Druck und in der Fußzeile angezeigt.
+Menschen planen mit diesen Zahlen. Deshalb gilt:
 
-## Jährliche Pflege (Checkliste)
+- **Golden-Tests:** `tests/golden.test.ts` vergleicht die Engine mit dem ursprünglichen Rechner in `legacy/index.html` (29 benannte und 300 Zufallsszenarien). `tests/combo.test.ts` prüft die Kombi mit einem Teil bitgenau gegen die Referenz.
+- **Korrekturen sind abschaltbar:** Jede Abweichung von der ersten Fassung hat gezielte Tests und ist in [`docs/korrekturen.md`](docs/korrekturen.md) mit Rechtsquelle und Wirkung dokumentiert. Neue Rechnung kommt nur in `combo.ts`, damit der historische Referenzpfad bitgleich bleibt.
+- **Stabile Links:** Standardwerte (`DEFAULTS` in `inputs.ts`) dürfen sich ändern. Geteilte Links bleiben gültig, weil sie gegen eine eingefrorene Basis kodiert sind (`link.ts`, `LINK_VERSION`).
+- **Jährliche Pflege:** Basiszins, Steuertarif, Beitragsbemessungsgrenzen und Förderregeln ändern sich. Die Checkliste steht in [`docs/jaehrliche-pflege.md`](docs/jaehrliche-pflege.md).
 
-Die Rechnung nutzt Werte, die sich jedes Jahr ändern. Nach jeder Änderung: `npm run test:all`, dann Rechtsstand und Prüfdatum in `src/lib/site.ts` anpassen.
+## Dokumentation
 
-- [ ] **Januar – Basiszins** für die Vorabpauschale (BMF-Schreiben): Standardwert `basis` in `src/lib/engine/inputs.ts`, Text in `glossary.ts` (`basiszins`) und unter „Weitere Einstellungen“.
-- [ ] **Einkommensteuertarif** (§ 32a EStG) und **Soli-Freigrenze**: `est()` / `soli()` in `src/lib/engine/core.ts` sowie die getrennte nominale ESt für E4 und das Steuerprofil (`incomeTaxNom`/`assess` in `combo.ts`) gemeinsam pflegen (Steuerreform 2027 im Blick behalten).
-- [ ] **Kirchensteuer und Splitting:** Kirchensteuersätze (8 % BY/BW, 9 % sonst; Auswahl in `Settings.svelte`, Glossar `kirchensteuer`), Abgeltungsformel § 32d Abs. 1 (`ABG` in `combo.ts`, Prozentangaben in Glossar `abgeltung` und Annahmen), Sonderausgaben-Pauschbetrag 36/72 € (§ 10c), Soli-Freigrenze bei Splitting (40.700 €, `assess` in `combo.ts`), gemeinsamer Sparer-Pauschbetrag 2.000 € (`SPB`), Partner-Vertrag (`avdSpouse`): § 10a Abs. 3, § 79 S. 2, § 84 S. 3–4 (175 €), Mindestbeitrag 120 €, Höchstbetrag + 120 € in `combo.ts` (`spouseAvd`, AVD-Block) und Glossar `partnerVertrag`.
-- [ ] **Beitragsbemessungsgrenze KV/PV** (`KV_BBG` in `core.ts`), **Versicherungspflichtgrenze** und **Zusatzbeitrag/Pflegesatz** (Standard `kvRate`, Texte `kvFreiwillig`/`kvRate` im Glossar).
-- [ ] **Altersvorsorgedepot:** Zulagen, Höchstbeträge, Bonus, Auszahlregeln gegen das aktuelle Gesetz/BMF-Schreiben prüfen; Hinweis zum Start (`avdStart`) entfällt ab 2027 automatisch. Standarddepot: Umschichtungsanteile (`AVD_STD_GLIDE` in `core.ts`, § 1 Abs. 1c Nr. 5 AltZertG; gelten mit dem Schalter „Umschichtung vor Rentenbeginn“ für alle Produkte) und Kostendeckel (§ 2a Abs. 2) mit Glossar (`standarddepot`, `umschichtung`, `avdKosten`) und `src/lib/prosCons.ts` abgleichen. Teilfreistellung (§ 20 InvStG, 30 % Aktienfonds, 0 % sicherer Teil) in `combo.ts` prüfen.
-- [ ] **„Was die Zahlen nicht zeigen“** (`src/lib/prosCons.ts`): Rechtsaussagen mit Fundstelle (§ 12 SGB II, § 93 EStG, AltZertG; Betriebsrente: § 1a BetrAVG, § 3 Nr. 63 EStG, SvEV, §§ 226/248/250 SGB V) gegen den aktuellen Stand prüfen.
-- [ ] **Hilfsrechnung Bruttorente** (`src/lib/pensionTax.ts`): PV-Satz, Ø-Zusatzbeitrag (`ZUSATZ_AVG`), Besteuerungsanteil-Tabelle (§ 22 EStG) prüfen.
-- [ ] Änderungen an der Rechnung bewusst machen: Golden-Tests vergleichen mit `legacy/index.html` (Korrekturen aus), `tests/fixes.test.ts` und `tests/combo*.test.ts` prüfen die aktuelle Rechnung. Abweichungen von der ersten Fassung in `docs/korrekturen.md` dokumentieren.
-- [ ] Standardwerte ändern sich nur in `DEFAULTS`; die Link-Basis in `link.ts` nie ändern (sonst neue `LINK_VERSION`).
+- [`docs/korrekturen.md`](docs/korrekturen.md): Korrekturen gegenüber der ersten Fassung mit Rechtsquellen und Wirkung
+- [`docs/kombi-modus.md`](docs/kombi-modus.md): Rechenmodell der Kombi
+- [`docs/zulagen-veranlagung-2026-11.md`](docs/zulagen-veranlagung-2026-11.md): Zulagen und Veranlagung beim Altersvorsorgedepot
+- [`docs/kirchensteuer-splitting.md`](docs/kirchensteuer-splitting.md): Kirchensteuer und Zusammenveranlagung
+- [`docs/gehaltsentwicklung.md`](docs/gehaltsentwicklung.md): Gehaltsverlauf bis zur Rente
+- [`docs/steueraenderung.md`](docs/steueraenderung.md): Was-wäre-wenn bei Steueränderungen
+- [`docs/neutrale-darstellung.md`](docs/neutrale-darstellung.md): Darstellung ohne Sieger, Kosten-Gleichstand
+- [`docs/engine-rest-2026-11.md`](docs/engine-rest-2026-11.md), [`docs/engine-review-2026-11.md`](docs/engine-review-2026-11.md): Engine-Reviews, wählbare Annahmen, offene Grenzen
+- [`docs/jaehrliche-pflege.md`](docs/jaehrliche-pflege.md): Checkliste für jährlich wechselnde Werte
 
-## Weitere Dokumentation
+## Fehler melden
 
-- `docs/korrekturen.md`: Korrekturen gegenüber der ersten Fassung (`legacy/index.html`) mit Rechtsquellen und Wirkung.
-- `docs/engine-rest-2026-11.md`: Umsetzung R3/R4/R5/R7, wählbare Annahmen, offene Erbfallgrenzen und aktuelle Vergleichsmessungen.
-- `docs/zulagen-veranlagung-2026-11.md`: E4-Veranlagung mit Primärbelegen, R3-Bilanz, D1-Gegenfall und aktuelle Wirkung.
-- `docs/gehaltsentwicklung.md`: Gehaltsverlauf bis zur Rente (Zielgehalt und Alter), abschaltbar, mit Wirkung auf die AVD-Erstattung.
-- `docs/kirchensteuer-splitting.md`: Kirchensteuer und Zusammenveranlagung (Primärquellen, Rechenmodell, Wirkung, offene Punkte).
-- `docs/neutrale-darstellung.md`: Darstellung ohne Sieger (feste Reihenfolge, Abstände) und Kosten-Gleichstand mit dem ETF-Depot.
-- `docs/kombi-modus.md`: Rechenmodell der Kombi (gemeinsame Besteuerung, Suche nach der besten Aufteilung, Einbindung in den Vergleich).
-
-## Speichern und Teilen
-
-- Eingaben werden automatisch im `localStorage` dieses Browsers gespeichert; die Adresszeile bleibt sauber.
-- „Link teilen“ kopiert einen Link mit dem Szenario im `#`-Teil (wird nicht an den Server gesendet).
-- Wird ein Link geöffnet und ist im Browser nichts gespeichert, wird das Szenario übernommen. Gibt es eigene, abweichende Eingaben, erscheint es im Ansichtsmodus: Nichts wird überschrieben, bis „Übernehmen“ geklickt wird.
-- „Auf Standardwerte zurücksetzen“ mit Rückgängig; „Gespeicherte Eingaben löschen“ unter Weitere Einstellungen.
+Fehler in der Rechnung oder veraltete Rechtsstände bitte als [Issue](https://github.com/JonasSeifried/rentenbilanz/issues) melden, möglichst mit dem geteilten Link oder dem kopierten Rechenweg. Alternativ per E-Mail an legal@jonasseifried.com.
 
 ## Lizenz
 
-Code: [MIT](LICENSE). Die Schrift Inter steht unter der SIL Open Font License (`src/assets/fonts/LICENSE-Inter.txt`). Die Inhalte sind eine Modellrechnung ohne Gewähr und keine Anlage-, Steuer- oder Rechtsberatung.
+Code unter [MIT](LICENSE). Die Schrift Inter steht unter der SIL Open Font License (`src/assets/fonts/LICENSE-Inter.txt`).
