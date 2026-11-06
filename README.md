@@ -84,7 +84,7 @@ Menschen planen mit diesen Zahlen. Deshalb gilt:
 - **Golden-Tests:** `tests/golden.test.ts` vergleicht die Engine mit dem ursprünglichen Rechner in `legacy/index.html` (29 benannte und 300 Zufallsszenarien). `tests/combo.test.ts` prüft die Kombi mit einem Teil bitgenau gegen die Referenz.
 - **Korrekturen sind abschaltbar:** Jede Abweichung von der ersten Fassung hat gezielte Tests und ist in [`docs/korrekturen.md`](docs/korrekturen.md) mit Rechtsquelle und Wirkung dokumentiert. Neue Rechnung kommt nur in `combo.ts`, damit der historische Referenzpfad bitgleich bleibt.
 - **Stabile Links:** Standardwerte (`DEFAULTS` in `inputs.ts`) dürfen sich ändern. Geteilte Links bleiben gültig, weil sie gegen eine eingefrorene Basis kodiert sind (`link.ts`, `LINK_VERSION`).
-- **Jährliche Pflege:** Basiszins, Steuertarif, Beitragsbemessungsgrenzen und Förderregeln ändern sich. Die Checkliste steht in [`docs/jaehrliche-pflege.md`](docs/jaehrliche-pflege.md).
+- **Jährliche Pflege:** Basiszins, Steuertarif, Beitragsbemessungsgrenzen und Förderregeln ändern sich. Die Schritte stehen als Arbeitsauftrag (auch für eine KI) in [`docs/jaehrliche-pflege.md`](docs/jaehrliche-pflege.md).
 
 ## Dokumentation
 
@@ -96,7 +96,7 @@ Menschen planen mit diesen Zahlen. Deshalb gilt:
 - [`docs/steueraenderung.md`](docs/steueraenderung.md): Was-wäre-wenn bei Steueränderungen
 - [`docs/neutrale-darstellung.md`](docs/neutrale-darstellung.md): Darstellung ohne Sieger, Kosten-Gleichstand
 - [`docs/engine-rest-2026-11.md`](docs/engine-rest-2026-11.md), [`docs/engine-review-2026-11.md`](docs/engine-review-2026-11.md): Engine-Reviews, wählbare Annahmen, offene Grenzen
-- [`docs/jaehrliche-pflege.md`](docs/jaehrliche-pflege.md): Checkliste für jährlich wechselnde Werte
+- [`docs/jaehrliche-pflege.md`](docs/jaehrliche-pflege.md): Arbeitsauftrag für die jährlich wechselnden Werte, direkt an eine KI übergebbar
 
 ## Fehler melden
 

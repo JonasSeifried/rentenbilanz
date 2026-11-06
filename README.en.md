@@ -75,7 +75,7 @@ All paths are relative, so the site also works in a subdirectory. Name, legal st
 | `src/lib/panels/`, `src/lib/components/` | UI (Svelte 5) |
 | `legacy/index.html` | The original calculator, reference for the golden tests. Do not modify. |
 | `tests/`, `e2e/` | Unit and golden tests (Vitest), browser tests (Playwright) |
-| `docs/` | Calculation model, corrections with legal sources, maintenance (German) |
+| `docs/` | Calculation model, corrections with legal sources, yearly maintenance task list (German) |
 
 ## Accuracy and testing
 
@@ -84,7 +84,7 @@ People plan their lives with these numbers, so:
 - **Golden tests:** `tests/golden.test.ts` checks the engine against the original calculator in `legacy/index.html` (29 named and 300 random scenarios). `tests/combo.test.ts` checks a one-part combination bit for bit against the reference.
 - **Corrections can be switched off:** every deviation from the first version has targeted tests and is documented with its legal source and effect in [`docs/korrekturen.md`](docs/korrekturen.md). New calculation logic goes only into `combo.ts`, so the historical reference path stays bit-identical.
 - **Stable links:** default values (`DEFAULTS` in `inputs.ts`) may change. Shared links stay valid because they are encoded against a frozen baseline (`link.ts`, `LINK_VERSION`).
-- **Yearly maintenance:** base interest rate, tax schedule, contribution ceilings and subsidy rules change every year. The checklist is in [`docs/jaehrliche-pflege.md`](docs/jaehrliche-pflege.md).
+- **Yearly maintenance:** base interest rate, tax schedule, contribution ceilings and subsidy rules change every year. The steps are written as a task list that can be handed to an AI agent in [`docs/jaehrliche-pflege.md`](docs/jaehrliche-pflege.md).
 
 ## Reporting issues
 
