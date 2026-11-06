@@ -17,7 +17,7 @@ export const FIXES: Readonly<Record<FixId, { finding: FindingId; title: string }
   insDeathMinimum: { finding: 'R9', title: 'Versicherung: Tod vor Rentenbeginn mindestens die eingezahlten Beiträge (Beitragsrückgewähr)' },
   vpTaxSale: { finding: 'R2', title: 'Vorabpauschalensteuer aus dem Depot: Verkauf einschließlich eigener Gewinnsteuer und KV' },
   kvDeductible: { finding: 'R1', title: 'Zusätzliche KV/PV im Alter als Sonderausgaben abziehen' },
-  avdSmallContribution: { finding: 'R6', title: 'AVD: Sonderausgabenabzug auch unter 120 € Jahresbeitrag, ohne Zulagen' },
+  avdSmallContribution: { finding: 'R6', title: 'AVD: Sonderausgabenabzug auch unter dem Mindesteigenbeitrag, ohne Zulagen' },
   taxRounding: { finding: 'R8', title: 'Einkommen und Einkommensteuer im nominalen Steuerjahr auf volle Euro abrunden' },
   rankReal: { finding: 'E1', title: 'Rangfolge und fairer Vergleich immer in heutiger Kaufkraft, unabhängig von der Anzeige' },
   heirTax: { finding: 'E2', title: 'AVD-Erbfall: Erben versteuern die Erträge mit ihrem eigenen Einkommen; hälftig nur, wenn der Erbe mindestens 62 ist' },
@@ -25,7 +25,7 @@ export const FIXES: Readonly<Record<FixId, { finding: FindingId; title: string }
   kvInvestBase: { finding: 'E6', title: 'KV auf Fondserträge: 70 % (Teilfreistellung) von Entnahmegewinn und Vorabpauschale' },
   kvSharedRoom: { finding: 'E7', title: 'KV: Beitragsbemessungsgrenze gilt für alle laufenden Einnahmen eines Produkts zusammen' },
   kvLumpSpread: { finding: 'E8', title: 'KV auf die Kapitalauszahlung der Versicherung über 10 Jahre aus den Entnahmen statt sofort' },
-  avdUnsubsidized: { finding: 'E10', title: 'AVD: Eigenbeiträge über 1.800 €/Jahr bleiben bis 6.840 €/Jahr ungefördert im Vertrag (AVD-Kosten, kein Steuerabzug in der Ansparphase, bei Auszahlung nur der Gewinnanteil steuerpflichtig, nach 12 Jahren zur Hälfte) statt im ETF-Nebendepot' },
+  avdUnsubsidized: { finding: 'E10', title: 'AVD: Eigenbeiträge über dem Förderhöchstbetrag bleiben bis zum Höchstbetrag ungefördert im Vertrag (AVD-Kosten, kein Steuerabzug in der Ansparphase, bei Auszahlung nur der Gewinnanteil steuerpflichtig, nach 12 Jahren zur Hälfte) statt im ETF-Nebendepot' },
 });
 
 export const FIX_IDS: readonly FixId[] = Object.freeze(Object.keys(FIXES) as FixId[]);

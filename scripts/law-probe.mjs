@@ -12,8 +12,6 @@ import { join } from 'node:path';
 // Tests, die mit einer neuen Tabelle rot werden MÜSSEN (Datei, Testname als Muster).
 const EXPECTED = [
   ['live-regression.test.ts', /Live-Rechnung = eingefrorenes Fixture/],
-  // Vorläufig: Oberflächentexte mit Jahreswerten als Literal (werden im nächsten Schritt aus der Tabelle erzeugt).
-  ['law.test.ts', /Oberflächentexte nennen die Werte der aktuellen Tabelle/],
 ];
 
 const dir = mkdtempSync(join(tmpdir(), 'law-probe-'));
@@ -35,7 +33,7 @@ try {
   for (const [f, n] of unexpected) console.error('Unerwartet rot: ' + f + ' › ' + n);
   for (const [f, re] of missing) console.error('Hätte rot werden müssen (Probe-Tabelle nicht aktiv?): ' + f + ' ' + re);
   console.log(ok
-    ? `Probe-Rechtsstand: ${res.numTotalTests} Tests, rot nur erwartet (${failed.length}).`
+    ? `Probe-Rechtsstand: ${res.numTotalTests} Tests, rot nur das Live-Fixture.`
     : 'Probe-Rechtsstand: Tests mischen Rechtsstände oder lesen Jahreswerte nicht aus der Tabelle (siehe oben).');
   process.exitCode = ok ? 0 : 1;
 } finally {

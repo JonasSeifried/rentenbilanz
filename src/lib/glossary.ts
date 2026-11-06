@@ -1,6 +1,8 @@
 // Kurze Erklärungen zu Fachbegriffen (als Popover am „?“ bzw. an unterstrichenen Begriffen).
 // Inhaltlich aus den geprüften Hinweistexten des Originals abgeleitet; Fundstellen siehe „Annahmen & Grenzen“.
 
+import { LT } from './lawText';
+
 export interface GlossaryEntry { title: string; text: string[] }
 
 export const GLOSSARY = {
@@ -31,7 +33,7 @@ export const GLOSSARY = {
     title: 'Von der Bruttorente zum zu versteuernden Einkommen',
     text: [
       'Steuerpflichtig ist nur der Besteuerungsanteil der Rente; er hängt vom Jahr des Rentenbeginns ab: 2026 84 %, danach jedes Jahr 0,5 Prozentpunkte mehr, ab 2058 100 % (§ 22 Nr. 1 S. 3 Buchst. a Doppelbuchst. aa EStG). Der Rest ist der Rentenfreibetrag. Er bleibt für die ganze Rentenzeit in Euro gleich; Rentenerhöhungen sind voll steuerpflichtig.',
-      'Abgezogen werden 102 € Werbungskosten-Pauschbetrag (§ 9a S. 1 Nr. 3 EStG), 36 € Sonderausgaben-Pauschbetrag (§ 10c EStG) und die Kranken- und Pflegeversicherung auf die Rente (§ 10 Abs. 1 Nr. 3 EStG). Gesetzlich Versicherte tragen die Hälfte von 14,6 % und vom Zusatzbeitrag (§ 249a SGB V), die Pflegeversicherung allein (§ 59 Abs. 1 SGB XI).',
+      'Abgezogen werden ' + LT.wkRente + ' Werbungskosten-Pauschbetrag (§ 9a S. 1 Nr. 3 EStG), ' + LT.saPausch + ' Sonderausgaben-Pauschbetrag (§ 10c EStG) und die Kranken- und Pflegeversicherung auf die Rente (§ 10 Abs. 1 Nr. 3 EStG). Gesetzlich Versicherte tragen die Hälfte von ' + LT.kvGeneral + ' und vom Zusatzbeitrag (§ 249a SGB V), die Pflegeversicherung allein (§ 59 Abs. 1 SGB XI).',
       'In heutigem Geld wächst die Rente mit der Inflation. Feste Euro-Beträge (Freibetrag, Pauschbeträge) werden dadurch real kleiner, das zu versteuernde Einkommen steigt über die Rentenjahre. Vorgeschlagen wird der Durchschnitt bis zum Ende des Auszahlplans, auf 100 € gerundet.',
       'Nicht berücksichtigt: tatsächliche Rentenerhöhungen über der Inflation, Abschläge oder Zuschläge bei einem Rentenbeginn vor oder nach der Regelaltersgrenze (die Renteninformation nennt die Rente zur Regelaltersgrenze), Steuerermäßigungen, Ehegattensplitting (das rechnet der Vergleich selbst, wenn „Verheiratet, zusammen veranlagt“ eingeschaltet ist).',
     ],
@@ -39,9 +41,9 @@ export const GLOSSARY = {
   sparerGenutzt: {
     title: 'Sparer-Pauschbetrag schon genutzt',
     text: [
-      'Kapitalerträge bis 1.000 € im Jahr sind steuerfrei (§ 20 Abs. 9 EStG), aber nur einmal für alle Konten und Depots zusammen. Zinsen auf Tagesgeld, Dividenden oder Gewinne aus anderen Depots verbrauchen ihn zuerst; für die hier verglichenen Depots bleibt dann weniger.',
-      'Einzutragen ist, wie viel davon andere Kapitalerträge im Jahr verbrauchen (nach Teilfreistellung), höchstens 1.000 €; zusammen veranlagt gilt der gemeinsame Pauschbetrag von 2.000 €, dann bis 2.000 € für beide zusammen. Die Jahressteuerbescheinigung jeder Bank nennt den „in Anspruch genommenen Sparer-Pauschbetrag“; die Summe über alle Banken ist der Wert.',
-      'Betrag in heutigem Geld: Er wächst im Modell mit der Inflation, der Pauschbetrag bleibt nominal 1.000 €. Dadurch ist er später stärker verbraucht als heute; wächst er über den Pauschbetrag, fehlt der Überschuss der anderen Erträge in der Günstigerprüfung (nicht gerechnet). Gilt in Anspar- und Auszahlphase. Die Erben haben im Modell ihren eigenen vollen Pauschbetrag. Ist „Verheiratet, zusammen veranlagt“ eingeschaltet und erbt der Partner, gilt im Todesjahr der gemeinsame Pauschbetrag abzüglich des hier eingetragenen Betrags; ohne diesen Schalter rechnet auch ein erbender Ehepartner mit vollen 1.000 €, obwohl sein Pauschbetrag durch ein mitgeerbtes Tagesgeld in Wirklichkeit teilweise verbraucht sein kann.',
+      'Kapitalerträge bis ' + LT.spb + ' im Jahr sind steuerfrei (§ 20 Abs. 9 EStG), aber nur einmal für alle Konten und Depots zusammen. Zinsen auf Tagesgeld, Dividenden oder Gewinne aus anderen Depots verbrauchen ihn zuerst; für die hier verglichenen Depots bleibt dann weniger.',
+      'Einzutragen ist, wie viel davon andere Kapitalerträge im Jahr verbrauchen (nach Teilfreistellung), höchstens ' + LT.spb + '; zusammen veranlagt gilt der gemeinsame Pauschbetrag von ' + LT.spb2 + ', dann bis ' + LT.spb2 + ' für beide zusammen. Die Jahressteuerbescheinigung jeder Bank nennt den „in Anspruch genommenen Sparer-Pauschbetrag“; die Summe über alle Banken ist der Wert.',
+      'Betrag in heutigem Geld: Er wächst im Modell mit der Inflation, der Pauschbetrag bleibt nominal ' + LT.spb + '. Dadurch ist er später stärker verbraucht als heute; wächst er über den Pauschbetrag, fehlt der Überschuss der anderen Erträge in der Günstigerprüfung (nicht gerechnet). Gilt in Anspar- und Auszahlphase. Die Erben haben im Modell ihren eigenen vollen Pauschbetrag. Ist „Verheiratet, zusammen veranlagt“ eingeschaltet und erbt der Partner, gilt im Todesjahr der gemeinsame Pauschbetrag abzüglich des hier eingetragenen Betrags; ohne diesen Schalter rechnet auch ein erbender Ehepartner mit vollen ' + LT.spb + ', obwohl sein Pauschbetrag durch ein mitgeerbtes Tagesgeld in Wirklichkeit teilweise verbraucht sein kann.',
     ],
   },
   rendite: {
@@ -58,8 +60,8 @@ export const GLOSSARY = {
   kvFreiwillig: {
     title: 'Freiwillig gesetzlich versichert im Alter',
     text: [
-      'Wer als Rentner nicht in die Krankenversicherung der Rentner (KVdR) kommt, aber gesetzlich versichert bleibt, ist freiwillig versichert. Dann zählen auch Auszahlungen aus privater Vorsorge für den Beitrag, bis zur Beitragsbemessungsgrenze (2026: 69.750 € im Jahr).',
-      'Das betrifft häufig Menschen, die zeitweise privat versichert waren, etwa weil sie über der Versicherungspflichtgrenze (2026: 77.400 €) verdient haben.',
+      'Wer als Rentner nicht in die Krankenversicherung der Rentner (KVdR) kommt, aber gesetzlich versichert bleibt, ist freiwillig versichert. Dann zählen auch Auszahlungen aus privater Vorsorge für den Beitrag, bis zur Beitragsbemessungsgrenze (' + LT.year + ': ' + LT.kvBbg + ' im Jahr).',
+      'Das betrifft häufig Menschen, die zeitweise privat versichert waren, etwa weil sie über der Versicherungspflichtgrenze (' + LT.year + ': ' + LT.kvJaeg + ') verdient haben.',
       'In der KVdR oder privat versichert: Dann fallen im Modell keine Beiträge auf die Auszahlungen an.',
     ],
   },
@@ -73,7 +75,7 @@ export const GLOSSARY = {
   },
   kvRate: {
     title: 'Beitragssatz bei freiwilliger Versicherung',
-    text: ['Satz auf die Zusatzeinnahmen für Mitglieder ohne Anspruch auf Krankengeld: 14,0 % ermäßigter Beitrag (§ 243 SGB V), Ø-Zusatzbeitrag 2026 2,9 % und Pflegeversicherung 4,2 % (kinderlos; mit Kind 3,6 %), zusammen etwa 21,1 % (mit Kind 20,5 %).'],
+    text: ['Satz auf die Zusatzeinnahmen für Mitglieder ohne Anspruch auf Krankengeld: ' + LT.kvReduced + ' ermäßigter Beitrag (§ 243 SGB V), Ø-Zusatzbeitrag ' + LT.year + ' ' + LT.zusatz + ' und Pflegeversicherung ' + LT.pvNoKids + ' (kinderlos; mit Kind ' + LT.pv + '), zusammen etwa ' + LT.kvVolNoKids + ' (mit Kind ' + LT.kvVolKids + ').'],
   },
   kaufkraft: {
     title: 'Heutige Kaufkraft',
@@ -86,21 +88,21 @@ export const GLOSSARY = {
   avd: {
     title: 'Altersvorsorgedepot (AVD)',
     text: [
-      'Neues staatlich gefördertes Wertpapierdepot ab 2027 (Altersvorsorgereformgesetz vom 26.05.2026). Eigenbeiträge bis 1.800 € im Jahr werden mit Zulagen gefördert, zusätzlich gibt es eventuell eine Steuererstattung.',
+      'Neues staatlich gefördertes Wertpapierdepot ab 2027 (Altersvorsorgereformgesetz vom 26.05.2026). Eigenbeiträge bis ' + LT.avdSubMax + ' im Jahr werden mit Zulagen gefördert, zusätzlich gibt es eventuell eine Steuererstattung.',
       'Ausgezahlt wird ab 65 bis 70 als Auszahlplan, die Auszahlung ist voll einkommensteuerpflichtig.',
     ],
   },
   zulagen: {
     title: 'Zulagen beim Altersvorsorgedepot',
     text: [
-      'Grundzulage: 50 % auf die ersten 360 € Eigenbeitrag im Jahr, 25 % auf den Teil bis 1.800 € (höchstens 540 €). Mindestens 120 € Eigenbeitrag im Jahr.',
-      'Kinderzulage: 1:1 bis 300 € je Kind mit Kindergeld. Berufseinsteigerbonus: einmalig 200 € unter 25.',
+      'Grundzulage: ' + LT.grundRate1 + ' auf die ersten ' + LT.grundTop1 + ' Eigenbeitrag im Jahr, ' + LT.grundRate2 + ' auf den Teil bis ' + LT.avdSubMax + ' (höchstens ' + LT.grundMax + '). Mindestens ' + LT.avdMinOwn + ' Eigenbeitrag im Jahr.',
+      'Kinderzulage: 1:1 bis ' + LT.kid + ' je Kind mit Kindergeld. Berufseinsteigerbonus: einmalig ' + LT.bonus + ' unter 25.',
     ],
   },
   bonus: {
     title: 'Berufseinsteigerbonus',
     text: [
-      'Einmalig 200 € zusätzliche Zulage, wenn man zu Beginn des Beitragsjahres jünger als 25 ist (§ 84 EStG n. F.). Der Rechner berücksichtigt ihn nur, solange das Alter passt.',
+      'Einmalig ' + LT.bonus + ' zusätzliche Zulage, wenn man zu Beginn des Beitragsjahres jünger als 25 ist (§ 84 EStG n. F.). Der Rechner berücksichtigt ihn nur, solange das Alter passt.',
       'Er erhöht nur die Zulage, nicht den Sonderausgabenabzug in der Günstigerprüfung (§ 2 Abs. 6 S. 2 EStG).',
     ],
   },
@@ -120,8 +122,8 @@ export const GLOSSARY = {
   },
   nebendepot: {
     title: 'ETF-Nebendepot',
-    text: ['Ins Altersvorsorgedepot passen höchstens 6.840 € Eigenbeiträge im Jahr (570 € im Monat). Was darüber hinausgeht, und Beiträge aus Jahren ohne Förderberechtigung rechnet der Rechner in einem normalen ETF-Depot. So fließt in jedes Produkt gleich viel eigenes Geld. Der Wert ist beim AVD enthalten.',
-      'Beiträge über 150 € im Monat (1.800 € im Jahr) bis zu diesem Höchstbetrag bleiben ungefördert im Vertrag: keine Zulage, kein Steuerabzug, aber auch keine Steuer während der Ansparphase. Bei der Auszahlung ist nur der Gewinnanteil steuerpflichtig, nach 12 Jahren Laufzeit zur Hälfte (§ 22 Nr. 5 S. 2 Buchst. c EStG).'],
+    text: ['Ins Altersvorsorgedepot passen höchstens ' + LT.avdMax + ' Eigenbeiträge im Jahr (' + LT.avdMaxM + ' im Monat). Was darüber hinausgeht, und Beiträge aus Jahren ohne Förderberechtigung rechnet der Rechner in einem normalen ETF-Depot. So fließt in jedes Produkt gleich viel eigenes Geld. Der Wert ist beim AVD enthalten.',
+      'Beiträge über ' + LT.avdSubMaxM + ' im Monat (' + LT.avdSubMax + ' im Jahr) bis zu diesem Höchstbetrag bleiben ungefördert im Vertrag: keine Zulage, kein Steuerabzug, aber auch keine Steuer während der Ansparphase. Bei der Auszahlung ist nur der Gewinnanteil steuerpflichtig, nach 12 Jahren Laufzeit zur Hälfte (§ 22 Nr. 5 S. 2 Buchst. c EStG).'],
   },
   foerderberechtigt: {
     title: 'Förderberechtigt',
@@ -139,13 +141,13 @@ export const GLOSSARY = {
   },
   basiszins: {
     title: 'Basiszins',
-    text: ['Vom Bundesfinanzministerium jährlich festgelegter Zins für die Vorabpauschale. 2026: 3,2 % (BMF, 13.01.2026). Für spätere Jahre ist der Wert eine Annahme.'],
+    text: ['Vom Bundesfinanzministerium jährlich festgelegter Zins für die Vorabpauschale. ' + LT.year + ': ' + LT.basiszins + ' (' + LT.basiszinsSource + '). Für spätere Jahre ist der Wert eine Annahme.'],
   },
   abgeltung: {
     title: 'Abgeltungsteuer, Teilfreistellung, Sparerpauschbetrag',
     text: [
-      'Gewinne aus Fonds werden pauschal mit 25 % plus Solidaritätszuschlag besteuert, zusammen 26,375 %. Mit Kirchensteuer sinkt die 25-%-Steuer etwas, dafür kommt die Kirchensteuer dazu: zusammen 27,995 % bei 9 % und 27,819 % bei 8 % (§ 32d Abs. 1 EStG).',
-      'Bei Aktienfonds sind 30 % der Erträge steuerfrei (Teilfreistellung). Dazu sind 1.000 € Kapitalerträge pro Jahr steuerfrei (Sparerpauschbetrag; zusammen veranlagte Ehepaare 2.000 €), im Rechner je Produkt.',
+      'Gewinne aus Fonds werden pauschal mit ' + LT.abg + ' plus Solidaritätszuschlag besteuert, zusammen ' + LT.abgSoli + '. Mit Kirchensteuer sinkt die ' + LT.abg.replace(' %', '-%') + '-Steuer etwas, dafür kommt die Kirchensteuer dazu: zusammen ' + LT.abgKist9 + ' bei 9 % und ' + LT.abgKist8 + ' bei 8 % (§ 32d Abs. 1 EStG).',
+      'Bei Aktienfonds sind 30 % der Erträge steuerfrei (Teilfreistellung). Dazu sind ' + LT.spb + ' Kapitalerträge pro Jahr steuerfrei (Sparerpauschbetrag; zusammen veranlagte Ehepaare ' + LT.spb2 + '), im Rechner je Produkt.',
     ],
   },
   ter: {
@@ -215,7 +217,7 @@ export const GLOSSARY = {
   },
   dynamik: {
     title: 'Beitragsdynamik',
-    text: ['Die Beiträge steigen jedes Jahr um diesen Prozentsatz, z. B. mit dem Gehalt. Beim Altersvorsorgedepot ist der Teil über 1.800 € im Jahr ungefördert, über 6.840 € im Jahr geht er ins ETF-Nebendepot.'],
+    text: ['Die Beiträge steigen jedes Jahr um diesen Prozentsatz, z. B. mit dem Gehalt. Beim Altersvorsorgedepot ist der Teil über ' + LT.avdSubMax + ' im Jahr ungefördert, über ' + LT.avdMax + ' im Jahr geht er ins ETF-Nebendepot.'],
   },
   erbfallAvd: {
     title: 'Erbfall beim Altersvorsorgedepot',
@@ -228,7 +230,7 @@ export const GLOSSARY = {
     title: 'Umschichtung vor Rentenbeginn',
     text: [
       'Eingeschaltet schichten alle Produkte wie das Standarddepot um: ab 5 Jahre vor Rentenbeginn 50 %, ab 2 Jahren 30 % in Aktien, der Rest in einer sicheren Anlage mit der angegebenen Rendite (§ 1 Abs. 1c Nr. 5 AltZertG). Neue Beiträge werden ebenso aufgeteilt; zu Beginn jedes Jahres wird auf diese Anteile zurückgesetzt. Ab Rentenbeginn rechnen alle Produkte mit der Rendite in der Auszahlphase, die Aufteilung bleibt.',
-      'Altersvorsorgedepot und Versicherung schichten innerhalb des Vertrags um, ohne Steuer. ETF-Depot, aktiver Fonds und das AVD-Nebendepot verkaufen dafür Anteile: Der Gewinn wird mit Abgeltungsteuer versteuert, 30 % sind frei (Teilfreistellung für Aktienfonds), der Sparer-Pauschbetrag von 1.000 € (zusammen veranlagt 2.000 €) gilt im Jahr für alle Depots zusammen. Der sichere Teil liegt in einem Anleihe- oder Geldmarkt-ETF ohne Teilfreistellung; seine Vorabpauschale und Gewinne sind voll steuerpflichtig, bei freiwillig Versicherten auch voll beitragspflichtig.',
+      'Altersvorsorgedepot und Versicherung schichten innerhalb des Vertrags um, ohne Steuer. ETF-Depot, aktiver Fonds und das AVD-Nebendepot verkaufen dafür Anteile: Der Gewinn wird mit Abgeltungsteuer versteuert, 30 % sind frei (Teilfreistellung für Aktienfonds), der Sparer-Pauschbetrag von ' + LT.spb + ' (zusammen veranlagt ' + LT.spb2 + ') gilt im Jahr für alle Depots zusammen. Der sichere Teil liegt in einem Anleihe- oder Geldmarkt-ETF ohne Teilfreistellung; seine Vorabpauschale und Gewinne sind voll steuerpflichtig, bei freiwillig Versicherten auch voll beitragspflichtig.',
       'Vereinfacht: Der Gewinn je Verkauf ist anteilig nach den durchschnittlichen Anschaffungskosten gerechnet. Gesetzlich gelten die zuerst gekauften Anteile als zuerst verkauft; dann fällt die Steuer etwas früher an, bei Standardwerten macht das unter 1 % der Summe aus. Verluste beim Umschichten werden nicht verrechnet, die Steuer ist dann eher zu hoch.',
     ],
   },
@@ -236,7 +238,7 @@ export const GLOSSARY = {
     title: 'Erbfall bei einer Kombi',
     text: [
       'Die Erben bekommen alle Teile zusammen und versteuern sie gemeinsam: AVD-Erträge, der Gewinn des ungeförderten AVD-Teils und die erste Restrente der Versicherung zählen im Todesjahr in einem Steuertarif. Das kann mehr Steuer kosten als bei jedem Teil für sich.',
-      'Die Depots (ETF, aktiver Fonds, AVD-Nebendepot) übernehmen die Erben mit den ursprünglichen Anschaffungskosten (§ 20 Abs. 4 S. 6 EStG, § 19 Abs. 1 InvStG). Gerechnet ist ein Verkauf im Todesjahr mit einem Sparer-Pauschbetrag von 1.000 € für alle Depots zusammen (erbt der zusammen veranlagte Ehepartner: 2.000 € abzüglich des anderweitig genutzten Betrags und Splittingtarif im Todesjahr, auch bei den Einzelprodukten). Gerechnet ist eine Person als Erbe; mehrere Erben hätten jeder einen eigenen Tarif und Pauschbetrag.',
+      'Die Depots (ETF, aktiver Fonds, AVD-Nebendepot) übernehmen die Erben mit den ursprünglichen Anschaffungskosten (§ 20 Abs. 4 S. 6 EStG, § 19 Abs. 1 InvStG). Gerechnet ist ein Verkauf im Todesjahr mit einem Sparer-Pauschbetrag von ' + LT.spb + ' für alle Depots zusammen (erbt der zusammen veranlagte Ehepartner: ' + LT.spb2 + ' abzüglich des anderweitig genutzten Betrags und Splittingtarif im Todesjahr, auch bei den Einzelprodukten). Gerechnet ist eine Person als Erbe; mehrere Erben hätten jeder einen eigenen Tarif und Pauschbetrag.',
       'Die Versicherung zahlt vor Rentenbeginn das Fondsguthaben aus, ohne Einkommensteuer (§ 20 Abs. 1 Nr. 6 EStG erfasst nur den Erlebensfall und den Rückkauf).',
     ],
   },
@@ -252,31 +254,31 @@ export const GLOSSARY = {
     title: 'Kirchensteuer',
     text: [
       '8 % der Einkommensteuer in Bayern und Baden-Württemberg, 9 % in den übrigen Ländern. Sie fällt auf alles an, was der Einkommensteuer unterliegt: Auszahlungen aus Altersvorsorgedepot und Versicherung, Kapitalerträge und Vorabpauschale.',
-      'Die gezahlte Kirchensteuer ist eine Sonderausgabe und senkt die Einkommensteuer etwas (über 36 € im Jahr, Ehepaare 72 €). Das ist gerechnet; das eingegebene zu versteuernde Einkommen gilt vor diesem Abzug. Bringt beim Altersvorsorgedepot der Sonderausgabenabzug mehr als die Zulage, sinkt die Kirchensteuer um den Satz mal der Steuerersparnis über der Zulage.',
+      'Die gezahlte Kirchensteuer ist eine Sonderausgabe und senkt die Einkommensteuer etwas (über ' + LT.saPausch + ' im Jahr, Ehepaare ' + LT.saPausch2 + '). Das ist gerechnet; das eingegebene zu versteuernde Einkommen gilt vor diesem Abzug. Bringt beim Altersvorsorgedepot der Sonderausgabenabzug mehr als die Zulage, sinkt die Kirchensteuer um den Satz mal der Steuerersparnis über der Zulage.',
       'Nicht gerechnet: die Kappung auf einen Höchstsatz des Einkommens (auf Antrag, nur bei hohen Einkommen), Kinderfreibeträge in der Bemessung und das Kirchgeld, wenn nur ein Ehepartner Mitglied ist. Bei Verheirateten gilt der Satz für beide. Erben zahlen im Rechner denselben Satz.',
     ],
   },
   splitting: {
     title: 'Verheiratet, zusammen veranlagt',
     text: [
-      'Ehepaare zahlen die Einkommensteuer gemeinsam auf beide Einkommen (Splittingtarif): Steuer auf die Hälfte, mal zwei. Verdient der Partner weniger, sinkt der Steuersatz, bei der Steuererstattung des Altersvorsorgedepots in der Ansparphase wie auf die Auszahlungen im Alter. Dazu gibt es 2.000 € Sparerpauschbetrag statt 1.000 € und eine doppelte Freigrenze beim Solidaritätszuschlag.',
+      'Ehepaare zahlen die Einkommensteuer gemeinsam auf beide Einkommen (Splittingtarif): Steuer auf die Hälfte, mal zwei. Verdient der Partner weniger, sinkt der Steuersatz, bei der Steuererstattung des Altersvorsorgedepots in der Ansparphase wie auf die Auszahlungen im Alter. Dazu gibt es ' + LT.spb2 + ' Sparerpauschbetrag statt ' + LT.spb + ' und eine doppelte Freigrenze beim Solidaritätszuschlag.',
       'Gerechnet wird mit dem zu versteuernden Einkommen des Partners vor und ab deinem Rentenbeginn, in heutigem Geld. Angenommen: Der Partner hat keine eigenen Kapitalerträge außer dem unter „Sparer-Pauschbetrag schon genutzt“ eingetragenen gemeinsamen Verbrauch. Einen eigenen geförderten Vertrag des Partners trägst du unter „Partner zahlt selbst ins Altersvorsorgedepot“ ein (siehe dort).',
-      'Die Krankenversicherung bleibt je Person. Andere Erben versteuern im Grundtarif mit ihrem eigenen Einkommen. Erbt der Partner, ist das Todesjahr noch gemeinsam veranlagt (Splitting, 2.000 €, mit seinem Einkommen); die spätere Steuer auf ein übernommenes Altersvorsorgedepot ist mit seinem Einkommen im Alter im Grundtarif geschätzt.',
+      'Die Krankenversicherung bleibt je Person. Andere Erben versteuern im Grundtarif mit ihrem eigenen Einkommen. Erbt der Partner, ist das Todesjahr noch gemeinsam veranlagt (Splitting, ' + LT.spb2 + ', mit seinem Einkommen); die spätere Steuer auf ein übernommenes Altersvorsorgedepot ist mit seinem Einkommen im Alter im Grundtarif geschätzt.',
     ],
   },
   partnerVertrag: {
     title: 'Eigener geförderter Vertrag des Partners',
     text: [
       'Bei zusammen veranlagten Ehepaaren prüft das Finanzamt beide Verträge gemeinsam: Die Steuerersparnis aus den Beiträgen beider samt Zulagen wird mit den Zulagen beider verglichen (§ 10a Abs. 3 EStG; BMF-Schreiben vom 05.10.2023, Rn. 109 f.). Deshalb ändert ein Vertrag des Partners deine Steuererstattung, auch wenn er selbst nicht im Vergleich steht.',
-      'Hat der Partner ein eigenes zu versteuerndes Einkommen, rechnet der Rechner ihn als selbst förderberechtigt (angenommen: rentenversichert, verbeamtet oder selbständig): eigene Grundzulage aus seinem Beitrag (ab 120 € im Jahr), eigener Höchstbetrag 1.800 €. Sein Vertrag gilt für jedes verglichene Produkt gleich; gezeigt wird, was dein eigener Vertrag an der gemeinsamen Steuer ändert.',
-      'Hat der Partner kein eigenes Einkommen, rechnet der Rechner ihn als mittelbar zulageberechtigt (§ 79 S. 2 EStG): nur in Jahren, in denen du selbst mindestens 120 € gefördert einzahlst und er mindestens 120 € im Jahr in seinen Vertrag. Seine Grundzulage richtet sich nach deinen geförderten Beiträgen, höchstens 175 € im Jahr (§ 84 S. 3–4 EStG ab 2027); bei dir zählen beide Beiträge (zusammen bis 1.920 €) und beide Zulagen. Diese Zulage fließt in den Vertrag des Partners und ist nicht im Ergebnis des Altersvorsorgedepots enthalten; ihre Summe steht im Rechenweg.',
+      'Hat der Partner ein eigenes zu versteuerndes Einkommen, rechnet der Rechner ihn als selbst förderberechtigt (angenommen: rentenversichert, verbeamtet oder selbständig): eigene Grundzulage aus seinem Beitrag (ab ' + LT.avdMinOwn + ' im Jahr), eigener Höchstbetrag ' + LT.avdSubMax + '. Sein Vertrag gilt für jedes verglichene Produkt gleich; gezeigt wird, was dein eigener Vertrag an der gemeinsamen Steuer ändert.',
+      'Hat der Partner kein eigenes Einkommen, rechnet der Rechner ihn als mittelbar zulageberechtigt (§ 79 S. 2 EStG): nur in Jahren, in denen du selbst mindestens ' + LT.avdMinOwn + ' gefördert einzahlst und er mindestens ' + LT.spouseMinOwn + ' im Jahr in seinen Vertrag. Seine Grundzulage richtet sich nach deinen geförderten Beiträgen, höchstens ' + LT.spouseGrundMax + ' im Jahr (§ 84 S. 3–4 EStG ab 2027); bei dir zählen beide Beiträge (zusammen bis ' + LT.avdSubMaxSpouse + ') und beide Zulagen. Diese Zulage fließt in den Vertrag des Partners und ist nicht im Ergebnis des Altersvorsorgedepots enthalten; ihre Summe steht im Rechenweg.',
       'Nicht gerechnet: Kinderzulagen und Berufseinsteigerbonus des Partners, ein anderer Rentenbeginn des Partners. Die Auszahlungen aus dem Partner-Vertrag gehören in sein Einkommen ab deinem Rentenbeginn.',
     ],
   },
   steueraenderung: {
     title: 'Was wäre, wenn sich die Steuern ändern?',
     text: [
-      'Gerechnet wird mit dem heutigen Steuerrecht. Bis zur Auszahlung können sich die Regeln ändern, für alle Produkte, aber über verschiedene Steuern: ETF-Depot und aktiver Fonds hängen an der Abgeltungsteuer (heute 25 % auf den Gewinn, bei Aktienfonds auf 70 % davon). Das Altersvorsorgedepot hängt an der Einkommensteuer, und zwar auf die ganze Auszahlung aus geförderten Beiträgen, weil Beiträge und Zulagen vorher steuerfrei waren (§ 22 Nr. 5 EStG); aus ungeförderten Beiträgen nur auf den Ertrag. Die Versicherung hängt als Kapital nach 12 Jahren und ab 62 an der Einkommensteuer auf die Hälfte des Gewinns (§ 20 Abs. 1 Nr. 6 S. 2 mit § 52 Abs. 28 S. 7 EStG), früher an der Abgeltungsteuer; als Leibrente an der Einkommensteuer auf den Ertragsanteil.',
+      'Gerechnet wird mit dem heutigen Steuerrecht. Bis zur Auszahlung können sich die Regeln ändern, für alle Produkte, aber über verschiedene Steuern: ETF-Depot und aktiver Fonds hängen an der Abgeltungsteuer (heute ' + LT.abg + ' auf den Gewinn, bei Aktienfonds auf 70 % davon). Das Altersvorsorgedepot hängt an der Einkommensteuer, und zwar auf die ganze Auszahlung aus geförderten Beiträgen, weil Beiträge und Zulagen vorher steuerfrei waren (§ 22 Nr. 5 EStG); aus ungeförderten Beiträgen nur auf den Ertrag. Die Versicherung hängt als Kapital nach 12 Jahren und ab 62 an der Einkommensteuer auf die Hälfte des Gewinns (§ 20 Abs. 1 Nr. 6 S. 2 mit § 52 Abs. 28 S. 7 EStG), früher an der Abgeltungsteuer; als Leibrente an der Einkommensteuer auf den Ertragsanteil.',
       'Gleich viele Prozentpunkte treffen die Produkte deshalb verschieden stark: am meisten Euro dort, wo der größte Betrag besteuert wird. Mit diesen Feldern lässt sich das mit den eigenen Zahlen durchspielen. Gerechnet wird ohne Bestandsschutz: Ab dem gewählten Alter gilt der neue Satz für alle Auszahlungen und Verkäufe.',
       'Bisherige Änderungen hatten Übergangsregeln: Für Kapitallebensversicherungen, die vor 2005 abgeschlossen wurden, gilt weiter das alte Recht: steuerfrei unter den damaligen Voraussetzungen (§ 52 Abs. 28 S. 5 EStG mit § 20 Abs. 1 Nr. 6 EStG a. F.). Kursgewinne auf Wertpapiere, die vor 2009 gekauft wurden, blieben bei Einführung der Abgeltungsteuer nach einem Jahr Haltedauer steuerfrei (§ 52a Abs. 11 S. 4 EStG a. F., heute § 52 Abs. 31 S. 2 EStG). Bei Fondsanteilen wurde dieser Schutz 2018 eingeschränkt: Wertsteigerungen ab 2018 sind über 100.000 € je Person steuerpflichtig (§ 56 Abs. 6 S. 1 Nr. 2 InvStG). Einen Anspruch auf Bestandsschutz gibt es nicht.',
       'Für bestehende Verträge und Depots ist eine Änderung für die Zukunft grundsätzlich zulässig, der Gesetzgeber muss aber den Vertrauensschutz abwägen. Das Bundesverfassungsgericht hat 2010 entschieden, dass Wertzuwächse, die nach altem Recht schon steuerfrei realisierbar waren, nicht nachträglich besteuert werden dürfen (Beschluss vom 07.07.2010, 2 BvL 14/02 u. a., zu Grundstücken). Wie eine künftige Änderung aussähe, lässt sich nicht vorhersagen.',

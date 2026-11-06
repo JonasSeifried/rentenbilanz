@@ -9,6 +9,8 @@ import type { Analysis, ContenderKey, Product, Scenario } from './engine/analyze
 import type { BreakEven } from './engine/breakEven';
 import { eur, eurRound } from './format';
 import { splitText } from './comboVerdict';
+import { CURRENT_LAW } from './engine/law';
+import { LT } from './lawText';
 
 export type VerdictKind = 'ok' | 'needTwo' | 'unequal' | 'refundSpent';
 /** 0 = kein Abstand kehrt sich um, 1 = in weniger als einem Drittel der Szenarien, 2 = in mindestens einem Drittel */
@@ -134,17 +136,17 @@ export function verdict(A: Analysis, _scen: Scenario[]): Verdict {
   const ref = active[0];
   const lines = active.slice(1).map(pr => gapText(A, pr, ref));
   const avdKombiTie = !!stats.avd && !!stats.kombi && ref.key !== 'avd' && Math.abs(stats.avd.cumHReal - stats.kombi.cumHReal) <= TIE_EUR;
-  if (avdKombiTie) lines.push(gapText(A, KOMBI_OF(A), AVD_OF(A)), 'Das Altersvorsorgedepot legt alles über 570 € im Monat (Höchstbetrag 6.840 € im Jahr) im ETF-Nebendepot an und ist damit fast dasselbe wie eine Kombi aus AVD und ETF.');
+  if (avdKombiTie) lines.push(gapText(A, KOMBI_OF(A), AVD_OF(A)), 'Das Altersvorsorgedepot legt alles über ' + LT.avdMaxM + ' im Monat (Höchstbetrag ' + LT.avdMax + ' im Jahr) im ETF-Nebendepot an und ist damit fast dasselbe wie eine Kombi aus AVD und ETF.');
   // Annahmen, an denen die Beträge hängen
   if (res.avd) {
-    let s = 'Gefördert werden beim Altersvorsorgedepot höchstens 150 € im Monat.';
-    if ((res.avd.unsubOwn ?? 0) > 0) s += ' Was darüber hinausgeht, bleibt bis 570 € im Monat ungefördert im Vertrag: ohne Zulage, aber erst bei der Auszahlung und nur auf den Gewinn versteuert.';
-    if (res.avd.sideOwn! > 0) s += ' Beiträge über 570 € im Monat oder ohne Förderberechtigung rechnet der Rechner im ETF-Nebendepot.';
+    let s = 'Gefördert werden beim Altersvorsorgedepot höchstens ' + LT.avdSubMaxM + ' im Monat.';
+    if ((res.avd.unsubOwn ?? 0) > 0) s += ' Was darüber hinausgeht, bleibt bis ' + LT.avdMaxM + ' im Monat ungefördert im Vertrag: ohne Zulage, aber erst bei der Auszahlung und nur auf den Gewinn versteuert.';
+    if (res.avd.sideOwn! > 0) s += ' Beiträge über ' + LT.avdMaxM + ' im Monat oder ohne Förderberechtigung rechnet der Rechner im ETF-Nebendepot.';
     if (p.reinvest && res.avd.ref! > 0) s += ' Gerechnet ist, dass die Steuererstattung jedes Jahr mit angelegt wird.';
     lines.push(s);
   }
   if (res.kombi) lines.push('Die Kombi (' + splitText(res.kombi.split, 'short') + ') wird gemeinsam versteuert: ein Steuertarif, ein Sparer-Pauschbetrag für alle Depots.'
-    + (res.kombi.split.avd > 150 ? ' Was beim AVD über 150 € im Monat hinausgeht, bleibt ungefördert im Vertrag' + (res.kombi.split.avd > 570 ? ', über 570 € im ETF-Nebendepot.' : '.') : ''));
+    + (res.kombi.split.avd > CURRENT_LAW.avd.subMax / 12 ? ' Was beim AVD über ' + LT.avdSubMaxM + ' im Monat hinausgeht, bleibt ungefördert im Vertrag' + (res.kombi.split.avd > CURRENT_LAW.avd.max / 12 ? ', über ' + LT.avdMaxM + ' im ETF-Nebendepot.' : '.') : ''));
 
   const comp = comparableScenarios(_scen);
   const flipped = comp.filter(s => isFlip(A, s.a));

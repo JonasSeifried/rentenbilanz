@@ -49,6 +49,8 @@ export interface LawTable {
   kv: { general: number; reduced: number; zusatzAvg: number; pv: number; pvChildless: number };
   /** Basiszins für die Vorabpauschale (§ 18 Abs. 4 InvStG), Anteil (Vorschlag für die Eingabe basis). */
   basiszins: number;
+  /** Fundstelle des Basiszinses für den Text der Oberfläche (z. B. „BMF, 13.01.2026“). */
+  basiszinsSource: string;
   /** Altersvorsorgedepot (AVRG vom 26.05.2026): Höchstbeträge, Mindesteigenbeitrag, Zulagen (§§ 10a, 84–86 EStG n. F.). */
   avd: {
     subMax: number; max: number; minOwn: number;
@@ -134,6 +136,7 @@ export const LAW_2026: Law = defineLaw({
   kvJaeg: 77400,
   kv: { general: 14.6, reduced: 14.0, zusatzAvg: 2.9, pv: 3.6, pvChildless: 0.6 },
   basiszins: 0.032,
+  basiszinsSource: 'BMF, 13.01.2026',
   avd: {
     subMax: 1800, max: 6840, minOwn: 120,
     grundRate1: 0.5, grundTop1: 360, grundRate2: 0.25, grundTop2: 1800,

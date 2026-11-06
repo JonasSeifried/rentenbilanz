@@ -23,6 +23,6 @@ export const LAW_PROBE: Law = defineLaw({
   kvJaeg: 79000,
   kv: { general: 14.6, reduced: 14.0, zusatzAvg: 3.1, pv: 3.8, pvChildless: 0.6 },
   basiszins: 0.025,
-  avd: { ...LAW_2026.avd, subMax: 2100, max: 7200, minOwn: 140, grundTop1: 420, grundTop2: 2100, kid: 330, bonus: 220, spouseMinOwn: 140, spouseRaise: 140, spouseGrundMax: 190 },
+  avd: { ...LAW_2026.avd, subMax: 2160, max: 7200, minOwn: 140, grundTop1: 420, grundTop2: 2160, kid: 330, bonus: 220, spouseMinOwn: 140, spouseRaise: 140, spouseGrundMax: 190 },
   ertrag: { ...LAW_2026.ertrag, 67: 18 },
 });

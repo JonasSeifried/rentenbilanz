@@ -4,6 +4,7 @@
 import type { Params, ProductKey } from './engine/core';
 import type { Tab } from './link';
 import { SITE } from './site';
+import { LT } from './lawText';
 
 /** Ein Punkt; `field` = Feld-ID, zu der ein Link mit `fieldLabel` führt (focusField(tab, field), Standard „settings“). */
 export interface Point { text: string; field?: string; fieldLabel?: string; tab?: Tab }
@@ -84,9 +85,9 @@ export function faqs(p: Params, keys: readonly ProductKey[]): Faq[] {
   const out: Faq[] = [];
   const avd = keys.includes('avd'), etf = keys.includes('etf');
   if (avd) out.push({
-    id: 'avd150', q: 'Was ändert sich über 150 € im Monat im Altersvorsorgedepot?',
+    id: 'avd150', q: 'Was ändert sich über ' + LT.avdSubMaxM + ' im Monat im Altersvorsorgedepot?',
     a: [
-      'Gefördert sind nur 1.800 € im Jahr (150 € im Monat). Bis 6.840 € im Jahr (570 € im Monat) darf man ungefördert in denselben Vertrag einzahlen: keine Zulage und kein Steuerabzug, aber auch keine Steuer bis zur Auszahlung. Dann ist nur der Gewinn steuerpflichtig, nach 12 Jahren Laufzeit zur Hälfte mit dem persönlichen Steuersatz.',
+      'Gefördert sind nur ' + LT.avdSubMax + ' im Jahr (' + LT.avdSubMaxM + ' im Monat). Bis ' + LT.avdMax + ' im Jahr (' + LT.avdMaxM + ' im Monat) darf man ungefördert in denselben Vertrag einzahlen: keine Zulage und kein Steuerabzug, aber auch keine Steuer bis zur Auszahlung. Dann ist nur der Gewinn steuerpflichtig, nach 12 Jahren Laufzeit zur Hälfte mit dem persönlichen Steuersatz.',
       'Gegenüber einem ETF-Depot zahlt dieser ungeförderte Teil bei niedrigen AVD-Kosten (um 0,5 %) nur knapp mehr aus, bei höheren Kosten, mit Krankenversicherung auf die Auszahlung oder hohem Einkommen im Alter weniger. Das Geld ist bis zur Rente gebunden. Wie sich verschiedene Aufteilungen unter deinen Annahmen rechnen, zeigt der Kombi-Modus.',
     ],
   });
@@ -116,9 +117,9 @@ export function faqs(p: Params, keys: readonly ProductKey[]): Faq[] {
     ],
   });
   if (avd && etf) out.push({
-    id: 'mix', q: 'Warum ist beim AVD die Grenze von 150 € im Monat wichtig?',
+    id: 'mix', q: 'Warum ist beim AVD die Grenze von ' + LT.avdSubMaxM + ' im Monat wichtig?',
     a: [
-      'Bis 150 € im Monat gibt es Zulagen. Bei üblichen Kosten sind sie viel größer als die höheren Kosten des AVD. Darüber gibt es nur noch den Steueraufschub: Der Abstand zum ETF-Depot schrumpft auf wenige Prozent oder kehrt sich um. Das ETF-Depot ist dafür jederzeit verfügbar und nutzt den Sparer-Pauschbetrag.',
+      'Bis ' + LT.avdSubMaxM + ' im Monat gibt es Zulagen. Bei üblichen Kosten sind sie viel größer als die höheren Kosten des AVD. Darüber gibt es nur noch den Steueraufschub: Der Abstand zum ETF-Depot schrumpft auf wenige Prozent oder kehrt sich um. Das ETF-Depot ist dafür jederzeit verfügbar und nutzt den Sparer-Pauschbetrag.',
     ],
   });
   // Steueränderungen: neutral, je Produkt die Steuer, an der es hängt (docs/steueraenderung.md); Fundstellen im Glossar.

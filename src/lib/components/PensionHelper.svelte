@@ -4,6 +4,7 @@
   import { app, setInput, showToast } from '../state.svelte';
   import { readParams } from '../engine/core';
   import { eur } from '../format';
+  import { LT } from '../lawText';
   import { pensionTax, ZUSATZ_AVG } from '../pensionTax';
   import NumberField from './NumberField.svelte';
   import Switch from './Switch.svelte';
@@ -59,20 +60,20 @@
           hint="Basisabsicherung laut Bescheinigung der Versicherung, abzüglich Zuschuss der Rentenversicherung." />
       {:else}
         <NumberField layout="row" label="Zusatzbeitrag der Krankenkasse" value={zusatz} onchange={v => (zusatz = v)} min={0} max={10} step={0.1} unit="%" limits={[0, 10]} testid="ph-zusatz"
-          hint={'Durchschnitt 2026: ' + pc(ZUSATZ_AVG) + ' %. Du trägst ' + pc(r.kvRatePct ?? 0) + ' % der Rente (halbe KV, volle PV).'} />
-        <Switch checked={childless} onchange={v => (childless = v)} label="Kinderlos (Pflege +0,6 %)" />
+          hint={'Durchschnitt ' + LT.year + ': ' + pc(ZUSATZ_AVG) + ' %. Du trägst ' + pc(r.kvRatePct ?? 0) + ' % der Rente (halbe KV, volle PV).'} />
+        <Switch checked={childless} onchange={v => (childless = v)} label="Kinderlos (Pflege +{LT.pvChildless})" />
       {/if}
       <NumberField layout="row" label="Weitere zu versteuernde Einkünfte im Alter" value={other} onchange={v => (other = v)} min={0} step={1000} unit="€/Jahr" limits={[0, 1e8]} testid="ph-other"
-        hint="Z. B. Betriebsrente oder Miete, schon nach deren Freibeträgen, Kosten und Beiträgen, aber ohne weiteren Werbungskosten-Pauschbetrag (die 102 € gelten für alle Renten zusammen). Ohne die verglichenen Produkte." />
+        hint="Z. B. Betriebsrente oder Miete, schon nach deren Freibeträgen, Kosten und Beiträgen, aber ohne weiteren Werbungskosten-Pauschbetrag (die {LT.wkRente} gelten für alle Renten zusammen). Ohne die verglichenen Produkte." />
     </div>
     {#if monthly > 0 || other > 0}
       <table class="calc" data-testid="ph-table">
         <tbody>
           <tr><td>Bruttorente im Jahr</td><td>{eur(r.gross)}</td></tr>
           <tr><td>− Rentenfreibetrag ({pc(100 - r.sharePct)} %, in Euro fest)</td><td>{eur(r.start.free)}</td></tr>
-          <tr><td>− Werbungskosten-Pauschbetrag (102 € fest)</td><td>{eur(r.start.wk)}</td></tr>
+          <tr><td>− Werbungskosten-Pauschbetrag ({LT.wkRente} fest)</td><td>{eur(r.start.wk)}</td></tr>
           <tr><td>− {isPrivate ? 'Private KV/PV' : 'KV/PV des Rentners (' + pc(r.kvRatePct ?? 0) + ' %)'}</td><td>{eur(r.kv)}</td></tr>
-          <tr><td>− Sonderausgaben-Pauschbetrag (36 € fest)</td><td>{eur(r.start.sa)}</td></tr>
+          <tr><td>− Sonderausgaben-Pauschbetrag ({LT.saPausch} fest)</td><td>{eur(r.start.sa)}</td></tr>
           {#if other > 0}<tr><td>+ Weitere Einkünfte</td><td>{eur(other)}</td></tr>{/if}
           <tr class="sum"><td>Zu versteuern im ersten Rentenjahr</td><td>{eur(r.start.zve)}</td></tr>
           <tr><td>… im letzten Jahr bis Alter {p.H}</td><td>{eur(r.end.zve)}</td></tr>

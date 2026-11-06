@@ -12,6 +12,7 @@
   import { CONTRIB_KEYS, type Inputs } from '../engine/inputs';
   import { comboVerdict, eurAmount } from '../comboVerdict';
   import { app, closeKombi, setInputs } from '../state.svelte';
+  import { LT } from '../lawText';
   import NumberField from './NumberField.svelte';
   import Icon from './Icon.svelte';
 
@@ -112,7 +113,7 @@
     <div class="fields">
       {#each PRODUCTS as pr (pr.key)}
         <NumberField label={LABEL[pr.key]} value={draft[pr.key]} onchange={v => setPart(pr.key, v)} min={0} step={10} unit="€"
-          testid="kombi-{pr.key}" hint={pr.key === 'avd' ? 'gefördert bis 150 €' : undefined} />
+          testid="kombi-{pr.key}" hint={pr.key === 'avd' ? 'gefördert bis ' + LT.avdSubMaxM : undefined} />
       {/each}
     </div>
 

@@ -73,6 +73,7 @@ Alle Pfade sind relativ, die Seite läuft auch in einem Unterordner. Name, Recht
 | `src/lib/pensionTax.ts` | Hilfsrechnung Bruttorente → zu versteuerndes Einkommen im Alter |
 | `src/lib/rechenweg.ts` | Export des Rechenwegs als Markdown |
 | `src/lib/glossary.ts`, `prosCons.ts` | Erklärtexte und „Was die Zahlen nicht zeigen“ |
+| `src/lib/lawText.ts` | Jahreswerte als Text (`LT`) für alle Texte der Oberfläche, aus der neuesten Rechtsstand-Tabelle |
 | `src/lib/link.ts`, `storage.ts`, `state.svelte.ts` | Link-Format, Speichern im Browser, App-Zustand |
 | `src/lib/panels/`, `src/lib/components/` | Oberfläche (Svelte 5) |
 | `legacy/index.html` | Ursprünglicher Rechner, Referenz für die Golden-Tests. Nicht ändern. |
@@ -84,10 +85,10 @@ Alle Pfade sind relativ, die Seite läuft auch in einem Unterordner. Name, Recht
 Menschen planen mit diesen Zahlen. Deshalb gilt:
 
 - **Golden-Tests:** `tests/golden.test.ts` vergleicht die Engine mit dem ursprünglichen Rechner in `legacy/index.html` (29 benannte und 300 Zufallsszenarien). `tests/combo.test.ts` prüft die Kombi mit einem Teil bitgenau gegen die Referenz. Beide rechnen immer mit den Werten von 2026 (`LAW_2026`).
-- **Live-Fixture:** `tests/live-regression.test.ts` friert die Ergebnisse der App mit allen Korrekturen über rund 500 Fälle bitgenau ein (auch Splitting, Kirchensteuer, Kombi, Steueränderung). Es wird nur bewusst neu erzeugt, mit begründetem Diff.
+- **Live-Fixture:** `tests/live-regression.test.ts` friert die Ergebnisse der App mit allen Korrekturen über rund 500 Fälle bitgenau ein (auch Splitting, Kirchensteuer, Kombi, Steueränderung). Es wird nur bewusst neu erzeugt, mit begründetem Diff. Regeltests mit Beträgen von 2026 sind fest an `LAW_2026` gebunden; `npm run test:law-probe` rechnet die Suite mit einer erfundenen neueren Tabelle und lässt nur das Live-Fixture rot werden.
 - **Korrekturen sind abschaltbar:** Jede Abweichung von der ersten Fassung hat gezielte Tests und ist in [`docs/korrekturen.md`](docs/korrekturen.md) mit Rechtsquelle und Wirkung dokumentiert. Neue Rechnung kommt nur in `combo.ts`, damit der historische Referenzpfad bitgleich bleibt.
 - **Stabile Links:** Standardwerte (`DEFAULTS` in `inputs.ts`) dürfen sich ändern. Geteilte Links bleiben gültig, weil sie gegen eine eingefrorene Basis kodiert sind (`link.ts`, `LINK_VERSION`).
-- **Jährliche Pflege:** Basiszins, Steuertarif, Beitragsbemessungsgrenzen und Förderregeln ändern sich. Jedes Jahr kommt eine neue Rechtsstand-Tabelle in `law.ts` dazu, mit Primärquelle je Wert; alte Tabellen bleiben unverändert. Die Schritte stehen als Arbeitsauftrag (auch für eine KI) in [`docs/jaehrliche-pflege.md`](docs/jaehrliche-pflege.md).
+- **Jährliche Pflege:** Basiszins, Steuertarif, Beitragsbemessungsgrenzen und Förderregeln ändern sich. Jedes Jahr kommt eine neue Rechtsstand-Tabelle in `law.ts` dazu, mit Primärquelle je Wert; alte Tabellen bleiben unverändert. Texte und Standardwerte folgen der Tabelle von selbst. Die Schritte stehen als Arbeitsauftrag (auch für eine KI) in [`docs/jaehrliche-pflege.md`](docs/jaehrliche-pflege.md).
 
 ## Dokumentation
 

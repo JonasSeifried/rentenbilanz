@@ -4,6 +4,8 @@
   import { incomeGrowth, incomePathKind, incomeStartText, kvGross, readParams, suggestedPath } from '../engine/core';
   import { DEFAULTS, LIMITS } from '../engine/inputs';
   import { SITE } from '../site';
+  import { CURRENT_LAW } from '../engine/law';
+  import { LT } from '../lawText';
   import NumberField from '../components/NumberField.svelte';
   import Switch from '../components/Switch.svelte';
   import Icon from '../components/Icon.svelte';
@@ -122,7 +124,7 @@
         <NumberField layout="row" label="… ab Alter" value={i.kidsFrom} onchange={v => setInput('kidsFrom', v)} unit="Jahre" limits={LIMITS.kidsFrom} />
         <NumberField layout="row" label="… für wie viele Jahre" value={i.kidsYears} onchange={v => setInput('kidsYears', v)} min={0} unit="Jahre" limits={LIMITS.kidsYears} effective={p.kidsYears} />
       {/if}
-      <Switch checked={i.bonus} onchange={v => setInput('bonus', v)} label="Berufseinsteigerbonus 200 € (unter 25)" info="bonus" />
+      <Switch checked={i.bonus} onchange={v => setInput('bonus', v)} label="Berufseinsteigerbonus {LT.bonus} (unter 25)" info="bonus" />
     </div>
     <div class="grp" role="group" aria-labelledby="s-tax">
       <h3 id="s-tax">Steuer</h3>
@@ -148,14 +150,14 @@
           limits={LIMITS.avdSpouse} effective={p.avdSpouse}
           hint={i.avdSpouse <= 0 ? '0 = kein eigener geförderter Vertrag des Partners.'
             : p.incSpouse > 0 ? 'Mit eigenem Einkommen gilt der Partner als selbst förderberechtigt (rentenversichert, verbeamtet oder selbständig): eigene Zulage, gemeinsame Günstigerprüfung beider Verträge. Sein Vertrag ist nicht im Vergleich; gerechnet wird, was er an deiner Erstattung ändert.'
-            : 'Ohne eigenes Einkommen gilt der Partner als mittelbar zulageberechtigt (nur in Jahren, in denen du und er je mindestens 120 € einzahlen): Zulage bis 175 € im Jahr auf seinen Vertrag, nicht im Ergebnis enthalten; gemeinsame Günstigerprüfung bei dir.'} />
+            : 'Ohne eigenes Einkommen gilt der Partner als mittelbar zulageberechtigt (nur in Jahren, in denen du und er je mindestens ' + LT.spouseMinOwn + ' einzahlen): Zulage bis ' + LT.spouseGrundMax + ' im Jahr auf seinen Vertrag, nicht im Ergebnis enthalten; gemeinsame Günstigerprüfung bei dir.'} />
       {/if}
     </div>
     <div class="grp" role="group" aria-labelledby="s-cap">
       <h3 id="s-cap">Andere Kapitalerträge</h3>
-      <NumberField id="f-allowanceUsed" layout="row" label="Sparer-Pauschbetrag schon genutzt" value={i.allowanceUsed} onchange={v => setInput('allowanceUsed', v)} min={0} max={2000} step={100} unit="€/Jahr" info="sparerGenutzt" testid="allowanceUsed"
+      <NumberField id="f-allowanceUsed" layout="row" label="Sparer-Pauschbetrag schon genutzt" value={i.allowanceUsed} onchange={v => setInput('allowanceUsed', v)} min={0} max={LIMITS.allowanceUsed[1]} step={100} unit="€/Jahr" info="sparerGenutzt" testid="allowanceUsed"
         limits={LIMITS.allowanceUsed} effective={p.allowanceUsed}
-        hint={'Zinsen und Erträge außerhalb der verglichenen Produkte, z. B. Tagesgeld. Heutiges Geld; 0 = ganzer Pauschbetrag frei (1.000 €, zusammen veranlagt 2.000 €).' + (!i.married && p.allowanceUsed > 1000 ? ' Mehr als 1.000 € ledig: Pauschbetrag ganz verbraucht.' : '')} />
+        hint={'Zinsen und Erträge außerhalb der verglichenen Produkte, z. B. Tagesgeld. Heutiges Geld; 0 = ganzer Pauschbetrag frei (' + LT.spb + ', zusammen veranlagt ' + LT.spb2 + ').' + (!i.married && p.allowanceUsed > CURRENT_LAW.spb ? ' Mehr als ' + LT.spb + ' ledig: Pauschbetrag ganz verbraucht.' : '')} />
     </div>
     <div class="grp" role="group" aria-labelledby="s-kv">
       <h3 id="s-kv">Krankenversicherung</h3>
@@ -175,14 +177,14 @@
   <Switch checked={i.fundingDelay} onchange={v => setInput('fundingDelay', v)} label="AVD-Zulagen und Erstattungen ein Jahr später (Sensitivität)" />
   <p class="hint">Standard: Ende des Beitragsjahres. Ein Jahr Verzug ist ein Szenario, keine gesetzliche Bearbeitungsfrist. Die letzte Gutschrift kommt am Ende des ersten Rentenjahres.</p>
   <Switch checked={i.indexAllowance} onchange={v => setInput('indexAllowance', v)} label="Sparer-Pauschbetrag wächst mit Inflation (hypothetische Sensitivität)" />
-  <p class="hint">Gesetzlicher Ausgangswert: nominal 1.000 € jährlich (zusammen veranlagt 2.000 €). Tarif, Soli-Grenze und KV-BBG wachsen im Modell mit Inflation; diese Fortschreibung ist keine zugesicherte Rechtsentwicklung.</p>
+  <p class="hint">Gesetzlicher Ausgangswert: nominal {LT.spb} jährlich (zusammen veranlagt {LT.spb2}). Tarif, Soli-Grenze und KV-BBG wachsen im Modell mit Inflation; diese Fortschreibung ist keine zugesicherte Rechtsentwicklung.</p>
   <div class="grp" role="group" aria-labelledby="s-taxchange">
     <h3 id="s-taxchange">Was wäre, wenn sich die Steuern ändern?</h3>
     <p class="hint">Hypothetisch, keine angekündigte Rechtslage. Standard: heutiges Recht für die ganze Laufzeit. Die Produkte hängen an verschiedenen Steuern: ETF-Depot und aktiver Fonds an der Abgeltungsteuer, Altersvorsorgedepot und Versicherung (als Kapital nach 12 Jahren und ab 62, als Leibrente immer) an der Einkommensteuer.</p>
     <NumberField id="f-abgRate" layout="row" label="Abgeltungsteuersatz" value={i.abgRate} onchange={v => setInput('abgRate', v)} min={0} max={60} step={1} unit="%" info="steueraenderung" testid="abgRate"
-      limits={LIMITS.abgRate} effective={pc(p.abgRate)} hint="Heute 25 % (zuzüglich Soli und gegebenenfalls Kirchensteuer). Teilfreistellung und Sparer-Pauschbetrag bleiben gleich." />
+      limits={LIMITS.abgRate} effective={pc(p.abgRate)} hint="Heute {LT.abg} (zuzüglich Soli und gegebenenfalls Kirchensteuer). Teilfreistellung und Sparer-Pauschbetrag bleiben gleich." />
     <NumberField id="f-estAdd" layout="row" label="Einkommensteuersatz höher um" value={i.estAdd} onchange={v => setInput('estAdd', v)} min={-14} max={30} step={1} unit="Punkte" testid="estAdd"
-      limits={LIMITS.estAdd} effective={pc(p.estAdd)} hint="Prozentpunkte auf den Grenzsteuersatz, für jeden Euro über dem Grundfreibetrag (12.348 €); negativ = Senkung. Betrifft auch die Erben." />
+      limits={LIMITS.estAdd} effective={pc(p.estAdd)} hint="Prozentpunkte auf den Grenzsteuersatz, für jeden Euro über dem Grundfreibetrag ({LT.gfb}); negativ = Senkung. Betrifft auch die Erben." />
     <NumberField id="f-taxFrom" layout="row" label="Gilt ab Alter" value={i.taxFrom} onchange={v => setInput('taxFrom', v)} min={-1} max={100} step={1} unit="Jahre" testid="taxFrom"
       limits={LIMITS.taxFrom} effective={p.taxFrom < 0 ? p.R : Math.max(p.taxFrom, p.a0)}
       hint="−1 = ab Rentenbeginn. Ohne Bestandsschutz gerechnet: Ab diesem Jahr gilt der neue Satz für alle Auszahlungen und Verkäufe, auch für vorher angesparte Gewinne." />
@@ -208,7 +210,7 @@
     <section class="card" aria-labelledby="s-avd" data-testid="card-avd">
       <h3 id="s-avd"><span class="key" style:background="var(--s2)"></span>Altersvorsorgedepot</h3>
       {@render offNote('avdOn')}
-      <NumberField layout="row" label="Beitrag (max. 150 gefördert)" value={i.avdM} onchange={v => setInput('avdM', v)} step={10} min={0} unit="€/Monat" info="nebendepot" limits={LIMITS.avdM} />
+      <NumberField layout="row" label="Beitrag (max. {LT.avdSubMaxMNum} gefördert)" value={i.avdM} onchange={v => setInput('avdM', v)} step={10} min={0} unit="€/Monat" info="nebendepot" limits={LIMITS.avdM} />
       <NumberField id="f-avdCost" layout="row" label="Ansparkosten" value={i.avdCost} onchange={v => setInput('avdCost', v)} step={0.1} min={0} unit="% p. a." info="avdKosten" testid="avdCost"
         limits={LIMITS.avdCost} effective={pc(p.avdCost)} />
       <p class="hint">Umschichtung vor Rentenbeginn wie im Standarddepot: unter „Markt“ (für alle Produkte).</p>
@@ -246,7 +248,7 @@
     </div>
     <div>
       <NumberField layout="row" label="Basiszins für Vorabpauschale" value={i.basis} onchange={v => setInput('basis', v)} step={0.1} min={0} max={10} unit="%" info="basiszins"
-        limits={LIMITS.basis} effective={pc(p.basis)} hint="2026: 3,2 % (BMF, 13.01.2026). Für spätere Jahre eine Annahme." />
+        limits={LIMITS.basis} effective={pc(p.basis)} hint="{LT.year}: {LT.basiszins} ({LT.basiszinsSource}). Für spätere Jahre eine Annahme." />
       <Switch checked={i.shift} onchange={v => setInput('shift', v)} label="Vor Rentenbeginn in sichere Anlagen umschichten (alle Produkte, wie im Standarddepot)" info="umschichtung" testid="shift" id="f-shift" />
       {#if i.shift}
         <NumberField id="f-safeRate" layout="row" label="Rendite sichere Anlage" value={i.safeRate} onchange={v => setInput('safeRate', v)} step={0.5} unit="% p. a." info="umschichtung" testid="safeRate"
@@ -267,16 +269,16 @@
   </details>
   <details>
     <summary>Einkommensteuer</summary>
-    <p>Einkommensteuer nach Tarif 2026 (§ 32a EStG) inkl. Solidaritätszuschlag; die Tarifgrenzen wachsen mit der Inflation mit, der Sparerpauschbetrag bleibt bei 1.000 € (zusammen veranlagt 2.000 €). Ledig: Grundtarif. Verheiratet: Splittingtarif auf das gemeinsame zu versteuernde Einkommen (§ 32a Abs. 5), Soli-Freigrenze verdoppelt; der Partner hat dabei keinen eigenen geförderten Vertrag und keine eigenen Kapitalerträge, seine mögliche Zulage (§ 79 Satz 2) ist nicht gerechnet. Kirchensteuer (8 oder 9 %) auf die Einkommensteuer einschließlich der Zulage, die bei der Günstigerprüfung hinzugerechnet wird (§ 51a EStG); gezahlte Kirchensteuer mindert als Sonderausgabe das Einkommen (§ 10 Abs. 1 Nr. 4). Nicht gerechnet: Kinderfreibeträge in der Bemessung, Kappung der Kirchensteuer, Kirchgeld; bei Verheirateten sind beide Kirchenmitglied. Erben versteuern im Grundtarif mit demselben Kirchensteuersatz; erbt der zusammen veranlagte Partner, gilt im Todesjahr noch das Splitting. Die Steuerreform 2027 ist noch nicht beschlossen. Das Gehalt bleibt bis zur Rente real gleich, außer unter „Gehaltsentwicklung“ ist ein Zielgehalt eingetragen.</p>
+    <p>Einkommensteuer nach Tarif {LT.year} (§ 32a EStG) inkl. Solidaritätszuschlag; die Tarifgrenzen wachsen mit der Inflation mit, der Sparerpauschbetrag bleibt bei {LT.spb} (zusammen veranlagt {LT.spb2}). Ledig: Grundtarif. Verheiratet: Splittingtarif auf das gemeinsame zu versteuernde Einkommen (§ 32a Abs. 5), Soli-Freigrenze verdoppelt; der Partner hat dabei keinen eigenen geförderten Vertrag und keine eigenen Kapitalerträge, seine mögliche Zulage (§ 79 Satz 2) ist nicht gerechnet. Kirchensteuer (8 oder 9 %) auf die Einkommensteuer einschließlich der Zulage, die bei der Günstigerprüfung hinzugerechnet wird (§ 51a EStG); gezahlte Kirchensteuer mindert als Sonderausgabe das Einkommen (§ 10 Abs. 1 Nr. 4). Nicht gerechnet: Kinderfreibeträge in der Bemessung, Kappung der Kirchensteuer, Kirchgeld; bei Verheirateten sind beide Kirchenmitglied. Erben versteuern im Grundtarif mit demselben Kirchensteuersatz; erbt der zusammen veranlagte Partner, gilt im Todesjahr noch das Splitting. Die Steuerreform 2027 ist noch nicht beschlossen. Das Gehalt bleibt bis zur Rente real gleich, außer unter „Gehaltsentwicklung“ ist ein Zielgehalt eingetragen.</p>
   </details>
   <details>
     <summary>ETF und Fonds</summary>
-    <p>Abgeltungsteuer 26,375 % (mit Kirchensteuer 9 %: 27,995 %, 8 %: 27,819 %; § 32d Abs. 1 EStG), 30 % Teilfreistellung (Aktienfonds), Sparer-Pauschbetrag 1.000 € nominal pro Jahr (zusammen veranlagt 2.000 €; in der Kombi gemeinsam einschließlich Versicherungsleistung), Vorabpauschale mit Zufluss im Folgejahr. Die Steuer wird aus dem Depot bezahlt; die beim dafür nötigen Anteilsverkauf entstehende Steuer ist mitgerechnet. Entnahmen jährlich am Jahresanfang als Zeitnäherung statt monatlicher Zahlung.</p>
+    <p>Abgeltungsteuer {LT.abgSoli} (mit Kirchensteuer 9 %: {LT.abgKist9}, 8 %: {LT.abgKist8}; § 32d Abs. 1 EStG), 30 % Teilfreistellung (Aktienfonds), Sparer-Pauschbetrag {LT.spb} nominal pro Jahr (zusammen veranlagt {LT.spb2}; in der Kombi gemeinsam einschließlich Versicherungsleistung), Vorabpauschale mit Zufluss im Folgejahr. Die Steuer wird aus dem Depot bezahlt; die beim dafür nötigen Anteilsverkauf entstehende Steuer ist mitgerechnet. Entnahmen jährlich am Jahresanfang als Zeitnäherung statt monatlicher Zahlung.</p>
   </details>
   <details>
     <summary>Altersvorsorgedepot</summary>
-    <p>Gesetz vom 26.05.2026 (BGBl. 2026 I Nr. 156), gilt ab 2027: 50 % Zulage auf die ersten 360 €, 25 % bis 1.800 € (max. 540 €), min. 120 € Eigenbeitrag; Kinderzulage 1:1 bis 300 € je Kind; Berufseinsteigerbonus 200 € unter 25 (zählt nicht in der Günstigerprüfung); Sonderausgabenabzug (Beitrag + Zulagen) mit Günstigerprüfung; Auszahlung aus dem geförderten Teil voll steuerpflichtig, ohne Fünftelregelung; der Sonderausgabenabzug ist auch unter 120 € Eigenbeitrag möglich, dann ohne Zulagen; Auszahlplan bis mind. 85, gerechnet als jährlich Restkapital ÷ Restlaufzeit (gesetzlich reicht es, mindestens 80 % davon zu zahlen und die Rate spätestens alle 3 Jahre neu festzulegen); Rentenbeginn 65–70 (früher nur zusammen mit einer früheren gesetzlichen Altersrente, nicht gerechnet).</p>
-    <p>Beiträge über 1.800 € im Jahr bleiben bis zum Höchstbetrag von 6.840 € im Jahr ungefördert im AVD (AVD-Kosten, keine Steuer in der Ansparphase; bei Auszahlung ist nur der Gewinnanteil steuerpflichtig, nach 12 Jahren Laufzeit zur Hälfte). Für freiwillig gesetzlich Versicherte zählt die ganze Auszahlung zur Krankenversicherung (wie bei privaten Renten, BSG B 12 KR 28/08 R; für das AVD noch nicht entschieden). Was über 6.840 € hinausgeht, und Beiträge aus Jahren ohne Förderberechtigung (ob sie ungefördert ins AVD dürfen, ist offen) liegen in einem ETF-Nebendepot (gleiche TER wie das ETF-Depot). Vereinfacht wird ab heute statt ab 01.01.2027 gerechnet, und Zulagen/Erstattungen werden standardmäßig zum Beitragsjahresende gutgeschrieben (Verzögerung als Sensitivität wählbar; tatsächliche Bearbeitungsdauer offen).</p>
+    <p>Gesetz vom 26.05.2026 (BGBl. 2026 I Nr. 156), gilt ab 2027: {LT.grundRate1} Zulage auf die ersten {LT.grundTop1}, {LT.grundRate2} bis {LT.avdSubMax} (max. {LT.grundMax}), min. {LT.avdMinOwn} Eigenbeitrag; Kinderzulage 1:1 bis {LT.kid} je Kind; Berufseinsteigerbonus {LT.bonus} unter 25 (zählt nicht in der Günstigerprüfung); Sonderausgabenabzug (Beitrag + Zulagen) mit Günstigerprüfung; Auszahlung aus dem geförderten Teil voll steuerpflichtig, ohne Fünftelregelung; der Sonderausgabenabzug ist auch unter {LT.avdMinOwn} Eigenbeitrag möglich, dann ohne Zulagen; Auszahlplan bis mind. 85, gerechnet als jährlich Restkapital ÷ Restlaufzeit (gesetzlich reicht es, mindestens 80 % davon zu zahlen und die Rate spätestens alle 3 Jahre neu festzulegen); Rentenbeginn 65–70 (früher nur zusammen mit einer früheren gesetzlichen Altersrente, nicht gerechnet).</p>
+    <p>Beiträge über {LT.avdSubMax} im Jahr bleiben bis zum Höchstbetrag von {LT.avdMax} im Jahr ungefördert im AVD (AVD-Kosten, keine Steuer in der Ansparphase; bei Auszahlung ist nur der Gewinnanteil steuerpflichtig, nach 12 Jahren Laufzeit zur Hälfte). Für freiwillig gesetzlich Versicherte zählt die ganze Auszahlung zur Krankenversicherung (wie bei privaten Renten, BSG B 12 KR 28/08 R; für das AVD noch nicht entschieden). Was über {LT.avdMax} hinausgeht, und Beiträge aus Jahren ohne Förderberechtigung (ob sie ungefördert ins AVD dürfen, ist offen) liegen in einem ETF-Nebendepot (gleiche TER wie das ETF-Depot). Vereinfacht wird ab heute statt ab 01.01.2027 gerechnet, und Zulagen/Erstattungen werden standardmäßig zum Beitragsjahresende gutgeschrieben (Verzögerung als Sensitivität wählbar; tatsächliche Bearbeitungsdauer offen).</p>
   </details>
   <details>
     <summary>Heutige Kaufkraft</summary>
@@ -284,7 +286,7 @@
   </details>
   <details>
     <summary>Erbfall</summary>
-    <p>Altersvorsorgedepot: Ehepartner können das Guthaben förderunschädlich auf einen eigenen Vertrag übertragen; die spätere Einkommensteuer darauf ist grob abgezogen. Alle anderen Erben: Zulagen und Steuervorteile werden zurückgefordert (§ 93 EStG). Die Erträge versteuern die Erben mit ihrem eigenen Steuersatz (§ 22 Nr. 5 S. 3 EStG; BMF-Schreiben vom 05.10.2023, Rn. 229 f.), nur zur Hälfte, wenn der Erbe mindestens 62 ist und der Vertrag mindestens 12 Jahre lief. Nach Rentenbeginn werden Restbeiträge und verbleibende Förderung noch grob am Restguthaben bemessen; deren genaue Zuordnung ist offen. Die latente Ehepartnersteuer nutzt den Restzeitraum der verstorbenen Person und deren Einkommen im Alter, bei „Verheiratet“ stattdessen das Einkommen des Partners im Alter (Grundtarif); das Todesjahr selbst ist dann gemeinsam veranlagt (Splitting mit dem Einkommen des Partners, 2.000 € Pauschbetrag, § 26 EStG). Das ist kein eigener Hinterbliebenen-Auszahlplan. Bei verzögerter Förderung wird nur bereits gutgeschriebene Förderung zurückgefordert; noch offene Ansprüche sind im Erbwert weder angesetzt noch abgezogen. Der ungeförderte Teil (Beiträge über 1.800 € im Jahr) geht ohne Rückforderung an alle Erben; sie versteuern nur dessen Gewinn (§ 22 Nr. 5 S. 2 Buchst. c EStG), beim Ehepartner ebenso. Restrenten aus der Garantiezeit der Versicherung versteuern die Erben ebenfalls selbst.</p>
+    <p>Altersvorsorgedepot: Ehepartner können das Guthaben förderunschädlich auf einen eigenen Vertrag übertragen; die spätere Einkommensteuer darauf ist grob abgezogen. Alle anderen Erben: Zulagen und Steuervorteile werden zurückgefordert (§ 93 EStG). Die Erträge versteuern die Erben mit ihrem eigenen Steuersatz (§ 22 Nr. 5 S. 3 EStG; BMF-Schreiben vom 05.10.2023, Rn. 229 f.), nur zur Hälfte, wenn der Erbe mindestens 62 ist und der Vertrag mindestens 12 Jahre lief. Nach Rentenbeginn werden Restbeiträge und verbleibende Förderung noch grob am Restguthaben bemessen; deren genaue Zuordnung ist offen. Die latente Ehepartnersteuer nutzt den Restzeitraum der verstorbenen Person und deren Einkommen im Alter, bei „Verheiratet“ stattdessen das Einkommen des Partners im Alter (Grundtarif); das Todesjahr selbst ist dann gemeinsam veranlagt (Splitting mit dem Einkommen des Partners, {LT.spb2} Pauschbetrag, § 26 EStG). Das ist kein eigener Hinterbliebenen-Auszahlplan. Bei verzögerter Förderung wird nur bereits gutgeschriebene Förderung zurückgefordert; noch offene Ansprüche sind im Erbwert weder angesetzt noch abgezogen. Der ungeförderte Teil (Beiträge über {LT.avdSubMax} im Jahr) geht ohne Rückforderung an alle Erben; sie versteuern nur dessen Gewinn (§ 22 Nr. 5 S. 2 Buchst. c EStG), beim Ehepartner ebenso. Restrenten aus der Garantiezeit der Versicherung versteuern die Erben ebenfalls selbst.</p>
   </details>
   <details>
     <summary>Kapitalerträge</summary>
@@ -296,7 +298,7 @@
   </details>
   <details>
     <summary>Krankenversicherung</summary>
-    <p>Nur wenn „freiwillig gesetzlich“ gewählt ist: Beitragssatz für Mitglieder ohne Krankengeld (14,0 % + Ø-Zusatzbeitrag 2,9 % + Pflege 4,2 % kinderlos = 21,1 %) auf AVD-Auszahlungen, Versicherungsleistungen (Leibrente voll; Kapitalauszahlung voll und auf 120 Monate verteilt, BSG B 12 KR 28/08 R, § 5 Abs. 4 Beitragsverfahrensgrundsätze Selbstzahler) und Fondserträge (Gewinnanteil der Entnahmen und Vorabpauschale, nach 30 % Teilfreistellung). Alle Einnahmen eines Produkts zusammen nur bis zur Beitragsbemessungsgrenze 2026 (69.750 €), die mit der Inflation mitwächst. Die zusätzliche KV/PV mindert als Sonderausgabe die Einkommensteuer. Die Entlastung zählt im selben Jahr zum verfügbaren Netto und wird nicht wiederangelegt. Das übrige Alterseinkommen ist als zu versteuerndes Einkommen vor diesen zusätzlichen Beiträgen einzugeben. Ob das AVD bei freiwillig Versicherten genauso behandelt wird (Auszahlplan und 30-%-Auszahlung, gerechnet ebenfalls mit 120 Monaten), ist noch nicht geklärt.</p>
+    <p>Nur wenn „freiwillig gesetzlich“ gewählt ist: Beitragssatz für Mitglieder ohne Krankengeld ({LT.kvReduced} + Ø-Zusatzbeitrag {LT.zusatz} + Pflege {LT.pvNoKids} kinderlos = {LT.kvVolNoKids}) auf AVD-Auszahlungen, Versicherungsleistungen (Leibrente voll; Kapitalauszahlung voll und auf 120 Monate verteilt, BSG B 12 KR 28/08 R, § 5 Abs. 4 Beitragsverfahrensgrundsätze Selbstzahler) und Fondserträge (Gewinnanteil der Entnahmen und Vorabpauschale, nach 30 % Teilfreistellung). Alle Einnahmen eines Produkts zusammen nur bis zur Beitragsbemessungsgrenze {LT.year} ({LT.kvBbg}), die mit der Inflation mitwächst. Die zusätzliche KV/PV mindert als Sonderausgabe die Einkommensteuer. Die Entlastung zählt im selben Jahr zum verfügbaren Netto und wird nicht wiederangelegt. Das übrige Alterseinkommen ist als zu versteuerndes Einkommen vor diesen zusätzlichen Beiträgen einzugeben. Ob das AVD bei freiwillig Versicherten genauso behandelt wird (Auszahlplan und 30-%-Auszahlung, gerechnet ebenfalls mit 120 Monaten), ist noch nicht geklärt.</p>
   </details>
   <details>
     <summary>Szenarien im Überblick</summary>

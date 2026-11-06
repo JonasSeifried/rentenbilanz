@@ -7,6 +7,7 @@ import { AMOUNT, type Analysis, type ContenderKey } from './engine/analyze';
 import { splitSum } from './engine/combo';
 import { SITE } from './site';
 import { CURRENT_LAW } from './engine/law';
+import { LT } from './lawText';
 import { costBreakEvens, MAX_COST } from './engine/breakEven';
 import { breakEvenText, gapText } from './verdict';
 
@@ -68,10 +69,10 @@ const limitsText = (p: Params, zulSpouse = '') => [
   ...(p.married ? [spouseAvdText(p, zulSpouse)] : []),
   salaryText(p),
   changeText(p),
-  'Abgeltungsteuer ' + (p.kist > 0 ? pct((1.055 + p.kist) / (4 + p.kist)) + ' % einschließlich Soli und Kirchensteuer (§ 32d Abs. 1 S. 4 EStG: 25 % ermäßigt auf e/(4 + k))' : '26,375 %') +
-    ', Teilfreistellung 30 % (Aktienfonds), Sparer-Pauschbetrag ' + (p.married ? '2.000 € (zusammen veranlagt; Partner ohne eigene Kapitalerträge außer den unten genannten angenommen) ' : '1.000 € ') +
+  'Abgeltungsteuer ' + (p.kist > 0 ? pct((CURRENT_LAW.abg.soliFactor + p.kist) / (CURRENT_LAW.abg.divisor + p.kist)) + ' % einschließlich Soli und Kirchensteuer (§ 32d Abs. 1 S. 4 EStG: ' + LT.abg + ' ermäßigt auf e/(' + CURRENT_LAW.abg.divisor + ' + k))' : LT.abgSoli) +
+    ', Teilfreistellung 30 % (Aktienfonds), Sparer-Pauschbetrag ' + (p.married ? LT.spb2 + ' (zusammen veranlagt; Partner ohne eigene Kapitalerträge außer den unten genannten angenommen) ' : LT.spb + ' ') +
     (p.indexAllowance ? 'wächst mit der Inflation (hypothetisch, Schalter indexAllowance)' : 'nominal fest') +
-    (p.allowanceUsed > 0 ? '; davon ' + n0(p.allowanceUsed) + ' €/Jahr (heutiges Geld, wächst mit der Inflation) schon durch andere Kapitalerträge genutzt, für die eigenen Depots bleibt nominal ' + (p.married ? '2.000 €' : '1.000 €') + (p.indexAllowance ? ' × Inflationsfaktor' : '') + ' minus dieser Betrag, mindestens 0; wächst der Betrag nominal über den Pauschbetrag, fehlt der Überschuss der anderen Erträge in der Günstigerprüfung (§ 32d Abs. 6 EStG). Die Erben haben ihren eigenen vollen Pauschbetrag' + (p.married ? '; erbt der Partner, gilt im Todesjahr der gemeinsame Betrag abzüglich des genutzten' : '') : '') +
+    (p.allowanceUsed > 0 ? '; davon ' + n0(p.allowanceUsed) + ' €/Jahr (heutiges Geld, wächst mit der Inflation) schon durch andere Kapitalerträge genutzt, für die eigenen Depots bleibt nominal ' + (p.married ? LT.spb2 : LT.spb) + (p.indexAllowance ? ' × Inflationsfaktor' : '') + ' minus dieser Betrag, mindestens 0; wächst der Betrag nominal über den Pauschbetrag, fehlt der Überschuss der anderen Erträge in der Günstigerprüfung (§ 32d Abs. 6 EStG). Die Erben haben ihren eigenen vollen Pauschbetrag' + (p.married ? '; erbt der Partner, gilt im Todesjahr der gemeinsame Betrag abzüglich des genutzten' : '') : '') +
     ', Vorabpauschale mit Zufluss im Folgejahr.',
   'Jahresmodell: Beiträge monatlich, Entnahmen jährlich am Jahresanfang; offene Depots ' +
     (p.payResidual ? 'zahlen Restkapital ÷ Restjahre aus.' : 'zahlen eine nominal konstante Annuität aus, das AVD Restkapital ÷ Restjahre.'),
@@ -83,23 +84,23 @@ const limitsText = (p: Params, zulSpouse = '') => [
 /** Steuertarif und Steuerprofil in Worten (Kirchensteuer, Zusammenveranlagung), passend zu assess() in combo.ts. */
 function taxText(p: Params): string {
   const tariff = p.married
-    ? 'Einkommensteuer Tarif 2026 (§ 32a EStG), Splittingtarif (zusammen veranlagt, § 32a Abs. 5) auf das gemeinsame zu versteuernde Einkommen; Partner ' + n0(p.incSpouse) + ' € vor und ' + n0(p.incSpouseRet) + ' € ab Rentenbeginn (heutiges Geld), Soli-Freigrenze verdoppelt'
-    : 'Einkommensteuer Tarif 2026 (§ 32a EStG), Grundtarif ledig';
+    ? 'Einkommensteuer Tarif ' + LT.year + ' (§ 32a EStG), Splittingtarif (zusammen veranlagt, § 32a Abs. 5) auf das gemeinsame zu versteuernde Einkommen; Partner ' + n0(p.incSpouse) + ' € vor und ' + n0(p.incSpouseRet) + ' € ab Rentenbeginn (heutiges Geld), Soli-Freigrenze verdoppelt'
+    : 'Einkommensteuer Tarif ' + LT.year + ' (§ 32a EStG), Grundtarif ledig';
   const church = p.kist > 0
-    ? 'Kirchensteuer ' + pct(p.kist) + ' % auf die festzusetzende Einkommensteuer einschließlich hinzugerechneter AVD-Zulage (§ 51a Abs. 2 EStG, ohne Kinderfreibeträge und ohne Kappung); gezahlte Kirchensteuer über ' + (p.married ? '72' : '36') + ' € ist im selben Jahr als Sonderausgabe abgezogen (§ 10 Abs. 1 Nr. 4, § 10c EStG)'
+    ? 'Kirchensteuer ' + pct(p.kist) + ' % auf die festzusetzende Einkommensteuer einschließlich hinzugerechneter AVD-Zulage (§ 51a Abs. 2 EStG, ohne Kinderfreibeträge und ohne Kappung); gezahlte Kirchensteuer über ' + (p.married ? LT.saPausch2 : LT.saPausch) + ' ist im selben Jahr als Sonderausgabe abgezogen (§ 10 Abs. 1 Nr. 4, § 10c EStG)'
     : 'keine Kirchensteuer';
-  const heirs = (p.kist > 0 || p.married ? ' Erben (incHeir) versteuern einzeln im Grundtarif mit 1.000 € Pauschbetrag' + (p.kist > 0 ? ' und demselben Kirchensteuersatz' : '') + '.' : '') +
-    (p.married ? ' Erbt der Partner: Todesjahr gemeinsam veranlagt mit dem Partner-Einkommen (Splitting, 2.000 €, Einkommen der verstorbenen Person im Todesjahr 0); spätere Steuer auf das übertragene AVD mit incSpouseRet im Grundtarif.' : '');
+  const heirs = (p.kist > 0 || p.married ? ' Erben (incHeir) versteuern einzeln im Grundtarif mit ' + LT.spb + ' Pauschbetrag' + (p.kist > 0 ? ' und demselben Kirchensteuersatz' : '') + '.' : '') +
+    (p.married ? ' Erbt der Partner: Todesjahr gemeinsam veranlagt mit dem Partner-Einkommen (Splitting, ' + LT.spb2 + ', Einkommen der verstorbenen Person im Todesjahr 0); spätere Steuer auf das übertragene AVD mit incSpouseRet im Grundtarif.' : '');
   return tariff + ', mit Solidaritätszuschlag; Tarifgrenzen wachsen mit der Inflation; ' + church + '.' + (p.married ? '' : ' Kein Ehegattensplitting.') + heirs;
 }
 
 /** Was-wäre-wenn Steueränderung in Worten, passend zu abg()/estAddAt() in combo.ts. */
 function changeText(p: Params): string {
-  if (p.abgRate === CURRENT_LAW.abg.rate && p.estAdd === 0) return 'Steuerrecht: heute geltendes Recht (Stand 2026) für die ganze Laufzeit; künftige Gesetzesänderungen sind nicht vorweggenommen.';
+  if (p.abgRate === CURRENT_LAW.abg.rate && p.estAdd === 0) return 'Steuerrecht: heute geltendes Recht (Stand ' + LT.year + ') für die ganze Laufzeit; künftige Gesetzesänderungen sind nicht vorweggenommen.';
   const from = p.taxFrom < 0 ? 'ab Rentenbeginn (Alter ' + p.R + ')' : 'ab Alter ' + Math.max(p.taxFrom, p.a0);
   const bits = [
-    ...(p.abgRate !== CURRENT_LAW.abg.rate ? ['Abgeltungsteuersatz ' + pct(p.abgRate) + ' % statt ' + pct(CURRENT_LAW.abg.rate) + ' % (mit Soli' + (p.kist > 0 ? ' und Kirchensteuer: ESt = e · s/(1 + s · k), verallgemeinert aus § 32d Abs. 1 S. 3–4 EStG unter der Annahme, dass auch die Ermäßigung um 25 % der Kirchensteuer dem neuen Satz folgt' : '') + '; Teilfreistellung und Sparer-Pauschbetrag unverändert)'] : []),
-    ...(p.estAdd !== 0 ? ['Grenzsteuersatz der Einkommensteuer oberhalb des Grundfreibetrags um ' + pct(p.estAdd) + ' Prozentpunkte ' + (p.estAdd > 0 ? 'höher' : 'niedriger') + ' (tarifliche ESt + Satz × (zvE − 12.348 €), heutiges Geld; Soli und Kirchensteuer darauf)'] : []),
+    ...(p.abgRate !== CURRENT_LAW.abg.rate ? ['Abgeltungsteuersatz ' + pct(p.abgRate) + ' % statt ' + pct(CURRENT_LAW.abg.rate) + ' % (mit Soli' + (p.kist > 0 ? ' und Kirchensteuer: ESt = e · s/(1 + s · k), verallgemeinert aus § 32d Abs. 1 S. 3–4 EStG unter der Annahme, dass auch die Ermäßigung um ' + LT.abg + ' der Kirchensteuer dem neuen Satz folgt' : '') + '; Teilfreistellung und Sparer-Pauschbetrag unverändert)'] : []),
+    ...(p.estAdd !== 0 ? ['Grenzsteuersatz der Einkommensteuer oberhalb des Grundfreibetrags um ' + pct(p.estAdd) + ' Prozentpunkte ' + (p.estAdd > 0 ? 'höher' : 'niedriger') + ' (tarifliche ESt + Satz × (zvE − ' + LT.gfb + '), heutiges Geld; Soli und Kirchensteuer darauf)'] : []),
   ];
   return 'Was-wäre-wenn Steueränderung (hypothetisch, keine angekündigte Rechtslage): ' + from + ' ' + bits.join('; ') + '. Gilt für alle Zahlungen und Verkäufe ab diesem Jahr, auch für Erben, ohne Bestandsschutz; Beiträge und Erstattungen davor nach heutigem Recht. Die grob geschätzte spätere Steuer auf ein vererbtes oder bei Rentenbeginn bewertetes AVD rechnet mit dem Satz des Bewertungsjahres, auch wenn der Stichtag erst später liegt.';
 }
@@ -109,8 +110,8 @@ function spouseAvdText(p: Params, zulSpouse: string): string {
   if (!(p.avdSpouse > 0)) return 'Partner ohne eigenen geförderten Altersvorsorgevertrag: Günstigerprüfung nur mit den eigenen Beiträgen und der eigenen Zulage (§ 10a Abs. 3 S. 1 EStG).';
   const m = n2(p.avdSpouse) + ' €/Monat (× (1 + Dynamik)^Jahr bis vor Rentenbeginn)';
   const tail = ' Die AVD-Erstattung ist die Änderung der gemeinsamen Steuer durch den eigenen Vertrag (kann negativ sein: Mehrsteuer, mit Wiederanlage aus dem Nebendepot bezahlt, ein ungedeckter Rest bei Rentenbeginn ohne Zins abgezogen); der Partner-Vertrag selbst ist nicht im Vergleich, seine Auszahlungen gehören in das Partner-Einkommen ab Rentenbeginn. Zurechnung für die Förderrückzahlung im Erbfall im Verhältnis der geförderten Eigenbeiträge (§ 10a Abs. 4 S. 3–4).';
-  if (p.incSpouse > 0) return 'Partner zahlt ' + m + ' in einen eigenen geförderten Vertrag; mit eigenem Einkommen als unmittelbar förderberechtigt angenommen (rentenversichert, verbeamtet oder selbständig, § 10a Abs. 1 EStG n. F.): eigene Grundzulage aus dem eigenen Beitrag (ab 120 €/Jahr, § 84 S. 1, § 86 n. F.), eigener Höchstbetrag 1.800 €. Die Günstigerprüfung vergleicht die Steuerersparnis beider Abzüge mit beiden Zulagen (§ 10a Abs. 3 S. 5; BMF 05.10.2023 Rn. 110). Diese Ausgangslage gilt für alle Produkte (auch in der Günstigerprüfung der Kapitalerträge).' + tail;
-  return 'Partner zahlt ' + m + ' in einen eigenen geförderten Vertrag; ohne eigenes Einkommen als mittelbar zulageberechtigt angenommen (§ 79 S. 2 EStG; nur in Jahren mit eigenem gefördertem Beitrag ab 120 € und einem Partner-Beitrag ab 120 €/Jahr). Partner-Grundzulage aus den eigenen geförderten Beiträgen, höchstens 175 € (§ 84 S. 3–4 n. F.); bei der eigenen Veranlagung zählen beide Beiträge (eigene vorrangig, zusammen bis 1.920 €) und beide Zulagen (§ 10a Abs. 3 S. 2–4 n. F.; BMF Rn. 109). Ohne eigenen Vertrag gäbe es keine Zulage und keinen Abzug für den Partner (BMF Rn. 26/27).' +
+  if (p.incSpouse > 0) return 'Partner zahlt ' + m + ' in einen eigenen geförderten Vertrag; mit eigenem Einkommen als unmittelbar förderberechtigt angenommen (rentenversichert, verbeamtet oder selbständig, § 10a Abs. 1 EStG n. F.): eigene Grundzulage aus dem eigenen Beitrag (ab ' + LT.avdMinOwn + '/Jahr, § 84 S. 1, § 86 n. F.), eigener Höchstbetrag ' + LT.avdSubMax + '. Die Günstigerprüfung vergleicht die Steuerersparnis beider Abzüge mit beiden Zulagen (§ 10a Abs. 3 S. 5; BMF 05.10.2023 Rn. 110). Diese Ausgangslage gilt für alle Produkte (auch in der Günstigerprüfung der Kapitalerträge).' + tail;
+  return 'Partner zahlt ' + m + ' in einen eigenen geförderten Vertrag; ohne eigenes Einkommen als mittelbar zulageberechtigt angenommen (§ 79 S. 2 EStG; nur in Jahren mit eigenem gefördertem Beitrag ab ' + LT.avdMinOwn + ' und einem Partner-Beitrag ab ' + LT.spouseMinOwn + '/Jahr). Partner-Grundzulage aus den eigenen geförderten Beiträgen, höchstens ' + LT.spouseGrundMax + ' (§ 84 S. 3–4 n. F.); bei der eigenen Veranlagung zählen beide Beiträge (eigene vorrangig, zusammen bis ' + LT.avdSubMaxSpouse + ') und beide Zulagen (§ 10a Abs. 3 S. 2–4 n. F.; BMF Rn. 109). Ohne eigenen Vertrag gäbe es keine Zulage und keinen Abzug für den Partner (BMF Rn. 26/27).' +
     (zulSpouse ? ' Die Partner-Zulage fließt in den Partner-Vertrag und ist nicht im Ergebnis enthalten, zusammen nominal: ' + zulSpouse + '.' : '') + tail;
 }
 

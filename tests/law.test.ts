@@ -6,9 +6,11 @@
 //     beiden Gruppen zugeordnet (neue Felder lassen sich nicht vergessen).
 //  3. Gezielte Verfälschungen (Grundfreibetrag 0, andere KV-BBG) wirken an den erwarteten Stellen und nur dort.
 //  4. Keine Jahres-Literale mehr in den Engine-Dateien (außer law.ts).
-//  5. Texte der Oberfläche nennen die Werte der aktuellen Tabelle.
+//  5. Texte der Oberfläche kommen aus der Tabelle (lawText.ts): Formatierung für 2026 festgehalten, kein Jahreswert
+//     als fertiger Text oder eindeutige Zahl in src/ außerhalb von law.ts und lawText.ts.
 // Dass die Option `law` überall ankommt, prüft tests/law-propagation.test.ts.
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { CURRENT_LAW, LAW_2026, LAWS, defineLaw, type Law, type LawTable } from '../src/lib/engine/law';
@@ -17,6 +19,7 @@ import { model } from '../src/lib/engine/engine';
 import { analyze, scenarioList } from '../src/lib/engine/analyze';
 import { DEFAULTS, LIMITS, type Inputs } from '../src/lib/engine/inputs';
 import { canon } from './live/cases';
+import { LT, lawText } from '../src/lib/lawText';
 
 const src = (rel: string) => readFileSync(fileURLToPath(new URL('../' + rel, import.meta.url)), 'utf8');
 
@@ -119,7 +122,7 @@ const ENGINE_VALUES: [string, unknown, boolean][] = [
 ];
 // Werte ohne Wirkung auf die Rechnung (Oberfläche, Hilfsrechnung pensionTax.ts, Standardwerte der Eingaben, Kennung).
 const OTHER_VALUES: [string, unknown][] = [
-  ['year', 2099], ['wkPauschRente', 150], ['kvJaeg', 80000], ['basiszins', 0.05],
+  ['year', 2099], ['basiszinsSource', 'BMF, 01.01.2099'], ['wkPauschRente', 150], ['kvJaeg', 80000], ['basiszins', 0.05],
   ['kv.general', 15], ['kv.reduced', 14.5], ['kv.zusatzAvg', 3.5], ['kv.pv', 4], ['kv.pvChildless', 1],
 ];
 
@@ -227,45 +230,67 @@ describe('Engine-Dateien ohne Jahres-Literale (nur law.ts)', () => {
 
 // ---------- Texte der Oberfläche ----------
 
-describe('Oberflächentexte nennen die Werte der aktuellen Tabelle', () => {
-  const L = CURRENT_LAW;
-  const e = (x: number) => x.toLocaleString('de-DE') + ' €';
-  const pc = (x: number) => x.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  const maxGrund = L.avd.grundRate1 * L.avd.grundTop1 + L.avd.grundRate2 * (L.avd.grundTop2 - L.avd.grundTop1);
-  const G = 'src/lib/glossary.ts', S = 'src/lib/panels/Settings.svelte', PC = 'src/lib/prosCons.ts', RW = 'src/lib/rechenweg.ts', V = 'src/lib/verdict.ts', PH = 'src/lib/components/PensionHelper.svelte';
-  const CHECKS: [string, string, string[]][] = [
-    ['AVD-Förderhöchstbetrag', e(L.avd.subMax), [G, S, PC, RW]],
-    ['AVD-Höchstbetrag', e(L.avd.max), [G, PC, V]],
-    ['Förderhöchstbetrag je Monat', e(L.avd.subMax / 12), [G, PC]],
-    ['Höchstbetrag je Monat', e(L.avd.max / 12), [G, PC, V]],
-    ['Sparer-Pauschbetrag', e(L.spb), [G, S, RW]],
-    ['gemeinsamer Sparer-Pauschbetrag', e(2 * L.spb), [G, S, RW]],
-    ['Mindesteigenbeitrag', e(L.avd.minOwn), [G, S, RW]],
-    ['Grundzulage 1. Stufe', e(L.avd.grundTop1), [G, S]],
-    ['höchste Grundzulage', e(maxGrund), [G, S]],
-    ['Kinderzulage', e(L.avd.kid), [G, S]],
-    ['Berufseinsteigerbonus', e(L.avd.bonus), [G, S]],
-    ['Grundzulage Partner (mittelbar)', e(L.avd.spouseGrundMax), [G, S, RW]],
-    ['Höchstbetrag mit Partner', e(L.avd.subMax + L.avd.spouseRaise), [G, RW]],
-    ['Grundfreibetrag', L.tariff.gfb.toLocaleString('de-DE'), [S, RW]],
-    ['KV-BBG', L.kvBbg.toLocaleString('de-DE'), [S]],
-    ['Versicherungspflichtgrenze', e(L.kvJaeg), [G]],
-    ['Sonderausgaben-Pauschbetrag', e(L.saPausch), [G, PH]],
-    ['Sonderausgaben-Pauschbetrag Ehegatten', e(2 * L.saPausch), [G]],
-    ['Werbungskosten-Pauschbetrag Rente', e(L.wkPauschRente), [G, PH]],
-    ['allgemeiner KV-Satz', pc(L.kv.general) + ' %', [G]],
-    ['ermäßigter KV-Satz', pc(L.kv.reduced) + ' %', [G, S]],
-    ['Ø-Zusatzbeitrag', pc(L.kv.zusatzAvg) + ' %', [G, S]],
-    ['PV-Satz', pc(L.kv.pv) + ' %', [G]],
-    ['Basiszins', pc(L.basiszins * 100) + ' %', [G]],
-    ['Tarifjahr', 'Tarif ' + L.year, [RW, S]],
-    ['Steuerwerte (Rechtsstand)', 'Steuerwerte ' + L.year, ['src/lib/site.ts']],
-    ['Rechtsstand im Rechenweg', 'Stand ' + L.year, [RW]],
-    ['heutiger Abgeltungsteuersatz', 'Heute ' + (L.abg.rate * 100).toLocaleString('de-DE') + ' %', [S]],
-  ];
-  for (const [what, text, files] of CHECKS) {
-    it(`${what}: „${text}“`, () => {
-      for (const f of files) expect(src(f).includes(text), `${f} nennt ${what} nicht als „${text}“`).toBe(true);
+describe('Oberflächentexte kommen aus der Tabelle (src/lib/lawText.ts)', () => {
+  it('Formatierung für 2026 genau wie vorher im Text', () => {
+    expect(lawText(LAW_2026)).toEqual({
+      year: '2026', spb: '1.000 €', spb2: '2.000 €', saPausch: '36 €', saPausch2: '72 €', wkRente: '102 €', gfb: '12.348 €',
+      kvBbg: '69.750 €', kvJaeg: '77.400 €', kvGeneral: '14,6 %', kvReduced: '14,0 %', zusatz: '2,9 %', pv: '3,6 %',
+      pvChildless: '0,6 %', pvNoKids: '4,2 %', kvVolNoKids: '21,1 %', kvVolKids: '20,5 %', basiszins: '3,2 %',
+      basiszinsSource: 'BMF, 13.01.2026', abg: '25 %', abgSoli: '26,375 %', abgKist9: '27,995 %', abgKist8: '27,819 %',
+      avdSubMax: '1.800 €', avdMax: '6.840 €', avdSubMaxM: '150 €', avdMaxM: '570 €', avdSubMaxMNum: '150', avdMinOwn: '120 €',
+      grundRate1: '50 %', grundTop1: '360 €', grundRate2: '25 %', grundMax: '540 €', kid: '300 €', bonus: '200 €',
+      spouseMinOwn: '120 €', spouseGrundMax: '175 €', avdSubMaxSpouse: '1.920 €',
     });
-  }
+  });
+  it('LT ist die neueste Tabelle', () => {
+    expect(LT).toEqual(lawText(CURRENT_LAW));
+  });
+
+  // Alle Quelldateien der Oberfläche (ohne law.ts und lawText.ts), Kommentare und <style> entfernt.
+  const walk = (d: string): string[] => readdirSync(d).flatMap(f => {
+    const p = join(d, f);
+    return statSync(p).isDirectory() ? walk(p) : /\.(ts|svelte)$/.test(f) ? [p] : [];
+  });
+  const ROOT = fileURLToPath(new URL('../', import.meta.url));
+  const UI = walk(join(ROOT, 'src')).filter(f => !/engine[\\/]law\.ts$|lawText\.ts$/.test(f));
+  const code = (f: string) => readFileSync(f, 'utf8')
+    .replace(/<style[\s\S]*?<\/style>/g, m => m.replace(/[^\n]/g, ''))
+    .replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ''))
+    .replace(/<!--[\s\S]*?-->/g, m => m.replace(/[^\n]/g, ''))
+    .split('\n').map(l => l.replace(/(^|[^:'"\\])\/\/.*$/, '$1'));
+  const rel = (f: string) => f.slice(ROOT.length);
+
+  it('kein Jahreswert als fertiger Text (z. B. „1.800 €“, „26,375 %“) außerhalb von lawText.ts', () => {
+    // Zu allgemein für eine Suche (Teilfreistellung, Umschichtungsanteile …): die Prozentsätze 25 % und 50 %.
+    const GENERIC = new Set(['abg', 'grundRate1', 'grundRate2', 'year', 'basiszinsSource', 'avdSubMaxMNum']);
+    const ALLOW: RegExp[] = [/1\.000 € in 40 Jahren/]; // Inflationsbeispiel im Glossar, kein Rechtswert
+    const hits: string[] = [];
+    for (const L of LAWS) {
+      const vals = Object.entries(lawText(L)).filter(([k]) => !GENERIC.has(k));
+      for (const f of UI) code(f).forEach((l, i) => {
+        if (ALLOW.some(re => re.test(l))) return;
+        for (const [k, v] of vals) {
+          const re = new RegExp('(?<![\\d.,])' + v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(' ', '\\s?'));
+          if (re.test(l)) hits.push(`${rel(f)}:${i + 1} ${L.id}.${k} „${v}“ :: ${l.trim().slice(0, 120)}`);
+        }
+      });
+    }
+    expect(hits, hits.join('\n')).toEqual([]);
+  });
+  it('keine eindeutigen Jahresbeträge als Zahl in der Logik der Oberfläche (Schwellen, Grenzen, Formeln)', () => {
+    // Beträge, die außerhalb des Rechtsstands nicht vorkommen (1.000/150 wären zu allgemein: Schrittweiten, Beispiele).
+    const hits: string[] = [];
+    for (const L of LAWS) {
+      const nums = new Set([L.avd.subMax, L.avd.max, L.avd.max / 12, L.kvBbg, L.kvJaeg, L.tariff.gfb, L.abg.withSoli, L.abg.soliFactor, L.avd.subMax + L.avd.spouseRaise].map(String));
+      for (const f of UI) code(f).forEach((l, i) => {
+        const c = l.replace(/'[^']*'|"[^"]*"|`[^`]*`/g, "''");
+        for (const m of c.matchAll(/(?<![\w.])\d+(?:\.\d+)?(?![\w.])|(?<![\w\d])\.\d+(?![\w.])/g)) {
+          if (nums.has(String(Number(m[0])))) hits.push(`${rel(f)}:${i + 1} ${m[0]} :: ${l.trim().slice(0, 120)}`);
+        }
+        // Vergleiche mit dem Pauschbetrag oder dem AVD-Betrag gegen eine feste Zahl
+        if (/(allowanceUsed|split\.avd|avdM)\s*[<>]=?\s*[1-9]/.test(c)) hits.push(`${rel(f)}:${i + 1} Vergleich mit Literal :: ${l.trim().slice(0, 120)}`);
+      });
+    }
+    expect(hits, hits.join('\n')).toEqual([]);
+  });
 });

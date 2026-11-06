@@ -73,6 +73,7 @@ All paths are relative, so the site also works in a subdirectory. Name, legal st
 | `src/lib/pensionTax.ts` | Gross state pension → taxable income in retirement |
 | `src/lib/rechenweg.ts` | Markdown export of the full calculation |
 | `src/lib/glossary.ts`, `prosCons.ts` | Glossary and "what the numbers don't show" |
+| `src/lib/lawText.ts` | Yearly values as text (`LT`) for every UI text, from the newest legal-status table |
 | `src/lib/link.ts`, `storage.ts`, `state.svelte.ts` | Share-link format, browser storage, app state |
 | `src/lib/panels/`, `src/lib/components/` | UI (Svelte 5) |
 | `legacy/index.html` | The original calculator, reference for the golden tests. Do not modify. |
@@ -84,10 +85,10 @@ All paths are relative, so the site also works in a subdirectory. Name, legal st
 People plan their lives with these numbers, so:
 
 - **Golden tests:** `tests/golden.test.ts` checks the engine against the original calculator in `legacy/index.html` (29 named and 300 random scenarios). `tests/combo.test.ts` checks a one-part combination bit for bit against the reference. Both always use the 2026 values (`LAW_2026`).
-- **Live fixture:** `tests/live-regression.test.ts` freezes the app's results with all corrections over about 500 cases, bit for bit (including joint assessment, church tax, combinations, tax-change scenarios). It is only regenerated deliberately, with a justified diff.
+- **Live fixture:** `tests/live-regression.test.ts` freezes the app's results with all corrections over about 500 cases, bit for bit (including joint assessment, church tax, combinations, tax-change scenarios). It is only regenerated deliberately, with a justified diff. Rule tests with 2026 amounts are pinned to `LAW_2026`; `npm run test:law-probe` runs the suite with a made-up newer table and allows only the live fixture to fail.
 - **Corrections can be switched off:** every deviation from the first version has targeted tests and is documented with its legal source and effect in [`docs/korrekturen.md`](docs/korrekturen.md). New calculation logic goes only into `combo.ts`, so the historical reference path stays bit-identical.
 - **Stable links:** default values (`DEFAULTS` in `inputs.ts`) may change. Shared links stay valid because they are encoded against a frozen baseline (`link.ts`, `LINK_VERSION`).
-- **Yearly maintenance:** base interest rate, tax schedule, contribution ceilings and subsidy rules change every year. Each year gets a new legal-status table in `law.ts`, with a primary source per value; older tables stay untouched. The steps are written as a task list that can be handed to an AI agent in [`docs/jaehrliche-pflege.md`](docs/jaehrliche-pflege.md).
+- **Yearly maintenance:** base interest rate, tax schedule, contribution ceilings and subsidy rules change every year. Each year gets a new legal-status table in `law.ts`, with a primary source per value; older tables stay untouched. Texts and default values follow the table automatically. The steps are written as a task list that can be handed to an AI agent in [`docs/jaehrliche-pflege.md`](docs/jaehrliche-pflege.md).
 
 ## Documentation (German)
 

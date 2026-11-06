@@ -550,9 +550,9 @@ https://www.buzer.de/gesetz/17547/a339399.htm. Bei null Beitrag weiterhin null F
 
 ### R8 – `taxRounding`: nominale Rundung nach indexiertem Tarif
 
-`core.ts` enthält zusätzlich `tax2026(incomeNom, index)` (heute `taxIndexed` der Rechtsstand-Tabelle, `lawOf(opts).fn` in `law.ts`; `tax2026` ist fest an `LAW_2026` gebunden): nominales Einkommen auf volle Euro abrunden,
+Die Engine rechnet mit `taxIndexed(incomeNom, index)` der Rechtsstand-Tabelle (`lawOf(opts).fn` in `law.ts`; früher `tax2026` in `core.ts`, Tests nehmen heute `LAW_2026.fn.taxIndexed`): nominales Einkommen auf volle Euro abrunden,
 indexierten Tarif anwenden, nominale ESt auf volle Euro abrunden, danach Soli berechnen (§ 32a Abs. 1,
-https://www.gesetze-im-internet.de/estg/__32a.html). `est()`/`tax()` bleiben für den Referenzpfad unverändert.
+https://www.gesetze-im-internet.de/estg/__32a.html). `est()`/`tax()` der Tabelle bleiben für den Referenzpfad unverändert.
 Die Review-Probe hatte den Steuerbetrag noch in heutigen Euro gerundet; deshalb stimmen deren isolierte
 R8-Eurobeträge nicht mit dieser genaueren Umsetzung überein. Rundungsstufen können die strikte Konvexität des
 Tarifs um wenige nominale Euro verletzen; die Invariantentests berücksichtigen nur diesen begrenzten Effekt.
