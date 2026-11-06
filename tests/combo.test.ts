@@ -107,7 +107,8 @@ function refStats(p: Params, m: ReturnType<typeof model>, k: ProductKey) {
 function oneProductInvariant(inputs: Inputs[], fixes: ReadonlySet<FixId>) {
   let cases = 0, numbers = 0;
   for (const inp of inputs) {
-    const p0 = readParams(inp);
+    // abgRate fest auf den Satz von 2026 (engine.ts kennt keine Steueränderung; DEFAULTS folgen der neuesten Tabelle).
+    const p0 = readParams({ ...inp, abgRate: LAW_2026.abg.rate * 100 });
     for (const k of SPLIT_KEYS) {
       const p: Params = { ...p0, on: only(k) };
       const amount = p[M[k]] as number;

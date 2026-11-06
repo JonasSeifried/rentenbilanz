@@ -120,7 +120,9 @@ function compareAll(inputs: Inputs) {
   });
 }
 
-const base = { ...DEFAULTS };
+// abgRate gibt es im Original nicht; fest auf den Satz von 2026, damit eine neue Tabelle (DEFAULTS folgen ihr) den Referenzpfad
+// nicht in die hypothetische Steueränderung schiebt.
+const base = { ...DEFAULTS, abgRate: LAW_2026.abg.rate * 100 };
 const named: [string, Partial<Inputs>][] = [
   ['Standardwerte', {}],
   ['Bisherige persönliche Werte (Original-Defaults)', { a0: 23, incWork: 85000, incRet: 40000, studyEnd: 24, incStudy: 35000 }],

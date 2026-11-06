@@ -89,6 +89,7 @@ const PROBES: Partial<Inputs>[] = [
   { ...ALL4, incWork: 60000, incRet: 40000, kist: 9, married: true, incSpouse: 0, incSpouseRet: 0, avdSpouse: 12, kids: 2, kidsFrom: 22, kidsYears: 25 }, // KiSt, Partner mittelbar, Kinder
   { ...ALL4, setAll: 700, etfM: 700, avdM: 700, insM: 700, fondM: 700 },           // AVD-Höchstbeträge
   { ...ALL4, avdM: 12 },                                                           // Mindesteigenbeitrag
+  { ...ALL4, married: true, incSpouse: 40000, avdSpouse: 100 },                    // Partner mit eigenem Einkommen und Vertrag (grundOf)
 ];
 const PROBE_P: Params[] = PROBES.map(x => readParams({ ...DEFAULTS, ...x }));
 
@@ -196,7 +197,6 @@ describe('Engine-Dateien ohne Jahres-Literale (nur law.ts)', () => {
   const ALLOW: [RegExp, string][] = [
     [/it < 1000; it\+\+/, 'Iterationsgrenze der Tauschsuche'],
     [/age < 25/, 'Altersgrenze des Berufseinsteigerbonus (§ 84 S. 2, Struktur)'],
-    [/0\.25 \* .*Math\.max\(0,|\.25\b.*\/\/ Struktur/, 'Struktur'],
   ];
   it('keine Tabellenwerte als Literal', () => {
     const hits: string[] = [];
