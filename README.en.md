@@ -28,7 +28,7 @@ An open calculator for private retirement savings in Germany. Rentenbilanz compa
 - **Inheritance:** what heirs receive after tax for a chosen age at death, using the heirs' own tax rate.
 - **What-if:** the cost level at which a product breaks even with the ETF portfolio, hypothetical tax changes, de-risking before retirement, and results in nominal terms or today's purchasing power.
 - **Transparent:** "Copy calculation" exports inputs, assumptions, model limits and yearly values as Markdown, so the numbers can be checked by hand or with an AI. Technical terms are explained in a glossary with legal references.
-- **Save and share:** inputs are saved in the browser. If you already have different inputs saved, a shared link opens in a view-only mode and replaces them only after you click “Übernehmen” (apply). Resetting to defaults can be undone.
+- **Save and share:** inputs are saved in the browser. If you already have different inputs saved, a shared link opens in a preview mode: you can look around and change values, but nothing is saved or overwritten until you click “Übernehmen” (apply). Resetting to defaults can be undone.
 - **Neutral:** numbers only, no recommendation and no "winner". Factors the numbers leave out (access to the money, lock-in, cost risk) are shown separately.
 
 ## Privacy
