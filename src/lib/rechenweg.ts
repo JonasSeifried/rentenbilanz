@@ -6,6 +6,7 @@ import { incomeAt, incomeGrowth, incomePathKind, incomeStartText, type Params, t
 import { AMOUNT, type Analysis, type ContenderKey } from './engine/analyze';
 import { splitSum } from './engine/combo';
 import { SITE } from './site';
+import { CURRENT_LAW } from './engine/law';
 import { costBreakEvens, MAX_COST } from './engine/breakEven';
 import { breakEvenText, gapText } from './verdict';
 
@@ -94,10 +95,10 @@ function taxText(p: Params): string {
 
 /** Was-wäre-wenn Steueränderung in Worten, passend zu abg()/estAddAt() in combo.ts. */
 function changeText(p: Params): string {
-  if (p.abgRate === .25 && p.estAdd === 0) return 'Steuerrecht: heute geltendes Recht (Stand 2026) für die ganze Laufzeit; künftige Gesetzesänderungen sind nicht vorweggenommen.';
+  if (p.abgRate === CURRENT_LAW.abg.rate && p.estAdd === 0) return 'Steuerrecht: heute geltendes Recht (Stand 2026) für die ganze Laufzeit; künftige Gesetzesänderungen sind nicht vorweggenommen.';
   const from = p.taxFrom < 0 ? 'ab Rentenbeginn (Alter ' + p.R + ')' : 'ab Alter ' + Math.max(p.taxFrom, p.a0);
   const bits = [
-    ...(p.abgRate !== .25 ? ['Abgeltungsteuersatz ' + pct(p.abgRate) + ' % statt 25 % (mit Soli' + (p.kist > 0 ? ' und Kirchensteuer: ESt = e · s/(1 + s · k), verallgemeinert aus § 32d Abs. 1 S. 3–4 EStG unter der Annahme, dass auch die Ermäßigung um 25 % der Kirchensteuer dem neuen Satz folgt' : '') + '; Teilfreistellung und Sparer-Pauschbetrag unverändert)'] : []),
+    ...(p.abgRate !== CURRENT_LAW.abg.rate ? ['Abgeltungsteuersatz ' + pct(p.abgRate) + ' % statt ' + pct(CURRENT_LAW.abg.rate) + ' % (mit Soli' + (p.kist > 0 ? ' und Kirchensteuer: ESt = e · s/(1 + s · k), verallgemeinert aus § 32d Abs. 1 S. 3–4 EStG unter der Annahme, dass auch die Ermäßigung um 25 % der Kirchensteuer dem neuen Satz folgt' : '') + '; Teilfreistellung und Sparer-Pauschbetrag unverändert)'] : []),
     ...(p.estAdd !== 0 ? ['Grenzsteuersatz der Einkommensteuer oberhalb des Grundfreibetrags um ' + pct(p.estAdd) + ' Prozentpunkte ' + (p.estAdd > 0 ? 'höher' : 'niedriger') + ' (tarifliche ESt + Satz × (zvE − 12.348 €), heutiges Geld; Soli und Kirchensteuer darauf)'] : []),
   ];
   return 'Was-wäre-wenn Steueränderung (hypothetisch, keine angekündigte Rechtslage): ' + from + ' ' + bits.join('; ') + '. Gilt für alle Zahlungen und Verkäufe ab diesem Jahr, auch für Erben, ohne Bestandsschutz; Beiträge und Erstattungen davor nach heutigem Recht. Die grob geschätzte spätere Steuer auf ein vererbtes oder bei Rentenbeginn bewertetes AVD rechnet mit dem Satz des Bewertungsjahres, auch wenn der Stichtag erst später liegt.';

@@ -170,7 +170,7 @@ export function scenarioList(p: Params, kombi?: Split | null, opts?: EngineOptio
     const from = p.taxFrom < 0 ? 'ab Rentenbeginn' : 'ab ' + Math.max(p.taxFrom, p.a0);
     const today = lawOf(opts).abg.rate; // heute geltender Abgeltungsteuersatz (Rechtsstand-Tabelle)
     if (p.abgRate === today && p.estAdd === 0) {
-      add('taxAbg', 'Abgeltungsteuer 30 % statt 25 % ' + from + ' (hypothetisch)', { abgRate: .3 });
+      add('taxAbg', 'Abgeltungsteuer 30 % statt ' + (today * 100).toLocaleString('de-DE') + ' % ' + from + ' (hypothetisch)', { abgRate: .3 });
       add('taxEst', 'Einkommensteuer 5 Prozentpunkte höher ' + from + ' (hypothetisch)', { estAdd: .05 });
     } else add('taxNow', 'Steuerrecht wie heute, ohne Änderung', { abgRate: today, estAdd: 0 });
     if (p.kvOn) {

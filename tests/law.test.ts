@@ -257,6 +257,8 @@ describe('Oberflächentexte nennen die Werte der aktuellen Tabelle', () => {
     ['Basiszins', pc(L.basiszins * 100) + ' %', [G]],
     ['Tarifjahr', 'Tarif ' + L.year, [RW, S]],
     ['Steuerwerte (Rechtsstand)', 'Steuerwerte ' + L.year, ['src/lib/site.ts']],
+    ['Rechtsstand im Rechenweg', 'Stand ' + L.year, [RW]],
+    ['heutiger Abgeltungsteuersatz', 'Heute ' + (L.abg.rate * 100).toLocaleString('de-DE') + ' %', [S]],
   ];
   for (const [what, text, files] of CHECKS) {
     it(`${what}: „${text}“`, () => {
