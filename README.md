@@ -28,6 +28,7 @@ Offener Rechner für die private Altersvorsorge in Deutschland. Rentenbilanz ver
 - **Erbfall:** was bei einem wählbaren Todesalter nach Steuern an die Erben geht, mit deren eigenem Steuersatz.
 - **Was-wäre-wenn:** Kosten-Gleichstand mit dem ETF-Depot, hypothetische Steueränderungen, Umschichtung vor Rentenbeginn, Ergebnisse nominal oder in heutiger Kaufkraft.
 - **Nachvollziehbar:** „Rechenweg kopieren“ gibt Eingaben, Annahmen, Modellgrenzen und Jahreswerte als Markdown aus, zum Nachrechnen von Hand oder mit einer KI. Fachbegriffe sind im Glossar mit Fundstelle erklärt.
+- **Speichern und Teilen:** Eingaben bleiben im Browser gespeichert. Sind schon eigene, abweichende Eingaben gespeichert, öffnet ein geteilter Link im Ansichtsmodus und überschreibt sie erst nach „Übernehmen“. Zurücksetzen auf Standardwerte lässt sich rückgängig machen.
 - **Neutral:** nur Zahlen, keine Empfehlung und kein „Sieger“. Was die Zahlen nicht zeigen (Verfügbarkeit, Bindung, Kostenrisiko), steht getrennt daneben.
 
 ## Datenschutz
